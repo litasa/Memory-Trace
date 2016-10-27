@@ -121,7 +121,27 @@ static void TestCustomAllocator()
 
 int main(int argc, char* argv[])
 {
-  TestCustomAllocator();
+  //TestCustomAllocator();
 
+
+		MemTrace::InitSocket("10.150.44.212",8080);
+	MemTrace::Flush();
+	MemTrace::HeapId id = MemTrace::HeapCreate("test");
+	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");
+	
+	int *buf  = new int[5*sizeof(int)];
+	int *buf2  = new int[5*sizeof(int)];
+	MemTrace::HeapAddCore(id,buf,5*sizeof(int));
+	MemTrace::HeapAddCore(id2,buf2,5*sizeof(int));
+		int *p = new (buf) int(3);
+		int *q = new (buf2) int(1);
+		MemTrace::HeapAllocate(id,p,sizeof(int));
+		MemTrace::HeapAllocate(id2,q,sizeof(int));
+		MemTrace::HeapFree(id,p);
+		MemTrace::HeapDestroy(id);
+		MemTrace::HeapDestroy(id2);
+		MemTrace::Flush();
+		
+	MemTrace::Shutdown();
   return 0;
 }
