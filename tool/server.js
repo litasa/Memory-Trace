@@ -192,6 +192,14 @@ var server = require('net').createServer(function (socket) {
             header.scope = readString(buffer);
           }
           header.timestamp = readByte(buffer);
+
+          //checking to see if we are doing a second run of the same program. If that is the case remove all saved data and begin from scratch
+          var check = peakByte(buffer);
+          if (check.val == 0) {
+            SeenStacks.clear();
+            HeapsAlive.clear();
+            HeapsDead.clear();
+          }
           header.callstackId = readCallstackData(buffer);
 
           printheader(header);
@@ -206,7 +214,7 @@ var server = require('net').createServer(function (socket) {
           }
           else if (header.event == typeEnum.ModuleDump) { //module dump
               //TODO save symData somewhere
-              symData = readSymbols(buffer);
+              var symData = readSymbols(buffer);
           }
           else if (header.event == typeEnum.HeapCreate) {
             var heapId = readByte(buffer);
@@ -269,10 +277,14 @@ var server = require('net').createServer(function (socket) {
             //TODO Check so that no leaks have happened
           }
         } //All events registred. Buffer is empty
+        lineChart.update();
     })
 })
 .listen(8080);
 
+server.on('close', function() {
+  console.log("connection closed, hmm");
+});
 
 require('dns').lookup(require('os').hostname(), function (err, add, fam) {
   console.log('Address: '+ add + '\n socket: ' + server.address().port);
@@ -298,6 +310,20 @@ function readByte(stream){
   val &= ~mul;
   stream.index = tempindex;
   return val;
+}
+
+function peakByte(stream) {
+  var val = 0;
+  var tempindex = stream.index;
+  var mul = 1;
+  do {
+    var b = stream.data[tempindex++];
+    val |= b*mul;
+    mul <<= 7;
+  } while (b < 128);
+
+  val &= ~mul;
+  return { val: val, index: tempindex};
 }
 
 function readPointer(stream){

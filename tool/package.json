@@ -20,5 +20,6 @@
     "electron": "^1.4.1"
   },
   "dependencies": {
+    "chart.js": "^2.3.0"
   }
 }
