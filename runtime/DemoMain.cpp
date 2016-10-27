@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
   //TestCustomAllocator();
 
 
-		MemTrace::InitSocket("10.150.44.212",8080);
+	MemTrace::InitSocket("10.150.44.212",8080);
 	MemTrace::Flush();
 	MemTrace::HeapId id = MemTrace::HeapCreate("test");
 	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");
@@ -141,7 +141,6 @@ int main(int argc, char* argv[])
 		MemTrace::HeapDestroy(id);
 		MemTrace::HeapDestroy(id2);
 		MemTrace::Flush();
-		
 	MemTrace::Shutdown();
   return 0;
 }

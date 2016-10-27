@@ -127,11 +127,11 @@ function Core(start_address, size, creation_time, callstackId)
   this.pointer = function () { return this.start_address;}
 
   this.Allocate = function (allocation) {
-    if ((allocation.pointer + allocation.size) <= this.end_address) {
+    if ((allocation.pointer.low + allocation.size) <= this.end_address.low) {
       this.allocations.push(allocation);
     }
     else {
-      console.log("Allocation size too large for Core. Not logged");
+      console.log("Allocation size too large for Core or Larger then 32 bit. Not logged");
     }
   }
 
@@ -168,6 +168,8 @@ function Core(start_address, size, creation_time, callstackId)
   }
 } //end of Core
 
+
+
 // server
 var server = require('net').createServer(function (socket) {
 
@@ -196,6 +198,8 @@ var server = require('net').createServer(function (socket) {
           //checking to see if we are doing a second run of the same program. If that is the case remove all saved data and begin from scratch
           var check = peakByte(buffer);
           if (check.val == 0) {
+            console.clear();
+            console.log("New run detected. Clearing: SeenStacks, HeapsAlive, HeapsDead");
             SeenStacks.clear();
             HeapsAlive.clear();
             HeapsDead.clear();
@@ -206,10 +210,10 @@ var server = require('net').createServer(function (socket) {
 
           if (header.event == typeEnum.BeginStream) {  //stream begin event
             //TODO check that magic number is correct etc
-            var magicNumber = read32Bit(buffer);
+            var magicNumber = read64Bit(buffer);
             var platform = readString(buffer);
             var pointerSize = readByte(buffer);
-            var timerFrequency = read32Bit(buffer);
+            var timerFrequency = read64Bit(buffer);
             var initCommonAddress = readPointer(buffer);
           }
           else if (header.event == typeEnum.ModuleDump) { //module dump
@@ -326,11 +330,35 @@ function peakByte(stream) {
   return { val: val, index: tempindex};
 }
 
+const HIGH_THREASHOLD_64BIT = 2097152;
+
 function readPointer(stream){
-  return (new Uint32Array([readByte(stream)]))[0]
+  var val = 0;
+  var point = { high: 0, low: 0};
+  var tempindex = stream.index;
+  var mul = 1;
+  do {
+    var b = stream.data[tempindex++];
+    val |= b*mul;
+    mul <<= 7;
+    if (mul > HIGH_THREASHOLD_64BIT) {
+      point.low = val;
+      mul = 1;
+      val = 0;
+    }
+  } while (b < 128);
+  val &= ~mul;
+  if (point.low > 0) { //we have 64 bit
+    point.high = val;
+  }
+  else {
+    point.low = val;
+  }
+  stream.index = tempindex;
+  return point;
 }
 
-function read32Bit(stream){
+function read64Bit(stream){
   return readPointer(stream);
 }
 
@@ -390,10 +418,14 @@ function printheader(header)
 function AllocationArrayToString(allocationArray){
   var string = new String;
   for (var i = 0; i < allocationArray.length; i++) {
-    var all = "Pointer: " + allocationArray[i].pointer + " Size: " + allocationArray[i].size + "\n";
+    var all = "Pointer: " + string64bitAsHex(allocationArray[i].pointer) + " Size: " + allocationArray[i].size + "\n";
     string = string.concat(all);
   }
   return string;
+}
+
+function string64bitAsHex(val){
+  return val.high.toString(16) + val.low.toString(16);
 }
 
 function getEventAsString(event)
