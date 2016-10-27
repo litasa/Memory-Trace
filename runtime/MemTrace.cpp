@@ -30,21 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdarg.h>
 #include <stdio.h>
 
-#if defined(MEMTRACE_UNIX)
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <pthread.h>
-#include <fcntl.h>
-#include <unistd.h>
-#endif
-
-#if defined(MEMTRACE_MAC)
-#include <execinfo.h>   // for backtrace(3)
-#endif
-
 #if defined(MEMTRACE_WINDOWS)
 #include <psapi.h>
-#include <minhook.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
@@ -328,8 +315,6 @@ namespace MemTrace
   static void InitCommon(TransmitBlockFn* fn);
   // Panic shutdown
   static void ErrorShutdown();
-  // Hook CRT allocators.
-  static void HookCrt();
 
   //-----------------------------------------------------------------------------
   // Encodes integers and strings using variable-length encoding and windowing
@@ -695,96 +680,7 @@ static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn)
   S.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
   S.m_Encoder.EmitPointer((const void*) MemTrace::InitCommon);
 
-  MemTrace::HeapCreate("CRT Heap"); // Will get id 0 in a side effecty kind of way.
-
-  HookCrt();
-
   RefreshLoadedModules();
-}
-
-//-----------------------------------------------------------------------------
-static void MemTrace::HookCrt()
-{
-  // @@@ If you are a licensed Durango dev, get in touch with us and we can
-  // share a way to hook the CRT for Durango. NDA material.
-
-#if defined(MEMTRACE_WINDOWS)
-  // On Windows, dynamically hook the CRT allocation functions to route through memtrace.
-
-  // Load minhook DLL
-  if (HMODULE minhook_module = LoadLibraryA("MinHook.x64.dll"))
-  {
-    auto MH_Initialize_Func = (decltype(&MH_Initialize)) GetProcAddress(minhook_module, "MH_Initialize");
-    auto MH_CreateHook_Func = (decltype(&MH_CreateHook)) GetProcAddress(minhook_module, "MH_CreateHook");
-    auto MH_EnableHook_Func = (decltype(&MH_EnableHook)) GetProcAddress(minhook_module, "MH_EnableHook");
-
-    if (!MH_Initialize_Func || !MH_CreateHook_Func || !MH_EnableHook_Func || MH_OK != (*MH_Initialize_Func)())
-    {
-      DebugBreak();
-    }
-
-#if _MSC_VER != 1700
-#error This needs updating for the new CRT version. Talk to Andreas.
-#endif
-
-#if !defined(_DEBUG)
-
-    if (HMODULE crt_module = GetModuleHandleA("msvcr110.dll"))
-    {
-#define IG_WRAP_FN(symbol) { #symbol, (void*) Wrapped_##symbol, (void**) &Original_##symbol }
-      static const struct
-      {
-        const char* m_FunctionName;
-        void*       m_Wrapper;
-        void**      m_StockFunctionPtr;
-      }
-      wrapped_functions[] =
-      {
-        IG_WRAP_FN(calloc),
-        IG_WRAP_FN(malloc),
-        IG_WRAP_FN(free),
-        IG_WRAP_FN(realloc),
-        IG_WRAP_FN(_recalloc),
-        IG_WRAP_FN(_aligned_malloc),
-        IG_WRAP_FN(_aligned_free),
-        IG_WRAP_FN(_aligned_realloc),
-        IG_WRAP_FN(_aligned_recalloc),
-        IG_WRAP_FN(_aligned_offset_malloc),
-        IG_WRAP_FN(_aligned_offset_realloc),
-        IG_WRAP_FN(_aligned_offset_recalloc),
-      };
-#undef IG_WRAP_FN
-
-      for (int i = 0; i < ARRAY_SIZE(wrapped_functions); ++i)
-      {
-        if (void* target = GetProcAddress(crt_module, wrapped_functions[i].m_FunctionName))
-        {
-          (*MH_CreateHook_Func)(target, wrapped_functions[i].m_Wrapper, wrapped_functions[i].m_StockFunctionPtr);
-        }
-        else
-        {
-          MemTracePrint("Failed to hook '%s' - entry point not found\n", wrapped_functions[i].m_FunctionName);
-        }
-      }
-
-      MH_STATUS status;
-
-      if (MH_OK != (status = (*MH_EnableHook_Func)(MH_ALL_HOOKS)))
-      {
-        MemTracePrint("CRT hooking failed: %08x\n", (uint32_t) status);
-      }
-    }
-#else
-    MemTracePrint("WARNING: CRT hooking in Debug builds not yet supported\n");
-#endif
-
-    // NOTE: minhook.x64.dll left mapped on purpose.
-  }
-  else
-  {
-    MemTracePrint("WARNING: Failed to load MinHook.x64.dll - CRT allocations will not be captured\n");
-  }
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -1256,71 +1152,6 @@ int MemTrace::GetBackTrace(uintptr_t frames[], uint64_t *hash_out, int skip_leve
   *hash_out = (uint64_t(hash) << 1) | 1;
 
   return count;
-}
-
-#elif defined(MEMTRACE_MAC)
-
-int MemTrace::GetBackTrace(uintptr_t frames[], uint64_t *hash_out, int skip_levels)
-{
-  int count = backtrace((void**)frames, kMaxFrames);
-  int skip_count = skip_levels > count ? count : skip_levels;
-  uint64_t         hash = 0x0123456789abcdef;
-
-  memmove(&frames[skip_levels], &frames[0], sizeof(frames[0]) * count - skip_count);
-  count -= skip_count;
-
-  // Compute a hash.
-  for (int i = 0; i < count; ++i)
-  {
-    hash = ((hash << 51) | (hash >> 13)) ^ frames[i];
-  }
-
-  // Make sure we don't hash to zero.
-  *hash_out = hash ? hash : 1;
-
-  return count;
-}
-
-#else
-
-// Manually walk the linked list of frames on the stack.  This depends on frame
-// pointer omission not being disabled. (Which is the default on most
-// compilers & platforms. You might want to do something different.)
-
-int __attribute__((noinline)) MemTrace::GetBackTrace(uintptr_t frames[], uint64_t *hash_out, int skip_levels)
-{
-  // Grab address of current frame.
-  const uintptr_t* fp   = (const uintptr_t*) __builtin_frame_address(0);
-  int              i    = -skip_levels;
-  uint64_t         hash = 0x0123456789abcdef;
-
-  // Deref current frame pointer (we'll start with the caller's frame)
-  while (fp)
-  {
-    // The parent frame link is the first 64-bit word in the frame in memory order
-    // The return address is the second 64-bit word in the frame in memory order (after the link).
-    const uintptr_t parent_frame = fp[0];
-    const uintptr_t ret_addr     = fp[1];
-
-    // (If we're still skipping levels, skip over this part)
-    if (i >= 0) {
-      // Write return address to output array and update running hash
-      frames[i] = ret_addr;
-      hash      = ((hash << 51) | (hash >> 13)) ^ ret_addr;
-    }
-
-    // Bail if we've filled the output array completely (shouldn't happen ideally)
-    if (++i == kMaxFrames)
-      break;
-
-    // Deref link to parent frame and loop.
-    fp = (uintptr_t*) parent_frame;
-  }
-
-  // Make sure we don't hash to zero.
-  *hash_out = hash ? hash : 1;
-
-  return i > 0 ? i - 1 : 0;
 }
 #endif
 
