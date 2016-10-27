@@ -1,3 +1,0 @@
-[submodule "runtime/minhook"]
-	path = runtime/minhook
-	url = https://github.com/TsudaKageyu/minhook.git
