@@ -2,6 +2,7 @@ bin
 obj
 *.pdb
 *.sdf
+*.opensdf
 *.suo
 *.user
 pingme.txt

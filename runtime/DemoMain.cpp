@@ -31,29 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 #include <assert.h>
 
-static void TestCRTAllocs()
-{
-  // This is ridiculous, but shows CRT allocating grabbing working.
-
-  MemTrace::UserMark("CRT Test Starting");
-
-  std::map<std::string, std::vector<std::string> > blah;    // Wee!!
-
-  for (int i = 0; i < 512; ++i)
-  {
-    std::string key = "k";
-    for (int k = 0; k < 10; ++k)
-    {
-      blah[key].push_back("Gah!");
-      blah[key].push_back("This is for demo purposes to make sure we're capturing CRT allocations");
-
-      key += "a";
-    }
-  }
-
-  MemTrace::UserMark("CRT Test Ending");
-}
-
 class BlockAllocator
 {
   struct Hdr
@@ -144,8 +121,6 @@ static void TestCustomAllocator()
 
 int main(int argc, char* argv[])
 {
-  TestCRTAllocs();
-
   TestCustomAllocator();
 
   return 0;
