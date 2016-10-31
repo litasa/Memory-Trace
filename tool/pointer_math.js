@@ -1,4 +1,4 @@
-
+//Under assumption that size is less than MAX_SAFE_INTEGER
 function addSizeToPointer(pointer, size){
   var ret = { high: pointer.high, low: pointer.low};
   if (ret.low + size < Number.MAX_SAFE_INTEGER) {

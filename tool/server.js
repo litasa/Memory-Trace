@@ -267,7 +267,9 @@ var server = require('net').createServer(function (socket) {
             if (!global.HeapsAlive.has(heapId)) {
               global.HeapsAlive.set(heapId,new Heap(heapName,header.timestamp,header.callstackId));
             }
-            console.log("Error, created a heap that already exists" + heapId);
+            else {
+              console.log("Error, created a heap that already exists" + heapId);              
+            }
           }
           else if (header.event == global.typeEnum.HeapDestroy) {
             var heapId = STREAM.readByte(buffer);
