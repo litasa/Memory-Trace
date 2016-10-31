@@ -79,7 +79,7 @@ namespace MemTrace
   // Various limits
   enum
   {
-    kBufferSize     = 32768,
+    kBufferSize     = 17520,
     kMaxStrings     = 1024,   // Max string hashes to keep around
     kMaxStacks      = 1024,   // Max call stack hashes to keep around
     kMaxFrames      = 256,    // Max frames in single callstack - needs to be large to capture all of it
@@ -330,6 +330,7 @@ namespace MemTrace
     SlotCache<kMaxStacks>         m_Stacks;                         // Window of recently sent backtraces
     int                           m_CurBuffer;                      // Index of current encoding buffer
     uint8_t                       m_Buffers[2][kBufferSize];        // Raw encoding buffers
+	bool						  m_sendFlag;
 
   private:
     //-----------------------------------------------------------------------------
@@ -352,9 +353,7 @@ namespace MemTrace
 
       if (size + m_WriteOffset > kBufferSize)
       {
-        TransmitCurrentBuffer();
-
-        base          = m_Buffers[m_CurBuffer];
+        m_sendFlag = true;
       }
 
       return base + m_WriteOffset;
@@ -384,6 +383,7 @@ namespace MemTrace
       m_WriteOffset  = 0;
       m_TransmitFn   = transmit_fn;
       m_StartTime    = TimerGetSystemCounter();
+	  m_sendFlag	 = false;
 
       m_Strings.Init();
       m_Stacks.Init();
@@ -504,6 +504,11 @@ namespace MemTrace
     // Emit common data that goes with every event.  
     void BeginEvent(EventCode code)
     {
+		if (m_sendFlag)
+		{
+			TransmitCurrentBuffer();
+			m_sendFlag = false;
+		}
       EmitUnsigned(code);
       EmitUnsigned(s_Scope.m_Kind);
       if (s_Scope.m_Kind != kScopeNone)

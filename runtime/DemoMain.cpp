@@ -125,7 +125,6 @@ int main(int argc, char* argv[])
 
 
 	MemTrace::InitSocket("10.150.44.212",8080);
-	MemTrace::Flush();
 	MemTrace::HeapId id = MemTrace::HeapCreate("test");
 	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");
 	
@@ -135,7 +134,7 @@ int main(int argc, char* argv[])
 	MemTrace::HeapAddCore(id2,buf2,5*sizeof(int));
 		int *p = new (buf) int(3);
 		int *q = new (buf2) int(1);
-		for (int i = 0; i < 300; i++)
+		while (true)
 		{
 			MemTrace::HeapAllocate(id,p,sizeof(int));
 			MemTrace::HeapAllocate(id2,q,sizeof(int));

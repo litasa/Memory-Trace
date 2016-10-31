@@ -26,7 +26,8 @@ var STREAM = new function () {
     'HeapFree': 24
   };
 
-  global.SeenStacks = new Set();
+  global.SeenStacks = new Map();
+  global.SeenStrings = new Map();
 
   global.HeapsAlive = new Map();
   global.HeapsDead = new Map();
@@ -104,7 +105,7 @@ var STREAM = new function () {
       frameInfo[i] = this.readByte(buffer);
       //TODO Add Metadata Symbol Contains Thingie
     }
-    global.SeenStacks.add(frameInfo);
+    global.SeenStacks.set(sequence, frameInfo);
     return sequence;
   }
 
@@ -112,14 +113,18 @@ var STREAM = new function () {
   {
     //get the sequence number to know if it has been used before
     var sequence = this.readByte(buffer);
+    if (sequence < global.SeenStrings.size) {
+      return global.SeenStrings.get(sequence);
+    }
     //TODO handle reuse if multiple strings used
     var stringLength = this.readByte(buffer);
-    var platform = new String("");
+    var string = new String("");
     for (var i = buffer.index; i < buffer.index + stringLength; i++) {
-      platform += String.fromCharCode(buffer.data[i]);
+      string += String.fromCharCode(buffer.data[i]);
     }
+    global.SeenStrings.set(sequence, string);
     buffer.index += stringLength;
-    return platform;
+    return string;
   }
 
   this.readSymbols = function(buffer)
@@ -235,19 +240,9 @@ var server = require('net').createServer(function (socket) {
             header.scope = STREAM.readString(buffer);
           }
           header.timestamp = STREAM.readByte(buffer);
-
-          //checking to see if we are doing a second run of the same program. If that is the case remove all saved data and begin from scratch
-          var check = STREAM.peakByte(buffer);
-          if (check.val == 0) {
-            console.clear();
-            console.log("New run detected. Clearing: SeenStacks, HeapsAlive, HeapsDead");
-            global.SeenStacks.clear();
-            global.HeapsAlive.clear();
-            global.HeapsDead.clear();
-          }
           header.callstackId = STREAM.readCallstackData(buffer);
 
-          printheader(header);
+          //printheader(header);
 
           if (header.event == global.typeEnum.BeginStream) {  //stream begin event
             //TODO check that magic number is correct etc
@@ -328,18 +323,15 @@ var server = require('net').createServer(function (socket) {
           else if (header.event == global.typeEnum.EndStream) {
             //TODO Check so that no leaks have happened
           }
-          var totalMemory = getTotalMemory(global.HeapsAlive);
-          newData.push( { x: header.timestamp, y: totalMemory});
-          if (totalMemory > 0) {
-            console.log(totalMemory);
-          }
+          //var totalMemory = getTotalMemory(global.HeapsAlive);
+          //addChartData(meep, { x: header.timestamp, y: totalMemory});
         } //All events registred. Buffer is empty
 
         //update total memory usage
 
-        lineChart.update();
-		chart.render();
+        console.log("done with buffer");
     })
+
 })
 .listen(8080);
 
