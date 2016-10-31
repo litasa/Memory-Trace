@@ -75,7 +75,15 @@ function Heap(name, timestamp, callstack)
     }
     return destroyData;
   }
-} //end heapinfo
+
+  this.getMemoryUsage = function() {
+    var ret = 0;
+    for (var i = 0; i < this.cores.length; i++) {
+      ret += this.cores[i].getMemoryUsage();
+    }
+    return ret;
+  }
+} //end HEAP
 
 function Allocation(pointer, size, creation_time, callstack)
 {
@@ -139,5 +147,13 @@ function Core(start_address, size, creation_time, callstackId)
         destroyed: true,
       alloclist: null}
     }
+  }
+
+  this.getMemoryUsage = function() {
+    var ret = 0;
+    for (var i = 0; i < this.allocations.length; i++) {
+      ret += this.allocations[i].size;
+    }
+    return ret;
   }
 } //end of Core

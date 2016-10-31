@@ -135,9 +135,14 @@ int main(int argc, char* argv[])
 	MemTrace::HeapAddCore(id2,buf2,5*sizeof(int));
 		int *p = new (buf) int(3);
 		int *q = new (buf2) int(1);
-		MemTrace::HeapAllocate(id,p,sizeof(int));
-		MemTrace::HeapAllocate(id2,q,sizeof(int));
-		MemTrace::HeapFree(id,p);
+		for (int i = 0; i < 300; i++)
+		{
+			MemTrace::HeapAllocate(id,p,sizeof(int));
+			MemTrace::HeapAllocate(id2,q,sizeof(int));
+			MemTrace::HeapFree(id,p);
+			MemTrace::HeapFree(id2,q);
+		}
+		
 		MemTrace::HeapDestroy(id);
 		MemTrace::HeapDestroy(id2);
 		MemTrace::Flush();

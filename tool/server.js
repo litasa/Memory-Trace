@@ -60,7 +60,7 @@ var STREAM = new function () {
     return { val: val, index: tempindex};
   }
 
-  const HIGH_THREASHOLD_64BIT = 2097152;
+
 
   this.readPointer = function(stream){
     var val = 0;
@@ -268,7 +268,7 @@ var server = require('net').createServer(function (socket) {
               global.HeapsAlive.set(heapId,new Heap(heapName,header.timestamp,header.callstackId));
             }
             else {
-              console.log("Error, created a heap that already exists" + heapId);              
+              console.log("Error, created a heap that already exists" + heapId);
             }
           }
           else if (header.event == global.typeEnum.HeapDestroy) {
@@ -328,12 +328,33 @@ var server = require('net').createServer(function (socket) {
           else if (header.event == global.typeEnum.EndStream) {
             //TODO Check so that no leaks have happened
           }
+          var totalMemory = getTotalMemory(global.HeapsAlive);
+          newData.push( { x: header.timestamp, y: totalMemory});
+          if (totalMemory > 0) {
+            console.log(totalMemory);
+          }
         } //All events registred. Buffer is empty
+
+        //update total memory usage
+
         lineChart.update();
 		chart.render();
     })
 })
 .listen(8080);
+
+function getTotalMemory(heapsalive)
+{
+  var ret = 0;
+  for (var i = 0; i < heapsalive.size; i++) {
+    if (heapsalive.has(i)) {
+    for (var j  = 0; j < heapsalive.get(i).cores.length; j++) {
+      ret += heapsalive.get(i).getMemoryUsage();
+      }
+    }
+  }
+  return ret;
+}
 
 server.on('close', function() {
   console.log("connection closed, hmm");
