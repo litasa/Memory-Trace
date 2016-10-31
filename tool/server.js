@@ -1,3 +1,5 @@
+//object that handles the buffer
+
 var STREAM = new function () {
   global.typeEnum = {
     'BeginStream' : 1,
@@ -193,6 +195,7 @@ function printConsole(buffer){
   }
 }
 
+//Helperfunctions for printing
 function printheader(header) {
   console.log("event is: " + this.getEventAsString(header.event));
   console.log("Timestamp is: " + header.timestamp);
@@ -201,18 +204,11 @@ function printheader(header) {
 function AllocationArrayToString(allocationArray){
   var string = new String;
   for (var i = 0; i < allocationArray.length; i++) {
-    var all = "Pointer: " + string64bitAsHex(allocationArray[i].pointer) + " Size: " + allocationArray[i].size + "\n";
+    var all = "Pointer: " + pointerToHex(allocationArray[i].pointer) + " Size: " + allocationArray[i].size + "\n";
     string = string.concat(all);
   }
   return string;
 }
-
-function string64bitAsHex(val){
-  return val.high.toString(16) + val.low.toString(16);
-}
-
-
-
 
 
 // server
@@ -268,25 +264,24 @@ var server = require('net').createServer(function (socket) {
           else if (header.event == global.typeEnum.HeapCreate) {
             var heapId = STREAM.readByte(buffer);
             var heapName = STREAM.readString(buffer);
-            if (global.HeapsAlive.has(heapId)) {
-              console.log("Error, created a heap that already exists" + heapId);
-              return;
+            if (!global.HeapsAlive.has(heapId)) {
+              global.HeapsAlive.set(heapId,new Heap(heapName,header.timestamp,header.callstackId));
             }
-            global.HeapsAlive.set(heapId,new Heap(heapName,header.timestamp,header.callstackId));
+            console.log("Error, created a heap that already exists" + heapId);
           }
           else if (header.event == global.typeEnum.HeapDestroy) {
             var heapId = STREAM.readByte(buffer);
             if (global.HeapsAlive.has(heapId)) {
               var heapdata = global.HeapsAlive.get(heapId);
               var destroyData = heapdata.Destroy();
-              if (destroyData.destroyed == false) {
-                console.log("Could not destroy heap " + heapId + " with name " + destroyData.name +
-              " because core: " + destroyData.core + " still contains \n" + AllocationArrayToString(destroyData.allocList));
-              }
-              else {
+              if (destroyData.destroyed == true) {
                 heapdata.death = header.timestamp;
                 global.HeapsAlive.delete(heapId);
                 global.HeapsDead.set(heapId,heapdata);
+              }
+              else {
+                console.log("Could not destroy heap " + heapId + " with name " + destroyData.name +
+              " because core: " + destroyData.core + " still contains \n" + AllocationArrayToString(destroyData.allocList));
               }
             }
             else {
@@ -313,6 +308,9 @@ var server = require('net').createServer(function (socket) {
               var heapdata = global.HeapsAlive.get(heapId);
               heapdata.Allocate(new Allocation(startPos, size, header.timestamp, header.callstackId));
             }
+            else {
+              console.log("Trying to allocate to non-existing heap: " + heapId);
+            }
           }
           else if (header.event == global.typeEnum.HeapFree) {
             var heapId = STREAM.readByte(buffer);
@@ -320,6 +318,9 @@ var server = require('net').createServer(function (socket) {
             if (global.HeapsAlive.has(heapId)) {
               var heapdata = global.HeapsAlive.get(heapId);
               heapdata.DeallocateFromPointer(startPos);
+            }
+            else {
+              console.log("Trying to deallocate from non-existing heap: " + heapId);
             }
           }
           else if (header.event == global.typeEnum.EndStream) {

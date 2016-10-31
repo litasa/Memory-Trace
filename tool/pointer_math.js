@@ -41,3 +41,17 @@ function pointerBlockInside(lowAddress,highAddress,pointer, size)
 {
     return (pointerLE(lowAddress,pointer)) && (pointerGE(highAddress,addSizeToPointer(pointer,size)));
 }
+
+function pointerEquals(pointerA, pointerB)
+{
+  if (pointerA.low == pointerB.low) {
+    if (pointerA.high == pointerB.high) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function pointerToHex(pointer){
+  return pointer.high.toString(16) + pointer.low.toString(16);
+}

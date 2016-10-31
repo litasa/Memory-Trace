@@ -121,7 +121,7 @@ function Core(start_address, size, creation_time, callstackId)
 
   this.GetPointerPosInAllocationArray = function(pointer) {
     for (var i = 0; i < this.allocations.length; i++) {
-      if (this.allocations[i].pointer == pointer) {
+      if (pointerEquals(this.allocations[i].pointer, pointer)) {
         return i;
       }
     }
