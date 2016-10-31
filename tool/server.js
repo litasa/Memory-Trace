@@ -1,172 +1,38 @@
-var typeEnum = {
-  'BeginStream' : 1,
-  'EndStream': 2,
-  'ModuleDump': 3,
-  'Mark': 4,
+(function () {
+  global.typeEnum = {
+    'BeginStream' : 1,
+    'EndStream': 2,
+    'ModuleDump': 3,
+    'Mark': 4,
 
-  'AddressAllocate': 10,
-  'AddressFree': 11,
-  'VirtualCommit': 12,
-  'VirtualDecommit': 13,
+    'AddressAllocate': 10,
+    'AddressFree': 11,
+    'VirtualCommit': 12,
+    'VirtualDecommit': 13,
 
-  'PhysicalAllocate': 14,
-  'PhysicalFree': 15,
-  'PhysicalMap': 16,
-  'PhysicalUnmap': 17,
+    'PhysicalAllocate': 14,
+    'PhysicalFree': 15,
+    'PhysicalMap': 16,
+    'PhysicalUnmap': 17,
 
-  'HeapCreate': 18,
-  'HeapDestroy': 19,
-  'HeapAddCore': 20,
-  'HeapRemoveCore': 21,
-  'HeapAllocate': 22,
-  'HeapReallocate': 23,
-  'HeapFree': 24
-};
+    'HeapCreate': 18,
+    'HeapDestroy': 19,
+    'HeapAddCore': 20,
+    'HeapRemoveCore': 21,
+    'HeapAllocate': 22,
+    'HeapReallocate': 23,
+    'HeapFree': 24
+  };
 
-var SeenStacks = new Set();
+  global.SeenStacks = new Set();
 
-var HeapsAlive = new Map();
-var HeapsDead = new Map();
+  global.HeapsAlive = new Map();
+  global.HeapsDead = new Map();
+}());
 
-function Heap(name, timestamp, callstack)
-{
-  //General heap data
-  this.name = name;
-  this.birth = timestamp;
-  this.death = -1;
-  this.callstack = callstack;
 
-  this.cores = new Array();
 
-  this.Allocate = function(allocation){
-    var coreid = this.GetCoreForAllocation(allocation);
-    if (coreid >= 0) {
-      this.cores[coreid].Allocate(allocation);
-    }
-    else {
-      console.log("Could not add Allocation because no core owner found. Not logged");
-    }
-  }
 
-  this.Deallocate = function(allocation) {
-    var coreid = this.GetCoreForAllocation(allocation);
-    if (coreid >= 0) {
-      this.cores[coreid].Deallocate(allocation);
-    }
-    else {
-      console.log("No core found for deallocation. Not Logged")
-    }
-  }
-
-  this.DeallocateFromPointer = function(pointer) {
-    for (var i = 0; i < this.cores.length; i++) {
-      var core = this.cores[i];
-      var pos = core.GetPointerPosInAllocationArray(pointer);
-      if (pos >= 0) {
-        core.Deallocate(core.allocations[pos]);
-        return;
-      }
-    }
-    console.log("No pointer found in any core for deallocation. Deallocation not done");
-  }
-
-  //Helperfunctions
-  this.GetCoreForAllocation = function (allocation){
-    for (var i = 0; i < this.cores.length; i++) {
-      var core = this.cores[i];
-
-      if ((core.start_address <= allocation.pointer)
-          && (core.end_address >= allocation.size + allocation.pointer)){
-        return i;
-      }
-    }
-    //core not found
-    return -1;
-  }
-
-  this.AddCore = function(core) {
-    //TODO add checks so cores does not overlap
-    this.cores.push(core);
-  }
-
-  this.Destroy = function() {
-    for (var i = 0; i < this.cores.length; i++) {
-      var destroyData = this.cores[i].Destroy();
-      if (!destroyData.destroyed) {
-        destroyData.name = this.name;
-        destroyData.core = i;
-        return destroyData;
-      }
-      else {
-        this.cores.splice(i,1);
-      }
-    }
-    return destroyData;
-  }
-} //end heapinfo
-
-function Allocation(pointer, size, creation_time, callstack)
-{
-  this.pointer = pointer;
-  this.size = size;
-  this.birth = creation_time;
-  this.death = -1;
-  this.callstack = callstack;
-}
-
-function Core(start_address, size, creation_time, callstackId)
-{
-  this.start_address = start_address;
-  this.end_address = start_address + size;
-  this.size = size;
-  this.birth = creation_time;
-  this.death = -1;
-  this.callstackId = callstackId;
-  this.allocations = new Array();
-
-  this.pointer = function () { return this.start_address;}
-
-  this.Allocate = function (allocation) {
-    if ((allocation.pointer.low + allocation.size) <= this.end_address.low) {
-      this.allocations.push(allocation);
-    }
-    else {
-      console.log("Allocation size too large for Core or Larger then 32 bit. Not logged");
-    }
-  }
-
-  this.Deallocate = function (allocation) {
-    var pos = this.GetPointerPosInAllocationArray(allocation.pointer);
-    if (pos >= 0) {
-      this.allocations.splice(pos,1);
-    }
-    else {
-      console.log("Pointer position not valid in Core. Allocation not removed");
-    }
-  }
-
-  this.GetPointerPosInAllocationArray = function(pointer) {
-    for (var i = 0; i < this.allocations.length; i++) {
-      if (this.allocations[i].pointer == pointer) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  this.Destroy = function() {
-    if (this.allocations.length > 0) {
-      return {
-        destroyed: false,
-        allocList: this.allocations};
-    }
-    else {
-      return {
-        destroyed: true,
-      alloclist: null}
-    }
-  }
-} //end of Core
 
 
 
@@ -200,15 +66,15 @@ var server = require('net').createServer(function (socket) {
           if (check.val == 0) {
             console.clear();
             console.log("New run detected. Clearing: SeenStacks, HeapsAlive, HeapsDead");
-            SeenStacks.clear();
-            HeapsAlive.clear();
-            HeapsDead.clear();
+            global.SeenStacks.clear();
+            global.HeapsAlive.clear();
+            global.HeapsDead.clear();
           }
           header.callstackId = readCallstackData(buffer);
 
           printheader(header);
 
-          if (header.event == typeEnum.BeginStream) {  //stream begin event
+          if (header.event == global.typeEnum.BeginStream) {  //stream begin event
             //TODO check that magic number is correct etc
             var magicNumber = read64Bit(buffer);
             var platform = readString(buffer);
@@ -216,23 +82,23 @@ var server = require('net').createServer(function (socket) {
             var timerFrequency = read64Bit(buffer);
             var initCommonAddress = readPointer(buffer);
           }
-          else if (header.event == typeEnum.ModuleDump) { //module dump
+          else if (header.event == global.typeEnum.ModuleDump) { //module dump
               //TODO save symData somewhere
               var symData = readSymbols(buffer);
           }
-          else if (header.event == typeEnum.HeapCreate) {
+          else if (header.event == global.typeEnum.HeapCreate) {
             var heapId = readByte(buffer);
             var heapName = readString(buffer);
-            if (HeapsAlive.has(heapId)) {
+            if (global.HeapsAlive.has(heapId)) {
               console.log("Error, created a heap that already exists" + heapId);
               return;
             }
-            HeapsAlive.set(heapId,new Heap(heapName,header.timestamp,header.callstackId));
+            global.HeapsAlive.set(heapId,new Heap(heapName,header.timestamp,header.callstackId));
           }
-          else if (header.event == typeEnum.HeapDestroy) {
+          else if (header.event == global.typeEnum.HeapDestroy) {
             var heapId = readByte(buffer);
-            if (HeapsAlive.has(heapId)) {
-              var heapdata = HeapsAlive.get(heapId);
+            if (global.HeapsAlive.has(heapId)) {
+              var heapdata = global.HeapsAlive.get(heapId);
               var destroyData = heapdata.Destroy();
               if (destroyData.destroyed == false) {
                 console.log("Could not destroy heap " + heapId + " with name " + destroyData.name +
@@ -240,44 +106,44 @@ var server = require('net').createServer(function (socket) {
               }
               else {
                 heapdata.death = header.timestamp;
-                HeapsAlive.delete(heapId);
-                HeapsDead.set(heapId,heapdata);
+                global.HeapsAlive.delete(heapId);
+                global.HeapsDead.set(heapId,heapdata);
               }
             }
             else {
               console.log("Trying to Destroy non existing heap");
             }
           }
-          else if (header.event == typeEnum.HeapAddCore) {
+          else if (header.event == global.typeEnum.HeapAddCore) {
             var heapId = readByte(buffer);
             var startPos = readPointer(buffer);
             var size = readByte(buffer);
-            if (HeapsAlive.has(heapId)) {
-              var heapdata = HeapsAlive.get(heapId);
+            if (global.HeapsAlive.has(heapId)) {
+              var heapdata = global.HeapsAlive.get(heapId);
               heapdata.AddCore(new Core(startPos, size, header.timestamp, header.callstackId));
             }
             else {
               console.log("Trying to add a Core to non-existing heap: " + heapId);
             }
           }
-          else if (header.event == typeEnum.HeapAllocate) {
+          else if (header.event == global.typeEnum.HeapAllocate) {
             var heapId = readByte(buffer);
             var startPos = readPointer(buffer);
             var size = readByte(buffer);
-            if (HeapsAlive.has(heapId)) {
-              var heapdata = HeapsAlive.get(heapId);
+            if (global.HeapsAlive.has(heapId)) {
+              var heapdata = global.HeapsAlive.get(heapId);
               heapdata.Allocate(new Allocation(startPos, size, header.timestamp, header.callstackId));
             }
           }
-          else if (header.event == typeEnum.HeapFree) {
+          else if (header.event == global.typeEnum.HeapFree) {
             var heapId = readByte(buffer);
             var startPos = readPointer(buffer);
-            if (HeapsAlive.has(heapId)) {
-              var heapdata = HeapsAlive.get(heapId);
+            if (global.HeapsAlive.has(heapId)) {
+              var heapdata = global.HeapsAlive.get(heapId);
               heapdata.DeallocateFromPointer(startPos);
             }
           }
-          else if (header.event == typeEnum.EndStream) {
+          else if (header.event == global.typeEnum.EndStream) {
             //TODO Check so that no leaks have happened
           }
         } //All events registred. Buffer is empty
@@ -366,7 +232,7 @@ function read64Bit(stream){
 function readCallstackData(buffer)
 {
   var sequence = readByte(buffer);
-  if (sequence < SeenStacks.size) {
+  if (sequence < global.SeenStacks.size) {
     return sequence;
   }
   var numberOfFrames = readByte(buffer);
@@ -375,7 +241,7 @@ function readCallstackData(buffer)
     frameInfo[i] = readByte(buffer);
     //TODO Add Metadata Symbol Contains Thingie
   }
-  SeenStacks.add(frameInfo);
+  global.SeenStacks.add(frameInfo);
   return sequence;
 }
 
