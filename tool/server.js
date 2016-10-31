@@ -29,13 +29,6 @@ var STREAM = new function () {
   global.HeapsAlive = new Map();
   global.HeapsDead = new Map();
 
-  this.printConsole = function(buffer){
-    for (var i = 0; i < buffer.length; i++) {
-      var hexnum = buffer[i].toString(16);
-      console.log(hexnum + " ")
-    }
-  }
-
   this.readByte = function(stream){
     var val = 0;
     var tempindex = stream.index;
@@ -143,76 +136,80 @@ var STREAM = new function () {
     }
     return symData;
   }
-
-  this.printheader = function(header)
-  {
-    console.log("event is: " + this.getEventAsString(header.event));
-    console.log("Timestamp is: " + header.timestamp);
-  }
-
-  this.AllocationArrayToString = function(allocationArray){
-    var string = new String;
-    for (var i = 0; i < allocationArray.length; i++) {
-      var all = "Pointer: " + this.string64bitAsHex(allocationArray[i].pointer) + " Size: " + allocationArray[i].size + "\n";
-      string = string.concat(all);
-    }
-    return string;
-  }
-
-  this.string64bitAsHex = function(val){
-    return val.high.toString(16) + val.low.toString(16);
-  }
-
-  this.getEventAsString = function(event)
-  {
-    var string = new String();
-    string = "(" + event +")";
-    if(event == 1){
-      return string.concat("BeginStream");
-    }  else if (event == 2) {
-      return string.concat("EndStream");
-    }  else if (event == 3) {
-      return string.concat("ModuleDump");
-    }  else if (event == 4) {
-      return string.concat("Mark");
-    }  else if (event == 10) {
-      return string.concat("AddressAllocate");
-    } else if (event == 11) {
-        return string.concat("AddressFree");
-    }  else if (event == 12) {
-        return string.concat("VirtualCommit");
-    }  else if (event == 13) {
-        return string.concat("VirtualDecommit");
-    }  else if (event == 14) {
-        return string.concat("PhysicalAllocate");
-    }  else if (event == 15) {
-        return string.concat("PhysicalFree");
-    }  else if (event == 16) {
-        return string.concat("PhysicalMap");
-    }  else if (event == 17) {
-        return string.concat("PhysicalUnmap");
-    }  else if (event == 18) {
-        return string.concat("HeapCreate");
-    }  else if (event == 19) {
-        return string.concat("HeapDestroy");
-    }  else if (event == 20) {
-        return string.concat("HeapAddCore");
-    }  else if (event == 21) {
-        return string.concat("HeapRemoveCore");
-    }  else if (event == 22) {
-        return string.concat("HeapAllocate");
-    }  else if (event == 23) {
-        return string.concat("HeapReallocate");
-    }  else if (event == 24) {
-        return string.concat("HeapFree");
-    }
-    else {
-      return string.concat("Unhandled Event");
-    }
-  }
 };
 
+function getEventAsString(event)
+{
+  var string = new String();
+  string = "(" + event +")";
+  if(event == 1){
+    return string.concat("BeginStream");
+  }  else if (event == 2) {
+    return string.concat("EndStream");
+  }  else if (event == 3) {
+    return string.concat("ModuleDump");
+  }  else if (event == 4) {
+    return string.concat("Mark");
+  }  else if (event == 10) {
+    return string.concat("AddressAllocate");
+  } else if (event == 11) {
+      return string.concat("AddressFree");
+  }  else if (event == 12) {
+      return string.concat("VirtualCommit");
+  }  else if (event == 13) {
+      return string.concat("VirtualDecommit");
+  }  else if (event == 14) {
+      return string.concat("PhysicalAllocate");
+  }  else if (event == 15) {
+      return string.concat("PhysicalFree");
+  }  else if (event == 16) {
+      return string.concat("PhysicalMap");
+  }  else if (event == 17) {
+      return string.concat("PhysicalUnmap");
+  }  else if (event == 18) {
+      return string.concat("HeapCreate");
+  }  else if (event == 19) {
+      return string.concat("HeapDestroy");
+  }  else if (event == 20) {
+      return string.concat("HeapAddCore");
+  }  else if (event == 21) {
+      return string.concat("HeapRemoveCore");
+  }  else if (event == 22) {
+      return string.concat("HeapAllocate");
+  }  else if (event == 23) {
+      return string.concat("HeapReallocate");
+  }  else if (event == 24) {
+      return string.concat("HeapFree");
+  }
+  else {
+    return string.concat("Unhandled Event");
+  }
+}
 
+function printConsole(buffer){
+  for (var i = 0; i < buffer.length; i++) {
+    var hexnum = buffer[i].toString(16);
+    console.log(hexnum + " ")
+  }
+}
+
+function printheader(header) {
+  console.log("event is: " + this.getEventAsString(header.event));
+  console.log("Timestamp is: " + header.timestamp);
+}
+
+function AllocationArrayToString(allocationArray){
+  var string = new String;
+  for (var i = 0; i < allocationArray.length; i++) {
+    var all = "Pointer: " + string64bitAsHex(allocationArray[i].pointer) + " Size: " + allocationArray[i].size + "\n";
+    string = string.concat(all);
+  }
+  return string;
+}
+
+function string64bitAsHex(val){
+  return val.high.toString(16) + val.low.toString(16);
+}
 
 
 
@@ -254,7 +251,7 @@ var server = require('net').createServer(function (socket) {
           }
           header.callstackId = STREAM.readCallstackData(buffer);
 
-          STREAM.printheader(header);
+          printheader(header);
 
           if (header.event == global.typeEnum.BeginStream) {  //stream begin event
             //TODO check that magic number is correct etc
@@ -284,7 +281,7 @@ var server = require('net').createServer(function (socket) {
               var destroyData = heapdata.Destroy();
               if (destroyData.destroyed == false) {
                 console.log("Could not destroy heap " + heapId + " with name " + destroyData.name +
-              " because core: " + destroyData.core + " still contains \n" + STREAM.AllocationArrayToString(destroyData.allocList));
+              " because core: " + destroyData.core + " still contains \n" + AllocationArrayToString(destroyData.allocList));
               }
               else {
                 heapdata.death = header.timestamp;
