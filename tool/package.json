@@ -20,6 +20,7 @@
     "electron": "^1.4.1"
   },
   "dependencies": {
+    "canvasjs": "^1.8.1",
     "chart.js": "^2.3.0"
   }
 }

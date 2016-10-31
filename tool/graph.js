@@ -1,6 +1,10 @@
 const chartJS = require('./node_modules/chart.js/src/chart.js')
-const CHART = document.getElementById("lineChart");
+const CHARTJS = document.getElementById("chartJS");
 
+const canvasJS = require('./node_modules/canvasjs/dist/canvasjs.min.js')
+
+
+//--------------------------CHARJS----------------------------
 Chart.defaults.global.animation.duration = 0;
 
 var startingData = {
@@ -14,7 +18,7 @@ var startingData = {
 },
 latestLabel = startingData.labels[6];
 
-let lineChart = new Chart(CHART, {
+let lineChart = new Chart(CHARTJS, {
   type: 'line',
   data: startingData
 });
@@ -27,4 +31,26 @@ setInterval(function() {
     lineChart.data.labels.splice(0,1);
     lineChart.data.datasets[0].data.splice(0,1);
   }
-}, 100)
+}, 100);
+
+//---------------------------CANVASJS---------------------------------------------
+var newData = [
+	  { x: 10, y: 10 },
+	  { x: 20, y: 15 },
+	  { x: 30, y: 25 },
+	  { x: 40, y: 30 },
+	  { x: 50, y: 28 }
+	  ];
+	  
+let chart = new CanvasJS.Chart("chartContainer", {
+  data: [
+  {
+	  type: "line",
+	  dataPoints: newData
+  }
+  ]
+});
+
+
+
+chart.render();

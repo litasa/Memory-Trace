@@ -282,6 +282,7 @@ var server = require('net').createServer(function (socket) {
           }
         } //All events registred. Buffer is empty
         lineChart.update();
+		chart.render();
     })
 })
 .listen(8080);
