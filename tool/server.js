@@ -420,10 +420,7 @@ var server = require('net').createServer(function (socket) {
 
         console.log("done with buffer");
       } catch (e) {
-          console.log(e);
-          for (var i = buffer.rollback[0]; i < buffer.data.length; i++) {
             console.log("should do stuff here");
-          }
       } finally {
 
       }
