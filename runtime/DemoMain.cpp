@@ -119,27 +119,32 @@ static void TestCustomAllocator()
   MemTrace::UserMark("Custom Allocator Test Ending");
 }
 
+#define PRINT 0
+
 int main(int argc, char* argv[])
 {
   //TestCustomAllocator();
 
 
 	MemTrace::InitSocket("10.150.44.212",8080);
+	//MemTrace::InitFile("temp.txt");
+	
 	MemTrace::HeapId id = MemTrace::HeapCreate("test");
 	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");
 	
 	int *buf  = new int[5*sizeof(int)];
 	int *buf2  = new int[5*sizeof(int)];
 	MemTrace::HeapAddCore(id,buf,5*sizeof(int));
-	MemTrace::HeapAddCore(id2,buf2,5*sizeof(int));
+	MemTrace::HeapAddCore(id2,buf2,40);
 		int *p = new (buf) int(3);
 		int *q = new (buf2) int(1);
-		while (true)
+
+		for (int i = 0; i < 10000; i++)
 		{
-			MemTrace::HeapAllocate(id,p,sizeof(int));
-			MemTrace::HeapAllocate(id2,q,sizeof(int));
+			MemTrace::HeapAllocate(id,p,4);
+			MemTrace::HeapAllocate(id2,q,40);
 			MemTrace::HeapFree(id,p);
-			MemTrace::HeapFree(id2,q);
+			MemTrace::HeapFree(id2,q); 
 		}
 		
 		MemTrace::HeapDestroy(id);

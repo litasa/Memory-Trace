@@ -34,7 +34,6 @@ var STREAM = new function () {
 
   this.readByte = function(stream){
     var val = 0;
-    stream.rollback.push(stream.index);
     var tempindex = stream.index;
     var mul = 1;
     do {
@@ -73,7 +72,6 @@ var STREAM = new function () {
   this.readPointer = function(stream){
     var val = 0;
     var point = { high: 0, low: 0};
-    stream.rollback.push(stream.index);
     var tempindex = stream.index;
     var mul = 1;
     do {
@@ -369,7 +367,7 @@ var server = require('net').createServer(function (socket) {
 
     function sanityCheck(sanity ,code) {
       if (sanity != code) {
-        console.log("SanityCheck not valid");
+        throw "SanityCheck not valid";
       }
     }
 
@@ -380,13 +378,14 @@ var server = require('net').createServer(function (socket) {
           data: new Buffer(data,'hex'),
           index: 0,
           rollbackNeeded: false,
-          rollback: []
+          rollback: 0
         };
         try {
         console.log("data recieved, Length: " + buffer.data.length);
 
         while (buffer.index < buffer.data.length) {
 
+          buffer.rollback = buffer.index;
           var header = readHeaderData(buffer);
 
           if (header.event == global.typeEnum.BeginStream) {  //stream begin event
@@ -420,8 +419,9 @@ var server = require('net').createServer(function (socket) {
 
         console.log("done with buffer");
       } catch (e) {
-            console.log("should do stuff here");
-      } finally {
+        console.log(e + " at: " + buffer.index);
+      }
+      finally {
 
       }
     })
