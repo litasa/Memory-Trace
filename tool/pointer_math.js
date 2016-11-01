@@ -6,15 +6,13 @@ function addSizeToPointer(pointer, size){
   var ret = { high: pointer.high, low: pointer.low};
   if (ret.low + size < LOW_BIT_THREASHOLD) {
     ret.low += size;
-    return ret;
   }
   else {
     ret.high++;
     var rest = LOW_BIT_THREASHOLD - ret.low + 1;
     ret.low = size - rest;
-    return ret;
-    console.log("PROBLEMS: Pointer and size overflows into high values")
   }
+  return ret;
 }
 
 function pointerLE(lhs,rhs)

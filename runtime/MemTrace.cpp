@@ -63,6 +63,7 @@ static const uint32_t kCrtHeapId = 0;
 // Vsnprintf() is OK because it doesn't allocate.
 static void MemTracePrint(const char* fmt, ...)
 {
+#if(PRINT)
   using namespace MemTrace;
 
   char msg[1024];
@@ -71,6 +72,7 @@ static void MemTracePrint(const char* fmt, ...)
   Vsnprintf(msg, sizeof msg, fmt, args);
   va_end(args);
   OutputDebugStringA(msg);
+#endif
 }
 
 namespace MemTrace
@@ -373,6 +375,7 @@ namespace MemTrace
       uint64_t t = TimerGetSystemCounter();
       uint64_t delta = t - m_StartTime;
       EmitUnsigned(delta);
+	  MemTracePrint(" Time: %i",delta);
     }
 
   public:
@@ -504,6 +507,7 @@ namespace MemTrace
     // Emit common data that goes with every event.  
     void BeginEvent(EventCode code)
     {
+		MemTracePrint("Event: %i",code);
 		if (m_sendFlag)
 		{
 			TransmitCurrentBuffer();
@@ -515,7 +519,13 @@ namespace MemTrace
         EmitString(s_Scope.m_String);
       EmitTimeStamp();
       EmitCallStack(2);
+	  MemTracePrint("\n");
     }
+
+	void EndEvent(EventCode code)
+	{
+		EmitUnsigned(code);
+	}
   };
 
   //-----------------------------------------------------------------------------
@@ -684,8 +694,10 @@ static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn)
   S.m_Encoder.EmitUnsigned(sizeof(void*));
   S.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
   S.m_Encoder.EmitPointer((const void*) MemTrace::InitCommon);
-
+  S.m_Encoder.EndEvent(kBeginStream);
+  
   RefreshLoadedModules();
+  
 }
 
 //-----------------------------------------------------------------------------
@@ -779,6 +791,7 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
       MemTracePrint("MemTrace: send() failed - shutting down\n");
       MemTrace::ErrorShutdown();
     }
+	MemTracePrint("sent data: %i",size);
   };
 
   if (!was_active)
@@ -892,6 +905,7 @@ void MemTrace::Shutdown()
   S.m_Lock.Enter();
 
   S.m_Encoder.BeginEvent(kEndStream);
+  S.m_Encoder.EndEvent(kEndStream);
 
   MemTracePrint("MemTrace: Shutting down..\n");
 
@@ -930,6 +944,7 @@ void MemTrace::UserMark(const char* label, ...)
 
   S.m_Encoder.BeginEvent(kMark);
   S.m_Encoder.EmitString(buffer);
+  S.m_Encoder.EndEvent(kMark);
 }
 
 void MemTrace::AddressAllocate(
@@ -944,6 +959,7 @@ void MemTrace::AddressAllocate(
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
   S.m_Encoder.EmitString(name);
+  S.m_Encoder.EndEvent(kAddressAllocate);
 }
 
 void MemTrace::AddressFree(const void* base)
@@ -955,6 +971,7 @@ void MemTrace::AddressFree(const void* base)
 
   S.m_Encoder.BeginEvent(kAddressFree);
   S.m_Encoder.EmitPointer(base);
+  S.m_Encoder.EndEvent(kAddressFree);
 }
 
 void MemTrace::VirtualCommit(const void* base, size_t size_bytes)
@@ -967,6 +984,7 @@ void MemTrace::VirtualCommit(const void* base, size_t size_bytes)
   S.m_Encoder.BeginEvent(kVirtualCommit);
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kVirtualCommit);
 }
 
 void MemTrace::VirtualDecommit(const void* base, size_t size_bytes)
@@ -979,6 +997,7 @@ void MemTrace::VirtualDecommit(const void* base, size_t size_bytes)
   S.m_Encoder.BeginEvent(kVirtualDecommit);
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kVirtualDecommit);
 }
 
 MemTrace::HeapId MemTrace::HeapCreate(const char* name)
@@ -993,6 +1012,7 @@ MemTrace::HeapId MemTrace::HeapCreate(const char* name)
   S.m_Encoder.BeginEvent(kHeapCreate);
   S.m_Encoder.EmitUnsigned(id);
   S.m_Encoder.EmitString(name);
+  S.m_Encoder.EndEvent(kHeapCreate);
 
   return id;
 }
@@ -1006,6 +1026,7 @@ void MemTrace::HeapDestroy(HeapId heap_id)
 
   S.m_Encoder.BeginEvent(kHeapDestroy);
   S.m_Encoder.EmitUnsigned(heap_id);
+  S.m_Encoder.EndEvent(kHeapDestroy);
 }
 
 void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
@@ -1019,6 +1040,7 @@ void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
   S.m_Encoder.EmitUnsigned(heap_id);
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kHeapAddCore);
 }
 
 void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes)
@@ -1032,6 +1054,7 @@ void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_byte
   S.m_Encoder.EmitUnsigned(heap_id);
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kHeapRemoveCore);
 }
 
 void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
@@ -1047,6 +1070,7 @@ void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
   S.m_Encoder.EmitUnsigned(id);
   S.m_Encoder.EmitPointer(ptr);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kHeapAllocate);
 }
 
 void MemTrace::HeapReallocate(HeapId id, const void* ptr_in, const void* ptr_out, size_t new_size_bytes)
@@ -1063,6 +1087,7 @@ void MemTrace::HeapReallocate(HeapId id, const void* ptr_in, const void* ptr_out
   S.m_Encoder.EmitPointer(ptr_in);
   S.m_Encoder.EmitPointer(ptr_out);
   S.m_Encoder.EmitUnsigned(new_size_bytes);
+  S.m_Encoder.EndEvent(kHeapReallocate);
 }
 
 void MemTrace::HeapFree(HeapId id, const void* ptr)
@@ -1077,6 +1102,7 @@ void MemTrace::HeapFree(HeapId id, const void* ptr)
   S.m_Encoder.BeginEvent(kHeapFree);
   S.m_Encoder.EmitUnsigned(id);
   S.m_Encoder.EmitPointer(ptr);
+  S.m_Encoder.EndEvent(kHeapFree);
 }
 
 void MemTrace::PushScope(ScopeKind kind, const char* str, ScopeKind* old_kind, const char** old_str)
@@ -1130,6 +1156,7 @@ void MemTrace::RefreshLoadedModulesUnlocked()
     }
   }
   S.m_Encoder.EmitUnsigned(0);
+  S.m_Encoder.EndEvent(kModuleDump);
 #endif
 
   // @@@ If you're a licensed Durango dev we can provide module walking code.
