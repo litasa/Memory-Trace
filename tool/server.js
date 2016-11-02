@@ -1,5 +1,7 @@
 //object that handles the buffer
 
+heapAllocate = 0;
+
 var STREAM = new function () {
   global.typeEnum = {
     'BeginStream' : 1,
@@ -32,7 +34,164 @@ var STREAM = new function () {
   global.HeapsAlive = new Map();
   global.HeapsDead = new Map();
 
-  this.readByte = function(stream){
+  this.oneStepRead = function oneStepRead(buffer, fromIndex){
+    var tempIndex;
+    if (fromIndex) {
+      tempIndex = buffer.index;
+      buffer.index = fromIndex;
+    }
+    buffer.rollback = buffer.index;
+    var header = readHeaderData(buffer);
+
+    if (header.event == global.typeEnum.BeginStream) {  //stream begin event
+      //TODO -- check that magic number is correct etc
+      readBeginStream(buffer,header);
+    }
+    else if (header.event == global.typeEnum.ModuleDump) { //module dump
+        readModuleDump(buffer,header);
+    }
+    else if (header.event == global.typeEnum.HeapCreate) {
+      readHeapCreate(buffer,header);
+    }
+    else if (header.event == global.typeEnum.HeapDestroy) {
+      readHeapDestroy(buffer,header);
+    }
+    else if (header.event == global.typeEnum.HeapAddCore) {
+      readHeapAddCore(buffer,header);
+    }
+    else if (header.event == global.typeEnum.HeapAllocate) {
+      readHeapAllocate(buffer,header);
+    }
+    else if (header.event == global.typeEnum.HeapFree) {
+      readHeapFree(buffer,header);
+    }
+    else if (header.event == global.typeEnum.EndStream) {
+      //TODO -- Check so that no leaks have happened
+    }
+    //var totalMemory = getTotalMemory(global.HeapsAlive);
+    //addChartData(meep, { x: header.timestamp, y: totalMemory});
+    if (tempIndex) {
+      buffer.index = tempIndex;
+    }
+  }
+
+  function readHeaderData(buffer){
+    var header = {
+      event: null,
+      scope: null,
+      timestamp: null,
+      callstackId: null
+    };
+
+    header.event = STREAM.readByte(buffer);
+    header.scope = STREAM.readByte(buffer);
+    if (header.scope != 0) {
+      header.scope = STREAM.readString(buffer);
+    }
+    header.timestamp = STREAM.readByte(buffer);
+    header.callstackId = STREAM.readCallstackData(buffer);
+    return header;
+  }
+
+  function readBeginStream(buffer, head){
+      //TODO -- check that magic number is correct etc
+    var magicNumber = STREAM.read64Bit(buffer);
+    var platform = STREAM.readString(buffer);
+    var pointerSize = STREAM.readByte(buffer);
+    var timerFrequency = STREAM.read64Bit(buffer);
+    var initCommonAddress = STREAM.readPointer(buffer);
+        sanityCheck(STREAM.readByte(buffer), head.event);
+  }
+
+  function readModuleDump(buffer, head) {
+    //TODO -- save symData somewhere
+    var symData = STREAM.readSymbols(buffer);
+    sanityCheck(STREAM.readByte(buffer), head.event);
+  }
+
+  function readHeapCreate(buffer, head) {
+    var heapId = STREAM.readByte(buffer);
+    var heapName = STREAM.readString(buffer);
+    sanityCheck(STREAM.readByte(buffer), head.event);
+    if (!global.HeapsAlive.has(heapId)) {
+      global.HeapsAlive.set(heapId,new Heap(heapName,head.timestamp,head.callstackId));
+    }
+    else {
+      console.log("Error, created a heap that already exists" + heapId);
+    }
+  }
+
+  function readHeapDestroy(buffer, head) {
+    var heapId = STREAM.readByte(buffer);
+    sanityCheck(STREAM.readByte(buffer), head.event);
+    if (global.HeapsAlive.has(heapId)) {
+      var heapdata = global.HeapsAlive.get(heapId);
+      var destroyData = heapdata.Destroy();
+      if (destroyData.destroyed == true) {
+        head.death = head.timestamp;
+        global.HeapsAlive.delete(heapId);
+        global.HeapsDead.set(heapId,heapdata);
+      }
+      else {
+        console.log("Could not destroy heap " + heapId + " with name " + destroyData.name +
+      " because core: " + destroyData.core + " still contains \n" + AllocationArrayToString(destroyData.allocList));
+      }
+    }
+    else {
+      console.log("Trying to Destroy non existing heap");
+    }
+  }
+
+  function readHeapAddCore(buffer,head) {
+    var heapId = STREAM.readByte(buffer);
+    var startPos = STREAM.readPointer(buffer);
+    var size = STREAM.readByte(buffer);
+    sanityCheck(STREAM.readByte(buffer), head.event);
+    if (global.HeapsAlive.has(heapId)) {
+      var heapdata = global.HeapsAlive.get(heapId);
+      heapdata.AddCore(new Core(startPos, size, head.timestamp, head.callstackId));
+    }
+    else {
+      console.log("Trying to add a Core to non-existing heap: " + heapId);
+    }
+  }
+
+  function readHeapAllocate(buffer, head) {
+    var heapId = STREAM.readByte(buffer);
+    var startPos = STREAM.readPointer(buffer);
+    var size = STREAM.readByte(buffer);
+    sanityCheck(STREAM.readByte(buffer), head.event);
+    if (global.HeapsAlive.has(heapId)) {
+      var heapdata = global.HeapsAlive.get(heapId);
+      heapdata.Allocate(new Allocation(startPos, size, head.timestamp, head.callstackId));
+      heapAllocate++;
+    }
+    else {
+      console.log("Trying to allocate to non-existing heap: " + heapId);
+    }
+  }
+
+  function readHeapFree(buffer,head) {
+    var heapId = STREAM.readByte(buffer);
+    var startPos = STREAM.readPointer(buffer);
+    sanityCheck(STREAM.readByte(buffer), head.event);
+    if (global.HeapsAlive.has(heapId)) {
+      var heapdata = global.HeapsAlive.get(heapId);
+      heapdata.DeallocateFromPointer(startPos);
+    }
+    else {
+      console.log("Trying to deallocate from non-existing heap: " + heapId);
+    }
+  }
+
+  function sanityCheck(sanity ,code) {
+    if (sanity != code) {
+      var msg = "SanityCheck not valid for code: " + code + " recieved sanity: " + sanity;
+      //throw msg;
+    }
+  }
+
+  this.readByte = function readByte(stream){
     var val = 0;
     var tempindex = stream.index;
     var mul = 1;
@@ -51,7 +210,7 @@ var STREAM = new function () {
     return val;
   }
 
-  this.peakByte = function(stream) {
+  this.peakByte = function peakByte(stream) {
     var val = 0;
     var tempindex = stream.index;
     var mul = 1;
@@ -69,7 +228,7 @@ var STREAM = new function () {
 
 
 
-  this.readPointer = function(stream){
+  this.readPointer = function readPointer(stream){
     var val = 0;
     var point = { high: 0, low: 0};
     var tempindex = stream.index;
@@ -99,7 +258,7 @@ var STREAM = new function () {
     return point;
   }
 
-  this.peakPointer = function(stream){
+  this.peakPointer = function peakPointer(stream){
     var val = 0;
     var point = { high: 0, low: 0};
     var tempindex = stream.index;
@@ -127,11 +286,11 @@ var STREAM = new function () {
     return point;
   }
 
-  this.read64Bit = function(stream){
+  this.read64Bit = function read64Bit(stream){
     return this.readPointer(stream);
   }
 
-  this.readCallstackData = function(buffer)
+  this.readCallstackData = function readCallstackData(buffer)
   {
     var sequence = this.readByte(buffer);
     if (sequence < global.SeenStacks.size) {
@@ -141,13 +300,13 @@ var STREAM = new function () {
     var frameInfo = new Array(numberOfFrames);
     for (var i = 0; i < numberOfFrames; i++) {
       frameInfo[i] = this.readByte(buffer);
-      //TODO Add Metadata Symbol Contains Thingie
+      //TODO -- Add Metadata Symbol Contains Thingie
     }
     global.SeenStacks.set(sequence, frameInfo);
     return sequence;
   }
 
-  this.readString = function(buffer)
+  this.readString = function readString(buffer)
   {
     //get the sequence number to know if it has been used before
     var sequence = this.readByte(buffer);
@@ -164,7 +323,7 @@ var STREAM = new function () {
     return string;
   }
 
-  this.readSymbols = function(buffer)
+  this.readSymbols = function readSymbols(buffer)
   {
     var symData = []
     while (bit != 0) {
@@ -252,180 +411,44 @@ function AllocationArrayToString(allocationArray){
   return string;
 }
 
+total_data_handled = 0;
 // server
 var server = require('net').createServer(function (socket) {
-
-    function readHeaderData(buffer){
-      var header = {
-        event: null,
-        scope: null,
-        timestamp: null,
-        callstackId: null
-      };
-
-      header.event = STREAM.readByte(buffer);
-      header.scope = STREAM.readByte(buffer);
-      if (header.scope != 0) {
-        header.scope = STREAM.readString(buffer);
-      }
-      header.timestamp = STREAM.readByte(buffer);
-      header.callstackId = STREAM.readCallstackData(buffer);
-      return header;
-    }
-
-    function readBeginStream(buffer, head){
-        //TODO check that magic number is correct etc
-      var magicNumber = STREAM.read64Bit(buffer);
-      var platform = STREAM.readString(buffer);
-      var pointerSize = STREAM.readByte(buffer);
-      var timerFrequency = STREAM.read64Bit(buffer);
-      var initCommonAddress = STREAM.readPointer(buffer);
-          sanityCheck(STREAM.readByte(buffer), head.event);
-    }
-
-    function readModuleDump(buffer, head) {
-      //TODO save symData somewhere
-      var symData = STREAM.readSymbols(buffer);
-      sanityCheck(STREAM.readByte(buffer), head.event);
-    }
-
-    function readHeapCreate(buffer, head) {
-      var heapId = STREAM.readByte(buffer);
-      var heapName = STREAM.readString(buffer);
-      sanityCheck(STREAM.readByte(buffer), head.event);
-      if (!global.HeapsAlive.has(heapId)) {
-        global.HeapsAlive.set(heapId,new Heap(heapName,head.timestamp,head.callstackId));
-      }
-      else {
-        console.log("Error, created a heap that already exists" + heapId);
-      }
-    }
-
-    function readHeapDestroy(buffer, head) {
-      var heapId = STREAM.readByte(buffer);
-      sanityCheck(STREAM.readByte(buffer), head.event);
-      if (global.HeapsAlive.has(heapId)) {
-        var heapdata = global.HeapsAlive.get(heapId);
-        var destroyData = heapdata.Destroy();
-        if (destroyData.destroyed == true) {
-          head.death = head.timestamp;
-          global.HeapsAlive.delete(heapId);
-          global.HeapsDead.set(heapId,heapdata);
-        }
-        else {
-          console.log("Could not destroy heap " + heapId + " with name " + destroyData.name +
-        " because core: " + destroyData.core + " still contains \n" + AllocationArrayToString(destroyData.allocList));
-        }
-      }
-      else {
-        console.log("Trying to Destroy non existing heap");
-      }
-    }
-
-    function readHeapAddCore(buffer,head) {
-      var heapId = STREAM.readByte(buffer);
-      var startPos = STREAM.readPointer(buffer);
-      var size = STREAM.readByte(buffer);
-      sanityCheck(STREAM.readByte(buffer), head.event);
-      if (global.HeapsAlive.has(heapId)) {
-        var heapdata = global.HeapsAlive.get(heapId);
-        heapdata.AddCore(new Core(startPos, size, head.timestamp, head.callstackId));
-      }
-      else {
-        console.log("Trying to add a Core to non-existing heap: " + heapId);
-      }
-    }
-
-    function readHeapAllocate(buffer, head) {
-      var heapId = STREAM.readByte(buffer);
-      var pointTemp = STREAM.peakPointer(buffer);
-      checkAllocationPointer(pointTemp);
-      var startPos = STREAM.readPointer(buffer);
-      var size = STREAM.readByte(buffer);
-      sanityCheck(STREAM.readByte(buffer), head.event);
-      if (global.HeapsAlive.has(heapId)) {
-        var heapdata = global.HeapsAlive.get(heapId);
-        heapdata.Allocate(new Allocation(startPos, size, head.timestamp, head.callstackId));
-      }
-      else {
-        console.log("Trying to allocate to non-existing heap: " + heapId);
-      }
-    }
-
-    function readHeapFree(buffer,head) {
-      var heapId = STREAM.readByte(buffer);
-      var startPos = STREAM.readPointer(buffer);
-      sanityCheck(STREAM.readByte(buffer), head.event);
-      if (global.HeapsAlive.has(heapId)) {
-        var heapdata = global.HeapsAlive.get(heapId);
-        heapdata.DeallocateFromPointer(startPos);
-      }
-      else {
-        console.log("Trying to deallocate from non-existing heap: " + heapId);
-      }
-    }
-
-    function sanityCheck(sanity ,code) {
-      if (sanity != code) {
-        throw "SanityCheck not valid";
-      }
-    }
-
     console.log("connected");
 
+    var savedBuff = Buffer.alloc(0);
+    var total_data_recieved = 0;
     socket.on('data', function (data) {
         var buffer = {
-          data: new Buffer(data,'hex'),
+          data: Buffer.from(data,'hex'),
           index: 0,
           rollbackNeeded: false,
           rollback: 0
         };
-        try {
+
         console.log("data recieved, Length: " + buffer.data.length);
+        total_data_handled += data.length;
+        buffer.data = Buffer.concat([savedBuff,buffer.data], savedBuff.length + buffer.data.length);
+
 
         while (buffer.index < buffer.data.length) {
+          try {
+            STREAM.oneStepRead(buffer);
+          } catch (e) {
+            //console.log("some error: " + e);
+            var tempBuff = Buffer.alloc(buffer.data.length - buffer.rollback);
+            buffer.data.copy(tempBuff, 0, buffer.rollback, buffer.data.length);
+            buffer.index = buffer.data.length;
+            savedBuff = Buffer.from(tempBuff);
+            //console.log("Rolling back buffer index");
+          } finally {
 
-          buffer.rollback = buffer.index;
-          var header = readHeaderData(buffer);
+          }
 
-          if (header.event == global.typeEnum.BeginStream) {  //stream begin event
-            //TODO check that magic number is correct etc
-            readBeginStream(buffer,header);
-          }
-          else if (header.event == global.typeEnum.ModuleDump) { //module dump
-              readModuleDump(buffer,header);
-          }
-          else if (header.event == global.typeEnum.HeapCreate) {
-            readHeapCreate(buffer,header);
-          }
-          else if (header.event == global.typeEnum.HeapDestroy) {
-            readHeapDestroy(buffer,header);
-          }
-          else if (header.event == global.typeEnum.HeapAddCore) {
-            readHeapAddCore(buffer,header);
-          }
-          else if (header.event == global.typeEnum.HeapAllocate) {
-            readHeapAllocate(buffer,header);
-          }
-          else if (header.event == global.typeEnum.HeapFree) {
-            readHeapFree(buffer,header);
-          }
-          else if (header.event == global.typeEnum.EndStream) {
-            //TODO Check so that no leaks have happened
-          }
-          //var totalMemory = getTotalMemory(global.HeapsAlive);
-          //addChartData(meep, { x: header.timestamp, y: totalMemory});
         } //All events registred. Buffer is empty
 
-        console.log("done with buffer");
-      } catch (e) {
-        console.log(e + " at: " + buffer.index);
-      }
-      finally {
-
-      }
+        console.log("done with buffer" + total_data_handled);
     })
-
 })
 .listen(8080);
 

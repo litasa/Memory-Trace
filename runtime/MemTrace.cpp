@@ -58,12 +58,12 @@ static uint64_t Fnv1A_64(const char* str)
 }
 
 static const uint32_t kCrtHeapId = 0;
+static int lastEvent = -1;
 
 // We can't use Printf/printf() in general because they're not initialized yet.
 // Vsnprintf() is OK because it doesn't allocate.
 static void MemTracePrint(const char* fmt, ...)
 {
-#if(PRINT)
   using namespace MemTrace;
 
   char msg[1024];
@@ -72,7 +72,6 @@ static void MemTracePrint(const char* fmt, ...)
   Vsnprintf(msg, sizeof msg, fmt, args);
   va_end(args);
   OutputDebugStringA(msg);
-#endif
 }
 
 namespace MemTrace
@@ -332,7 +331,6 @@ namespace MemTrace
     SlotCache<kMaxStacks>         m_Stacks;                         // Window of recently sent backtraces
     int                           m_CurBuffer;                      // Index of current encoding buffer
     uint8_t                       m_Buffers[2][kBufferSize];        // Raw encoding buffers
-	bool						  m_sendFlag;
 
   private:
     //-----------------------------------------------------------------------------
@@ -355,7 +353,9 @@ namespace MemTrace
 
       if (size + m_WriteOffset > kBufferSize)
       {
-        m_sendFlag = true;
+        TransmitCurrentBuffer();
+
+        base          = m_Buffers[m_CurBuffer];
       }
 
       return base + m_WriteOffset;
@@ -375,7 +375,6 @@ namespace MemTrace
       uint64_t t = TimerGetSystemCounter();
       uint64_t delta = t - m_StartTime;
       EmitUnsigned(delta);
-	  MemTracePrint(" Time: %i",delta);
     }
 
   public:
@@ -386,7 +385,6 @@ namespace MemTrace
       m_WriteOffset  = 0;
       m_TransmitFn   = transmit_fn;
       m_StartTime    = TimerGetSystemCounter();
-	  m_sendFlag	 = false;
 
       m_Strings.Init();
       m_Stacks.Init();
@@ -507,19 +505,13 @@ namespace MemTrace
     // Emit common data that goes with every event.  
     void BeginEvent(EventCode code)
     {
-		MemTracePrint("Event: %i",code);
-		if (m_sendFlag)
-		{
-			TransmitCurrentBuffer();
-			m_sendFlag = false;
-		}
+	  lastEvent = code;
       EmitUnsigned(code);
       EmitUnsigned(s_Scope.m_Kind);
       if (s_Scope.m_Kind != kScopeNone)
         EmitString(s_Scope.m_String);
       EmitTimeStamp();
       EmitCallStack(2);
-	  MemTracePrint("\n");
     }
 
 	void EndEvent(EventCode code)
@@ -725,6 +717,8 @@ void MemTrace::InitFile(const char* trace_temp_file)
   InitCommon(write_block_fn);
 }
 
+static int total_data_sent = 0;
+
 //-----------------------------------------------------------------------------
 void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 {
@@ -780,6 +774,23 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     MemTracePrint("MemTrace: Warning: Couldn't set send buffer size to %d bytes\n", sndbufsize);
   }
 
+  /*-----------------------------------REMOVE THIS LATER ----------------------*/
+  //so we log the output as well
+  const char* trace_temp_file = "text.txt";
+  FileHandle hf = FileOpenForReadWrite(trace_temp_file);
+
+  if (hf == kInvalidFileHandle)
+  {
+    MemTracePrint("MemTrace: Failed to open %s for writing, disabling system\n", trace_temp_file);
+    return;
+  }
+
+  // Stash the boot filename so we can delete it later.
+  Strcpy(S.m_BootFileName, ARRAY_SIZE(S.m_BootFileName), trace_temp_file);
+
+  S.m_BootFile = hf;
+  /*-------------------------------------END REMOVE THIS LATER-------------------------*/
+
   auto write_block_fn = [](const void* block, size_t size) -> void
   {
     // If we don't have a socket, we drop everything on the floor.
@@ -791,7 +802,9 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
       MemTracePrint("MemTrace: send() failed - shutting down\n");
       MemTrace::ErrorShutdown();
     }
-	MemTracePrint("sent data: %i",size);
+	FileWrite(S.m_BootFile, block, size);
+	total_data_sent+= size;
+	MemTracePrint("sent data: %i\n, last event: %i, total data sent: %i\n",size, lastEvent, total_data_sent);
   };
 
   if (!was_active)
