@@ -1,15 +1,18 @@
 var rem = require('electron').remote; 
 var dialog = rem.dialog;
 var fs = require('fs');
+var net = require('net');
 
 function readFile(filepath){
-    fs.readFile(filepath, 'utf-8', function (err, data) {
+    fs.readFile(filepath, function (err, data) {
           if(err){
               alert("An error ocurred reading the file :" + err.message);
               return;
           }
-          // Change how to handle the file content
-          console.log("The file content is : " + data);
+          var client = new net.Socket();
+		  client.connect(8080, '192.168.1.123', function() {
+		  client.write(data);
+});
     });
 }
 
