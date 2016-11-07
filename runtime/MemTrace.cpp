@@ -425,8 +425,8 @@ namespace MemTrace
         out[i++] = byte;
         val    >>= 7;
       } while (val);
-
-      out[i-1] = byte | 0x80;
+	  uint8_t temp = byte | 0x80;
+	  out[i - 1] = temp;
 
       Commit(i);
     }
@@ -516,7 +516,7 @@ namespace MemTrace
 
 	void EndEvent(EventCode code)
 	{
-		EmitUnsigned(code);
+		//EmitUnsigned(code);
 	}
   };
 

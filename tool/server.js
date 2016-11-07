@@ -1,9 +1,7 @@
 //object that handles the buffer
 
-heapAllocate = 0;
-
-var STREAM = new function () {
-  global.typeEnum = {
+var BufferReader = new function() {
+	global.typeEnum = {
     'BeginStream' : 1,
     'EndStream': 2,
     'ModuleDump': 3,
@@ -33,15 +31,16 @@ var STREAM = new function () {
 
   global.HeapsAlive = new Map();
   global.HeapsDead = new Map();
-
-  this.oneStepRead = function oneStepRead(buffer, fromIndex){
-    var tempIndex;
-    if (fromIndex) {
-      tempIndex = buffer.index;
-      buffer.index = fromIndex;
-    }
-    buffer.rollback = buffer.index;
-    var header = readHeaderData(buffer);
+  
+  this.oneEvent = function oneStepRead(buffer, fromIndex){
+    var header = {
+      event: null,
+      scope: null,
+	  scopeDataIndex: -1,
+      timestamp: null,
+      callstackId: null
+    };
+    if(!readHeaderData(header, buffer)) { return false; }
 
     if (header.event == global.typeEnum.BeginStream) {  //stream begin event
       //TODO -- check that magic number is correct etc
@@ -70,178 +69,178 @@ var STREAM = new function () {
     }
     //var totalMemory = getTotalMemory(global.HeapsAlive);
     //addChartData(meep, { x: header.timestamp, y: totalMemory});
-    if (tempIndex) {
-      buffer.index = tempIndex;
-    }
   }
-
-  function readHeaderData(buffer){
-    var header = {
-      event: null,
-      scope: null,
-      timestamp: null,
-      callstackId: null
-    };
-
-    header.event = STREAM.readByte(buffer);
-    header.scope = STREAM.readByte(buffer);
-    if (header.scope != 0) {
-      header.scope = STREAM.readString(buffer);
+	
+	function readHeaderData(header, buffer){
+	var ret = [];
+    if(!STREAM.read32Byte(ret, buffer)) { return false; }  //code
+    if(!STREAM.read32Byte(ret, buffer))  { return false; } //scope
+	
+    if (ret[1] != 0) {
+      if(!STREAM.readStringIndex(ret, buffer)) { return false; } //scope name
+	  header.scopeDataIndex = ret.pop();
     }
-    header.timestamp = STREAM.readByte(buffer);
-    header.callstackId = STREAM.readCallstackData(buffer);
-    return header;
+	
+    if(!STREAM.read64Byte(ret, buffer)) {return false; } //timestamp
+	if(!STREAM.readBacktraceIndex(ret, buffer)) {return false;} //callstack index
+
+	header.event       = ret[0];
+	header.scope       = ret[1];
+	header.timestamp   = ret[2];
+	header.callstackId = ret[3];
+		
+    return true;
   }
 
   function readBeginStream(buffer, head){
       //TODO -- check that magic number is correct etc
-    var magicNumber = STREAM.read64Bit(buffer);
-    var platform = STREAM.readString(buffer);
-    var pointerSize = STREAM.readByte(buffer);
-    var timerFrequency = STREAM.read64Bit(buffer);
-    var initCommonAddress = STREAM.readPointer(buffer);
-        sanityCheck(STREAM.readByte(buffer), head.event);
+	var beginStreamEvent = {};
+	var ret = [];
+    
+	if(!STREAM.read64Byte(ret, buffer)) { return false;}
+	if(!STREAM.readString(ret, buffer)) { return false;}
+	if(!STREAM.read32Byte(ret, buffer)) { return false;}
+	if(!STREAM.read64Byte(ret, buffer)) { return false;}
+	if(!STREAM.read64Byte(ret, buffer)) { return false;}
+	
+	beginStreamEvent.magicNumber       = ret[0];
+	beginStreamEvent.platform          = ret[1];
+	beginStreamEvent.pointerSize       = ret[2];
+	beginStreamEvent.timerFrequency    = ret[3];
+	beginStreamEvent.initCommonAddress = ret[4];
   }
 
   function readModuleDump(buffer, head) {
     //TODO -- save symData somewhere
-    var symData = STREAM.readSymbols(buffer);
-    sanityCheck(STREAM.readByte(buffer), head.event);
+	var tempSymData = [];
+    while(true)
+	{
+		var dump = {};
+		var ret = [];
+		if(!STREAM.read32Byte(ret,buffer)) {return false;}
+		if(ret.pop() == 0)
+		{
+			break;
+		}
+		
+		if(!STREAM.readString(ret, buffer)) { return false; }
+		if(!STREAM.read64Byte(ret, buffer)) { return false; }
+		if(!STREAM.read64Byte(ret, buffer)) { return false; }
+		dump.name = ret[0];
+		dump.base = ret[1];
+		dump.size = ret[2];
+		//add to list
+		tempSymData.push(dump);
+	}
+	//add to global modules
+	global.Modules = tempSymData;
   }
 
   function readHeapCreate(buffer, head) {
-    var heapId = STREAM.readByte(buffer);
-    var heapName = STREAM.readString(buffer);
-    sanityCheck(STREAM.readByte(buffer), head.event);
-    if (!global.HeapsAlive.has(heapId)) {
-      global.HeapsAlive.set(heapId,new Heap(heapName,head.timestamp,head.callstackId));
-    }
-    else {
-      console.log("Error, created a heap that already exists" + heapId);
-    }
+	  var heapCreate = {};
+	  var ret = [];
+	  if(!STREAM.read32Byte(ret, buffer)) { return false; } //id
+	  if(!STREAM.readStringIndex(ret,buffer)) { return false; } //name
+	  //begin out event
+	  heapCreate.head   = head;
+	  heapCreate.id     = ret[0];
+	  heapCreate.nameId = ret[1];
   }
 
   function readHeapDestroy(buffer, head) {
-    var heapId = STREAM.readByte(buffer);
-    sanityCheck(STREAM.readByte(buffer), head.event);
-    if (global.HeapsAlive.has(heapId)) {
-      var heapdata = global.HeapsAlive.get(heapId);
-      var destroyData = heapdata.Destroy();
-      if (destroyData.destroyed == true) {
-        head.death = head.timestamp;
-        global.HeapsAlive.delete(heapId);
-        global.HeapsDead.set(heapId,heapdata);
-      }
-      else {
-        console.log("Could not destroy heap " + heapId + " with name " + destroyData.name +
-      " because core: " + destroyData.core + " still contains \n" + AllocationArrayToString(destroyData.allocList));
-      }
-    }
-    else {
-      console.log("Trying to Destroy non existing heap");
-    }
+    var heapDestroy = {};
+	var ret = [];
+	if(!STREAM.read32Byte(ret,buffer)) {return false;} //id
+	
+	heapDestroy.head = head;
+	heapDestroy.id   = ret[0];
   }
 
   function readHeapAddCore(buffer,head) {
-    var heapId = STREAM.readByte(buffer);
-    var startPos = STREAM.readPointer(buffer);
-    var size = STREAM.readByte(buffer);
-    sanityCheck(STREAM.readByte(buffer), head.event);
-    if (global.HeapsAlive.has(heapId)) {
-      var heapdata = global.HeapsAlive.get(heapId);
-      heapdata.AddCore(new Core(startPos, size, head.timestamp, head.callstackId));
-    }
-    else {
-      console.log("Trying to add a Core to non-existing heap: " + heapId);
-    }
+    var heapAddCore = {};
+	var ret = [];
+	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
+	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
+	if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
+	
+	heapAddCore.head = head;
+	heapAddCore.id   = ret[0];
+	heapAddCore.base = ret[1];
+	heapAddCore.size = ret[2];
   }
 
   function readHeapAllocate(buffer, head) {
-    var heapId = STREAM.readByte(buffer);
-    var startPos = STREAM.readPointer(buffer);
-    var size = STREAM.readByte(buffer);
-    sanityCheck(STREAM.readByte(buffer), head.event);
-    if (global.HeapsAlive.has(heapId)) {
-      var heapdata = global.HeapsAlive.get(heapId);
-      heapdata.Allocate(new Allocation(startPos, size, head.timestamp, head.callstackId));
-      heapAllocate++;
-    }
-    else {
-      console.log("Trying to allocate to non-existing heap: " + heapId);
-    }
+    var allocation = {};
+	var ret = [];
+	
+	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
+	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to start
+	if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
+	
+	//TODO check so allocation is not already made	
+	allocation.id = ret[0];
+	allocation.pointer = ret[1];
+	allocation.size = ret[2];
   }
 
   function readHeapFree(buffer,head) {
-    var heapId = STREAM.readByte(buffer);
-    var startPos = STREAM.readPointer(buffer);
-    sanityCheck(STREAM.readByte(buffer), head.event);
-    if (global.HeapsAlive.has(heapId)) {
-      var heapdata = global.HeapsAlive.get(heapId);
-      heapdata.DeallocateFromPointer(startPos);
-    }
-    else {
-      console.log("Trying to deallocate from non-existing heap: " + heapId);
-    }
+    var heapFree = {};
+	var ret = [];
+	
+	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
+	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer;
+	
+	heapFree.head    = head;
+	heapFree.id      = ret[0];
+	heapFree.pointer = ret[1];
   }
+}
 
-  function sanityCheck(sanity ,code) {
-    if (sanity != code) {
-      var msg = "SanityCheck not valid for code: " + code + " recieved sanity: " + sanity;
-      //throw msg;
-    }
-  }
+var STREAM = new function () {
+  
+  
+  global.Modules = [];
 
-  this.readByte = function readByte(stream){
+  this.read32Byte = function readByte(code, stream){
     var val = 0;
     var tempindex = stream.index;
     var mul = 1;
     do {
+		if(tempindex == stream.data.length)
+		{
+			code = 0;
+			return false;
+		}
       var b = stream.data[tempindex++];
       val |= b*mul;
       mul <<= 7;
-    } while (b < 128);
+    } while (b < 0x80);
 
     val &= ~mul;
-    if (tempindex > stream.data.length) {
-      stream.rollbackNeeded = true;
-      throw "PROBLEM, READ TOO LONG IN BUFFER";
-    }
+
     stream.index = tempindex;
-    return val;
+	code.push(val);
+    return true;
   }
 
-  this.peakByte = function peakByte(stream) {
-    var val = 0;
-    var tempindex = stream.index;
-    var mul = 1;
-    do {
-      var b = stream.data[tempindex++];
-      val |= b*mul;
-      mul <<= 7;
-    } while (b < 128);
-    if (tempindex > stream.data.length) {
-      console.log("PROBLEM, PEAKED TOO LONG IN BUFFER")
-    }
-    val &= ~mul;
-    return { val: val, index: tempindex};
-  }
-
-
-
-  this.readPointer = function readPointer(stream){
+  this.read64Byte = function read64Byte(code, stream){
     var val = 0;
     var point = { high: 0, low: 0};
     var tempindex = stream.index;
     var mul = 1;
     do {
-      var b = stream.data[tempindex++];
-      val |= b*mul;
-      mul <<= 7;
-      if (mul > HIGH_THREASHOLD_64BIT) {
-        point.low = val;
-        mul = 1;
-        val = 0;
-      }
+		if(tempindex == stream.data.length) {
+			code = 0;
+			return false;
+		}
+		var b = stream.data[tempindex++];
+		val |= b*mul;
+		mul <<= 7;
+		if (mul > HIGH_THREASHOLD_64BIT) {
+			point.low = val;
+			mul = 1;
+			val = 0;
+		}
     } while (b < 128);
     val &= ~mul;
     if (point.low > 0) { //we have 64 bit
@@ -250,94 +249,121 @@ var STREAM = new function () {
     else {
       point.low = val;
     }
-    if (tempindex > stream.data.length) {
-      stream.rollbackNeeded = true;
-      throw "PROBLEM, READ TOO LONG IN BUFFER";
-    }
     stream.index = tempindex;
-    return point;
+    code.push(point);
+	return true;
   }
-
-  this.peakPointer = function peakPointer(stream){
-    var val = 0;
-    var point = { high: 0, low: 0};
-    var tempindex = stream.index;
-    var mul = 1;
-    do {
-      var b = stream.data[tempindex++];
-      val |= b*mul;
-      mul <<= 7;
-      if (mul > HIGH_THREASHOLD_64BIT) {
-        point.low = val;
-        mul = 1;
-        val = 0;
+  
+  this.readString = function readString(ret, stream)
+  {
+	  if(!this.read32Byte(ret, stream)) { return false; }
+	  var index = ret.pop();
+	  
+	  if(index < global.SeenStrings.size)
+	  {
+		  string = global.SeenStrings.get(index);
+		  return true;
+	  }
+	  
+	  if(!this.read32Byte(ret, stream)) { return false; }
+	  var length = ret.pop();
+	  
+	  var string = String("");
+	  for(i=0; i < length; ++i)
+	  {
+		  if(stream.index + i == stream.data.length) { return false; }
+		  
+		  string += String.fromCharCode(stream.data[stream.index + i]);
+	  }
+	  
+	  ++global.seenStringRollback;
+		/* dunno what this is atm
+		string shared;
+      if (!m_StringCache.TryGetValue(data, out shared))
+      {
+        shared = data;
+        m_StringCache.Add(data, data);
       }
-    } while (b < 128);
-    val &= ~mul;
-    if (point.low > 0) { //we have 64 bit
-      point.high = val;
-    }
-    else {
-      point.low = val;
-    }
-    if (tempindex > stream.data.length) {
-      console.log("PROBLEM, READ TOO LONG IN BUFFER")
-    }
-    return point;
+		*/
+	  global.SeenStrings.set(index,string);
+	  stream.index += length;
+	  ret.push(string);
+	  return true;
   }
-
-  this.read64Bit = function read64Bit(stream){
-    return this.readPointer(stream);
-  }
-
-  this.readCallstackData = function readCallstackData(buffer)
+  
+  this.readStringIndex = function readStringIndex(ret, stream)
   {
-    var sequence = this.readByte(buffer);
-    if (sequence < global.SeenStacks.size) {
-      return sequence;
-    }
-    var numberOfFrames = this.readByte(buffer);
-    var frameInfo = new Array(numberOfFrames);
-    for (var i = 0; i < numberOfFrames; i++) {
-      frameInfo[i] = this.readByte(buffer);
-      //TODO -- Add Metadata Symbol Contains Thingie
-    }
-    global.SeenStacks.set(sequence, frameInfo);
-    return sequence;
+	  var temp = [];
+	  if(!this.read64Byte(temp,stream)){ return false; }
+	  var sequence = temp.pop();
+	  
+	  if(pointerLessVal(sequence, global.SeenStacks.size))
+	  {
+		  ret.push(sequence);
+		  return true;
+	  }
+	  
+	  if(!this.read32Byte(temp, stream)) { return false; }
+	  var length = temp.pop();
+	  var string = new String("");
+	  for(i = 0; i < length; i++)
+	  {
+		  if(stream.index + i > stream.data.length) { return false; }
+		  string += String.fromCharCode(stream.data[stream.index + i]);
+	  }
+	  
+	  ++stream.seenStringRollback;
+	  global.SeenStrings.set(sequence, string);
+	  stream.index += length;
+	  ret.push(global.SeenStrings.size - 1);
+	  return true;
   }
 
-  this.readString = function readString(buffer)
+  this.readBacktraceIndex = function readBacktraceIndex(ret, stream)
   {
-    //get the sequence number to know if it has been used before
-    var sequence = this.readByte(buffer);
-    if (sequence < global.SeenStrings.size) {
-      return global.SeenStrings.get(sequence);
-    }
-    var stringLength = this.readByte(buffer);
-    var string = new String("");
-    for (var i = buffer.index; i < buffer.index + stringLength; i++) {
-      string += String.fromCharCode(buffer.data[i]);
-    }
-    global.SeenStrings.set(sequence, string);
-    buffer.index += stringLength;
-    return string;
-  }
-
-  this.readSymbols = function readSymbols(buffer)
-  {
-    var symData = []
-    while (bit != 0) {
-      var bit = this.readByte(buffer);
-      if (bit == 0) {
-        return;
-      };
-      symData.push({
-        name: this.readString(buffer),
-        base: this.readByte(buffer),
-        size: this.readByte(buffer)
-      });
-    }
-    return symData;
+	  if(!this.read32Byte(ret, stream))
+	  {
+		ret.push(-1);
+		return false;
+	  }
+	  var index = ret.pop();
+	  
+	  if(index < global.SeenStacks.size)
+	  {
+		  ret.push(index);
+		  return true;
+	  }
+	  
+	  if(index != global.SeenStacks.size)
+	  {
+		  throw "Unexpected stack index"
+	  }
+	  
+	  if(!this.read32Byte(ret,stream))
+	  {
+		  ret.push(-1);
+		  return false;
+	  }
+	  var frame_count = ret.pop();
+	  var frames = new Array();
+	  
+	  for(i = 0; i < frame_count; ++i)
+	  {
+		  if(!this.read64Byte(frames,stream))
+		  {
+			  ret.push(-1);
+			  return false;
+		  }
+		  //add to metadata
+		  /*
+		  if (!MetaData.Symbols.Contains(frames[i]))
+		  {MetaData.Symbols.Add(frames[i]);}
+		  */
+	  }
+	  ++global.seenStringRollback;
+	  global.SeenStacks.set(index, frames);
+	  ret.push(index);
+	  return true;
   }
 };
 
@@ -415,9 +441,13 @@ total_data_handled = 0;
 // server
 var server = require('net').createServer(function (socket) {
     console.log("connected");
-
-    var savedBuff = Buffer.alloc(0);
     var total_data_recieved = 0;
+	
+	var ringBuffersize = 128*1024;
+	var ringBuffer = new Buffer(ringBuffersize);
+	var ringStart = 0;
+	var ringEnd = 0;
+	
     socket.on('data', function (data) {
         var buffer = {
           data: Buffer.from(data,'hex'),
@@ -425,27 +455,31 @@ var server = require('net').createServer(function (socket) {
           rollbackNeeded: false,
           rollback: 0
         };
-
+		
         console.log("data recieved, Length: " + buffer.data.length);
         total_data_handled += data.length;
-        buffer.data = Buffer.concat([savedBuff,buffer.data], savedBuff.length + buffer.data.length);
-
-
-        while (buffer.index < buffer.data.length) {
-          try {
-            STREAM.oneStepRead(buffer);
-          } catch (e) {
-            //console.log("some error: " + e);
-            var tempBuff = Buffer.alloc(buffer.data.length - buffer.rollback);
-            buffer.data.copy(tempBuff, 0, buffer.rollback, buffer.data.length);
-            buffer.index = buffer.data.length;
-            savedBuff = Buffer.from(tempBuff);
-            //console.log("Rolling back buffer index");
-          } finally {
-
-          }
-
-        } //All events registred. Buffer is empty
+		
+		var data_offset = 0;
+		
+		do{
+			var ringspace = (ringBuffersize - (ringEnd - ringStart));
+			
+			ringspace = Math.min(buffer.data.length - data_offset, ringspace);
+			
+			var wpos = ringEnd;
+			
+			while(ringspace > 0){
+				ringBuffer[wpos & (ringBuffersize -1 )] = buffer.data[data_offset++];
+				--ringspace;
+				++wpos;
+			}
+			
+			ringEnd = wpos;
+			
+			BufferReader.oneEvent(ringBuffer);
+			
+			
+		} while(data_offset < buffer.data.length)
 
         console.log("done with buffer" + total_data_handled);
     })

@@ -28,6 +28,19 @@ function pointerLE(lhs,rhs)
     return false;
 }
 
+function pointerLessVal(pointer,val)
+{
+	if(pointer.high != 0)
+	{
+		return false;
+	}
+	if(pointer.low >= val)
+	{
+		return false;
+	}
+	return true;
+}
+
 function pointerGE(lhs,rhs)
 {
   if (lhs.high > rhs.high) {
