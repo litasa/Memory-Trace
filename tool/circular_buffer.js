@@ -1,32 +1,56 @@
-var CircularBuffer = function (size) {
-	var bufferSize = size;
-	var buffer = new Array(size);
+class CircularBuffer{
+	constructor(size) {
+		this.data = Buffer.alloc(size);
+		this.end = 0;
+		this.read = 0;
+		this.length = this.data.length;
+		this.numRead = 0;
+		this.full = false;
+		this.readWrap = false;
+		this.rollback = 0;
+	}
 	
-	var end = 0;
-	var start = 0;
-	
-	this.addValue = function(value) {
-		buffer[end] = value;
-		if(end != bufferSize)
-		{
-			end++;
-		}
-		else{
-			end = 0;
-		}
-		if(end == start){
-			start++;
+	addValue(value) {
+		this.data[this.end++] = value;
+		if(this.end >= this.length) {
+			this.end = 0;
+			this.full = true;
 		}
 	}
 	
-	this.getValue = function(index) {
-		var i = index + start;
-		
-		if( i >= bufferSize) {
-			i -= bufferSize;
+	getNextValue() {
+		var val = this.data[this.read++];
+		this.numRead++;
+		if(this.read == this.length) {
+			this.read = 0;
+			this.readWrap = true;
 		}
-		
-		return buffer[i];
+		return val;
 	}
 	
+	readOverflow(length) {
+		if(!this.full){
+			return this.read >= this.end;
+		}
+		else {
+			if(this.readWrap) {
+				return this.read >= this.end;
+			}
+			return false;
+		}
+	}
+	
+	populate(buffer, fromIndex) {
+		var temp = this.end;
+		var i = fromIndex;
+		do{
+			this.addValue(buffer[i++]);
+		} while(i < buffer.length && temp != this.end);
+		return i; //number of items added
+	}
+	
+	resetRead() {
+		this.numRead = 0;
+		this.readWrap = false;
+	}
 }
