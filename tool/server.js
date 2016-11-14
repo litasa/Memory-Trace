@@ -1,5 +1,6 @@
 
 total_data_handled = 0;
+numEvents = 0;
 // server
 var server = require('net').createServer(function (socket) {
     console.log("connected");
@@ -25,14 +26,18 @@ var server = require('net').createServer(function (socket) {
 			index = ringBuffer.populate(buffer.data, index);
 			
 			do{
-				if(!BufferReader.oneEvent(ringBuffer)) {
+				if(!EventReader.oneEvent(ringBuffer)) {
 					ringBuffer.read = ringBuffer.rollback;
+				}
+				else{
+					numEvents++;
 				}
 			} while(ringBuffer.numRead < index);
 			
 		} while(index < buffer.data.length);
 
         console.log("done with buffer" + total_data_handled);
+		console.log("Number of handled events: " + numEvents);
     })
 })
 .listen(8080);
