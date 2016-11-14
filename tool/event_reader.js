@@ -41,11 +41,11 @@ var EventReader = new function() {
 	buffer.rollback = buffer.read;
     if(!readHeaderData(header, buffer)) { return false; }
 
-    if (header.event == global.typeEnum.BeginStream) {  //stream begin event
+    if (header.event == global.typeEnum.BeginStream) {
       //TODO -- check that magic number is correct etc
       if(!readBeginStream(buffer,header)) { return false; }
     }
-    else if (header.event == global.typeEnum.ModuleDump) { //module dump
+    else if (header.event == global.typeEnum.ModuleDump) {
         if(!readModuleDump(buffer,header)) { return false; }
     }
     else if (header.event == global.typeEnum.HeapCreate) {
@@ -98,11 +98,11 @@ var EventReader = new function() {
 	var beginStreamEvent = {};
 	var ret = [];
     
-	if(!STREAM.read64Byte(ret, buffer)) { return false;}
-	if(!STREAM.readString(ret, buffer)) { return false;}
-	if(!STREAM.read32Byte(ret, buffer)) { return false;}
-	if(!STREAM.read64Byte(ret, buffer)) { return false;}
-	if(!STREAM.read64Byte(ret, buffer)) { return false;}
+	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Stream Magic
+	if(!STREAM.readString(ret, buffer)) { return false;} //Platform name
+	if(!STREAM.read32Byte(ret, buffer)) { return false;} //Pointer size
+	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Timer frequency
+	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Common address
 	
 	beginStreamEvent.magicNumber       = ret[0];
 	beginStreamEvent.platform          = ret[1];
@@ -120,15 +120,15 @@ var EventReader = new function() {
 	{
 		var dump = {};
 		var ret = [];
-		if(!STREAM.read32Byte(ret,buffer)) {return false;}
+		if(!STREAM.read32Byte(ret,buffer)) {return false;} //keep going code ( 0 == stop )
 		if(ret.pop() == 0)
 		{
 			break;
 		}
 		
-		if(!STREAM.readString(ret, buffer)) { return false; }
-		if(!STREAM.read64Byte(ret, buffer)) { return false; }
-		if(!STREAM.read64Byte(ret, buffer)) { return false; }
+		if(!STREAM.readString(ret, buffer)) { return false; } //module name
+		if(!STREAM.read64Byte(ret, buffer)) { return false; } //module handle
+		if(!STREAM.read64Byte(ret, buffer)) { return false; } //size
 		dump.name = ret[0];
 		dump.base = ret[1];
 		dump.size = ret[2];
