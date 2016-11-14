@@ -4,13 +4,23 @@
 </style>
 <head>
   <script src="pointer_math.js" charset="utf-8"></script>
+  <script src="circular_buffer.js"></script>
+  <script src="stream_reader.js"></script>
+  <script src="event_handler.js"></script>
+  <!--
   <script src="objects.js"></script>
+  -->
   <script src="server.js"></script>
   <script type="text/javascript" src="./node_modules/canvasjs/dist/canvasjs.min.js"></script>
+  
 </head>
 <body>
+
 <canvas id="chartJS" width="400" height="400"></canvas>
 <div id="chartContainer" style="height: 500px; width: 50%;"></div>
   <script src="graph.js"></script>
+  <input type="button" value="Choose a file" id="select-file"/>
+  
+  <script src="file_load.js"></script>
 </body>
 </html>
