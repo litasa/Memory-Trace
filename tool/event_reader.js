@@ -107,7 +107,7 @@ var EventReader = new function() {
 	beginStreamEvent.magicNumber       = ret[0];
 	beginStreamEvent.platform          = ret[1];
 	beginStreamEvent.pointerSize       = ret[2];
-	beginStreamEvent.timerFrequency    = ret[3];
+	global.timerFrequency    = ret[3];
 	beginStreamEvent.initCommonAddress = ret[4];
 	
 	return true;
@@ -151,6 +151,8 @@ var EventReader = new function() {
 	  heapCreate.id     = ret[0];
 	  heapCreate.nameId = ret[1];
 	  
+	  Visualization.addHeap(heapCreate);
+	  
 	  return true;
   }
 
@@ -192,6 +194,9 @@ var EventReader = new function() {
 	allocation.id      = ret[0];
 	allocation.pointer = ret[1];
 	allocation.size    = ret[2];
+	allocation.head    = head;
+	
+	Visualization.addAllocation(allocation);
 	
 	return true;
   }

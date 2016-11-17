@@ -11,9 +11,16 @@ function readFile(filepath){
           }
           var client = new net.Socket();
 		  client.connect(8080, '192.168.1.123', function() {
-		  client.write(data);
-});
+			client.write(data);
+		  });
     });
+}
+
+function saveFile(filepath, data) {
+	fs.writeFile(filepath,data, (err) => {
+		if(err) throw err;
+		console.log("Saved " + filepath );
+	});
 }
 
 document.getElementById('select-file').addEventListener('click',function(){
