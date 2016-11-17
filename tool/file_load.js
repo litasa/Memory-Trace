@@ -10,7 +10,7 @@ function readFile(filepath){
               return;
           }
           var client = new net.Socket();
-		  client.connect(8080, '192.168.1.123', function() {
+		  client.connect(server.address().port, server.address, function() {
 			client.write(data);
 		  });
     });
