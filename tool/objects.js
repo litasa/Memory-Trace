@@ -14,7 +14,7 @@ function Heap(name, timestamp, callstack)
       this.cores[coreid].Allocate(allocation);
     }
     else {
-      console.log("Could not add Allocation because no core owner found. Not logged");
+      throw "Could not add Allocation because no core owner found. Not logged";
     }
   }
 
@@ -24,7 +24,7 @@ function Heap(name, timestamp, callstack)
       this.cores[coreid].Deallocate(allocation);
     }
     else {
-      console.log("No core found for deallocation. Not Logged")
+      throw "No core found for deallocation. Not Logged";
     }
   }
 
@@ -37,7 +37,7 @@ function Heap(name, timestamp, callstack)
         return;
       }
     }
-    console.log("No pointer found in any core for deallocation. Deallocation not done");
+    throw "No pointer found in any core for deallocation. Deallocation not done";
   }
 
   //Helperfunctions
@@ -113,7 +113,7 @@ function Core(start_address, size, creation_time, callstackId)
       this.allocations.push(allocation);
     }
     else {
-      console.log("Allocation size too large for Core or Larger then 32 bit. Not logged");
+      throw "Allocation size too large for Core or Larger then 32 bit. Not logged";
     }
   }
 
@@ -123,7 +123,7 @@ function Core(start_address, size, creation_time, callstackId)
       this.allocations.splice(pos,1);
     }
     else {
-      console.log("Pointer position not valid in Core. Allocation not removed");
+      throw "Pointer position not valid in Core. Allocation not removed";
     }
   }
 

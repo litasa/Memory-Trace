@@ -58,6 +58,7 @@ static uint64_t Fnv1A_64(const char* str)
 }
 
 static const uint32_t kCrtHeapId = 0;
+static int lastEvent = -1;
 
 // We can't use Printf/printf() in general because they're not initialized yet.
 // Vsnprintf() is OK because it doesn't allocate.
@@ -79,7 +80,7 @@ namespace MemTrace
   // Various limits
   enum
   {
-    kBufferSize     = 32768,
+    kBufferSize     = 17520,
     kMaxStrings     = 1024,   // Max string hashes to keep around
     kMaxStacks      = 1024,   // Max call stack hashes to keep around
     kMaxFrames      = 256,    // Max frames in single callstack - needs to be large to capture all of it
@@ -424,8 +425,8 @@ namespace MemTrace
         out[i++] = byte;
         val    >>= 7;
       } while (val);
-
-      out[i-1] = byte | 0x80;
+	  uint8_t temp = byte | 0x80;
+	  out[i - 1] = temp;
 
       Commit(i);
     }
@@ -504,6 +505,7 @@ namespace MemTrace
     // Emit common data that goes with every event.  
     void BeginEvent(EventCode code)
     {
+	  lastEvent = code;
       EmitUnsigned(code);
       EmitUnsigned(s_Scope.m_Kind);
       if (s_Scope.m_Kind != kScopeNone)
@@ -511,6 +513,11 @@ namespace MemTrace
       EmitTimeStamp();
       EmitCallStack(2);
     }
+
+	void EndEvent(EventCode code)
+	{
+		//EmitUnsigned(code);
+	}
   };
 
   //-----------------------------------------------------------------------------
@@ -679,8 +686,10 @@ static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn)
   S.m_Encoder.EmitUnsigned(sizeof(void*));
   S.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
   S.m_Encoder.EmitPointer((const void*) MemTrace::InitCommon);
-
+  S.m_Encoder.EndEvent(kBeginStream);
+  
   RefreshLoadedModules();
+  
 }
 
 //-----------------------------------------------------------------------------
@@ -707,6 +716,8 @@ void MemTrace::InitFile(const char* trace_temp_file)
 
   InitCommon(write_block_fn);
 }
+
+static int total_data_sent = 0;
 
 //-----------------------------------------------------------------------------
 void MemTrace::InitSocket(const char *server_ip_address, int server_port)
@@ -763,6 +774,23 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     MemTracePrint("MemTrace: Warning: Couldn't set send buffer size to %d bytes\n", sndbufsize);
   }
 
+  /*-----------------------------------REMOVE THIS LATER ----------------------*/
+  //so we log the output as well
+  const char* trace_temp_file = "text.txt";
+  FileHandle hf = FileOpenForReadWrite(trace_temp_file);
+
+  if (hf == kInvalidFileHandle)
+  {
+    MemTracePrint("MemTrace: Failed to open %s for writing, disabling system\n", trace_temp_file);
+    return;
+  }
+
+  // Stash the boot filename so we can delete it later.
+  Strcpy(S.m_BootFileName, ARRAY_SIZE(S.m_BootFileName), trace_temp_file);
+
+  S.m_BootFile = hf;
+  /*-------------------------------------END REMOVE THIS LATER-------------------------*/
+
   auto write_block_fn = [](const void* block, size_t size) -> void
   {
     // If we don't have a socket, we drop everything on the floor.
@@ -774,6 +802,9 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
       MemTracePrint("MemTrace: send() failed - shutting down\n");
       MemTrace::ErrorShutdown();
     }
+	FileWrite(S.m_BootFile, block, size);
+	total_data_sent+= size;
+	MemTracePrint("sent data: %i\n, last event: %i, total data sent: %i\n",size, lastEvent, total_data_sent);
   };
 
   if (!was_active)
@@ -887,6 +918,7 @@ void MemTrace::Shutdown()
   S.m_Lock.Enter();
 
   S.m_Encoder.BeginEvent(kEndStream);
+  S.m_Encoder.EndEvent(kEndStream);
 
   MemTracePrint("MemTrace: Shutting down..\n");
 
@@ -925,6 +957,7 @@ void MemTrace::UserMark(const char* label, ...)
 
   S.m_Encoder.BeginEvent(kMark);
   S.m_Encoder.EmitString(buffer);
+  S.m_Encoder.EndEvent(kMark);
 }
 
 void MemTrace::AddressAllocate(
@@ -939,6 +972,7 @@ void MemTrace::AddressAllocate(
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
   S.m_Encoder.EmitString(name);
+  S.m_Encoder.EndEvent(kAddressAllocate);
 }
 
 void MemTrace::AddressFree(const void* base)
@@ -950,6 +984,7 @@ void MemTrace::AddressFree(const void* base)
 
   S.m_Encoder.BeginEvent(kAddressFree);
   S.m_Encoder.EmitPointer(base);
+  S.m_Encoder.EndEvent(kAddressFree);
 }
 
 void MemTrace::VirtualCommit(const void* base, size_t size_bytes)
@@ -962,6 +997,7 @@ void MemTrace::VirtualCommit(const void* base, size_t size_bytes)
   S.m_Encoder.BeginEvent(kVirtualCommit);
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kVirtualCommit);
 }
 
 void MemTrace::VirtualDecommit(const void* base, size_t size_bytes)
@@ -974,6 +1010,7 @@ void MemTrace::VirtualDecommit(const void* base, size_t size_bytes)
   S.m_Encoder.BeginEvent(kVirtualDecommit);
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kVirtualDecommit);
 }
 
 MemTrace::HeapId MemTrace::HeapCreate(const char* name)
@@ -988,6 +1025,7 @@ MemTrace::HeapId MemTrace::HeapCreate(const char* name)
   S.m_Encoder.BeginEvent(kHeapCreate);
   S.m_Encoder.EmitUnsigned(id);
   S.m_Encoder.EmitString(name);
+  S.m_Encoder.EndEvent(kHeapCreate);
 
   return id;
 }
@@ -1001,6 +1039,7 @@ void MemTrace::HeapDestroy(HeapId heap_id)
 
   S.m_Encoder.BeginEvent(kHeapDestroy);
   S.m_Encoder.EmitUnsigned(heap_id);
+  S.m_Encoder.EndEvent(kHeapDestroy);
 }
 
 void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
@@ -1014,6 +1053,7 @@ void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
   S.m_Encoder.EmitUnsigned(heap_id);
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kHeapAddCore);
 }
 
 void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes)
@@ -1027,6 +1067,7 @@ void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_byte
   S.m_Encoder.EmitUnsigned(heap_id);
   S.m_Encoder.EmitPointer(base);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kHeapRemoveCore);
 }
 
 void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
@@ -1042,6 +1083,7 @@ void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
   S.m_Encoder.EmitUnsigned(id);
   S.m_Encoder.EmitPointer(ptr);
   S.m_Encoder.EmitUnsigned(size_bytes);
+  S.m_Encoder.EndEvent(kHeapAllocate);
 }
 
 void MemTrace::HeapReallocate(HeapId id, const void* ptr_in, const void* ptr_out, size_t new_size_bytes)
@@ -1058,6 +1100,7 @@ void MemTrace::HeapReallocate(HeapId id, const void* ptr_in, const void* ptr_out
   S.m_Encoder.EmitPointer(ptr_in);
   S.m_Encoder.EmitPointer(ptr_out);
   S.m_Encoder.EmitUnsigned(new_size_bytes);
+  S.m_Encoder.EndEvent(kHeapReallocate);
 }
 
 void MemTrace::HeapFree(HeapId id, const void* ptr)
@@ -1072,6 +1115,7 @@ void MemTrace::HeapFree(HeapId id, const void* ptr)
   S.m_Encoder.BeginEvent(kHeapFree);
   S.m_Encoder.EmitUnsigned(id);
   S.m_Encoder.EmitPointer(ptr);
+  S.m_Encoder.EndEvent(kHeapFree);
 }
 
 void MemTrace::PushScope(ScopeKind kind, const char* str, ScopeKind* old_kind, const char** old_str)
@@ -1125,6 +1169,7 @@ void MemTrace::RefreshLoadedModulesUnlocked()
     }
   }
   S.m_Encoder.EmitUnsigned(0);
+  S.m_Encoder.EndEvent(kModuleDump);
 #endif
 
   // @@@ If you're a licensed Durango dev we can provide module walking code.
