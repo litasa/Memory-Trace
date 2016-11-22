@@ -1,12 +1,12 @@
-function Heap(name, timestamp, callstack)
+function Allocator(heap)
 {
   //General heap data
-  this.name = name;
-  this.birth = timestamp;
+  this.name = heap.name;
+  this.birth = heap.head.timestamp;
   this.death = -1;
-  this.callstack = callstack;
+  this.callstack = heap.head.callstack;
 
-  this.cores = new Array();
+  this.cores = [];
 
   this.Allocate = function(allocation){
     var coreid = this.GetCoreForAllocation(allocation);
@@ -102,7 +102,7 @@ function Core(start_address, size, creation_time, callstackId)
   this.birth = creation_time;
   this.death = -1;
   this.callstackId = callstackId;
-  this.allocations = new Array();
+  this.allocations = [];
 
   this.pointer = function () { return this.start_address;}
 

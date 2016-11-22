@@ -107,7 +107,7 @@ var EventReader = new function() {
 	beginStreamEvent.magicNumber       = ret[0];
 	beginStreamEvent.platform          = ret[1];
 	beginStreamEvent.pointerSize       = ret[2];
-	global.timerFrequency    = ret[3];
+	global.timerFrequency   		   = ret[3];
 	beginStreamEvent.initCommonAddress = ret[4];
 	
 	return true;
@@ -142,16 +142,16 @@ var EventReader = new function() {
   }
 
   function readHeapCreate(buffer, head) {
-	  var heapCreate = {};
+	  var Allocator = {};
 	  var ret = [];
 	  if(!STREAM.read32Byte(ret, buffer)) { return false; } //id
 	  if(!STREAM.readStringIndex(ret,buffer)) { return false; } //name
 	  //begin out event
-	  heapCreate.head   = head;
-	  heapCreate.id     = ret[0];
-	  heapCreate.nameId = ret[1];
+	  Allocator.head   = head;
+	  Allocator.id     = ret[0];
+	  Allocator.nameId = ret[1];
 	  
-	  Visualization.addHeap(heapCreate);
+	  Visualization.addAllocator(Allocator);
 	  
 	  return true;
   }
@@ -168,16 +168,18 @@ var EventReader = new function() {
   }
 
   function readHeapAddCore(buffer,head) {
-    var heapAddCore = {};
+    var core = {};
 	var ret = [];
 	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
 	
-	heapAddCore.head = head;
-	heapAddCore.id   = ret[0];
-	heapAddCore.base = ret[1];
-	heapAddCore.size = ret[2];
+	core.head = head;
+	core.id   = ret[0];
+	core.base = ret[1];
+	core.size = ret[2];
+	
+	Visualization.addCore(core);
 	
 	return true;
   }
@@ -211,6 +213,8 @@ var EventReader = new function() {
 	heapFree.head    = head;
 	heapFree.id      = ret[0];
 	heapFree.pointer = ret[1];
+	
+	Visualization.removeAllocation(heapFree);
 	
 	return true;
   }

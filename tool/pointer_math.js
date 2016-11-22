@@ -54,9 +54,14 @@ function pointerGE(lhs,rhs)
     return false;
 }
 
-function pointerBlockInside(lowAddress,highAddress,pointer, size)
+function pointerBlockInside(core ,pointer, size)
 {
-    return (pointerLE(lowAddress,pointer)) && (pointerGE(highAddress,addSizeToPointer(pointer,size)));
+    return (pointerLE(core.low,pointer)) && (pointerGE(core.high,addSizeToPointer(pointer,size)));
+}
+
+function pointerInsideCore(pointer, coreBase)
+{
+    return (pointerLE(coreBase,pointer)) && (pointerGE(pointer, coreBase));
 }
 
 function pointerEquals(pointerA, pointerB)
