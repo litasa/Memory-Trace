@@ -1,15 +1,38 @@
 
 window.onload = function () {
-
-		Visualization.chart = new CanvasJS.Chart("chartContainer",{
-			zoomEnabled: true,
-			title :{
-				text: "Memory Usage"
-			},
-			data: Visualization.dataToDisplay
+		Chart.defaults.global.animation.duration = 0;
+		var ctx = document.getElementById("myChart");
+		lineData = {
+			labels: [],
+			datasets: [],
+		};
+		
+		Visualization.chart = new Chart(ctx, {
+			type: 'line',
+			data: lineData,
+			options: {
+				responsive: true,
+				animation: {
+					duration: 0
+				},
+				tooltips: {
+					enabled: false
+				},
+				scales: {
+				xAxes: [{
+					type: 'linear',
+					position: 'bottom'
+				}]
+				}
+			}
 		});
-		Visualization.chart.render();
-		Visualization.updateIntervalFunction = setInterval(function() {Visualization.chart.render();}, 100);
+		count = 0;
+		Visualization.chart.update();
+			
+			//update frequency
+			setInterval(function(){ 
+			Visualization.chart.update();
+			},500);
 }
 /*
 Required for a chart object
@@ -19,6 +42,9 @@ Required for a chart object
 			dataPoints: []
 */
 Visualization = new function() {
+	this.MaxHorizontal = 1000;
+	this.Scale = 100;
+	
 	this.dataToDisplay = [];
 	this.allocatorsMap = new Array();
 	
@@ -29,12 +55,26 @@ Visualization = new function() {
 		alloc.managedSize = 0;
 		alloc.usedMemory = 0;
 		
-		this.dataToDisplay.push({
-			name: alloc.id,
-			legendText: global.SeenStrings.get(alloc.nameId),
-			type: 'line',
-			dataPoints: []
+		this.chart.data.datasets.push({
+				id: alloc.id,
+				label: global.SeenStrings.get(alloc.nameId),
+				fill: false,
+				data: []
 		});
+	}
+	
+	var chartDataUpdate = function (allocator, core, time, size){
+		
+		//TODO Make sure that high values also get added
+		allocator.usedMemory += size;
+		//TODO Make sure that high values also get added
+		core.usedMemory += size;
+		
+		lineData.datasets[allocator.id].data.push({x: time, y: core.usedMemory});
+		
+		if(lineData.datasets[allocator.id].data.length > Visualization.MaxHorizontal){
+			lineData.datasets[allocator.id].data.splice(0,1);
+		}
 	}
 	
 	this.addCore = function(core) {
@@ -52,38 +92,23 @@ Visualization = new function() {
 		var core = getCore(allocator.cores,alloc.pointer).value;
 		
 		core.allocs.push(alloc);
-		//TODO Make sure that high values also get added
-		core.usedMemory += alloc.size.low;
-		//TODO Make sure that high values also get added
-		allocator.usedMemory += alloc.size.low;
-		
 		
 		//TODO Use high value of timestamp as well
 		var time = alloc.head.timestamp.low / global.timerFrequency.low;
 		
 		//TODO use special container for visualization to be able to show different stuffs
-		this.dataToDisplay[alloc.id].dataPoints.push({
-			x: time,
-			y: alloc.size.low
-		})
+		chartDataUpdate(allocator,core, time, alloc.size.low);
 	}
 	
 	this.removeAllocation = function(alloc) {
 		var allocator = getAllocator(alloc.id).value;
 		var core = getCore(allocator.cores,alloc.pointer).value;
 		var allocation = getAlloc(core.allocs,alloc.pointer);
-		
-		//TODO Make sure that high values also get added
-		allocator.usedMemory -= allocation.value.size.low;
-		//TODO Make sure that high values also get added
-		core.usedMemory -= allocation.value.size.low;
-		
+
 		var time = alloc.head.timestamp.low / global.timerFrequency.low;
 		
-		this.dataToDisplay[alloc.id].dataPoints.push({
-			x: time,
-			y: allocator.usedMemory
-		});
+		//negative size to remove
+		chartDataUpdate(allocator,core, time, -allocation.value.size.low);
 		
 		core.allocs.splice(allocation.key,1);
 	}
