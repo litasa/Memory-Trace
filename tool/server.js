@@ -16,7 +16,6 @@ var server = require('net').createServer(function (socket) {
           rollbackNeeded: false,
           rollback: 0
         };
-		
         console.log("data recieved, Length: " + buffer.data.length);
         total_data_handled += data.length;
 		
@@ -33,7 +32,7 @@ var server = require('net').createServer(function (socket) {
 					numEvents++;
 				}
 			} while(ringBuffer.numRead < index);
-			
+			Visualization.update();
 		} while(index < buffer.data.length);
 
         console.log("done with buffer" + total_data_handled);

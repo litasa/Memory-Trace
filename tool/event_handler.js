@@ -19,10 +19,20 @@ window.onload = function () {
 					enabled: false
 				},
 				scales: {
-				xAxes: [{
-					type: 'linear',
-					position: 'bottom'
-				}]
+					xAxes: [{
+						type: 'linear',
+						position: 'bottom'
+					}]
+				}, 
+				zoom: {
+					enabled: true,
+					drag: false,
+					mode: 'x',
+				},
+				pan: {
+					enabled: true,
+					drag: true,
+					mode: 'x'
 				}
 			}
 		});
@@ -30,9 +40,7 @@ window.onload = function () {
 		Visualization.chart.update();
 			
 			//update frequency
-			setInterval(function(){ 
-			Visualization.chart.update();
-			},500);
+			
 }
 /*
 Required for a chart object
@@ -48,6 +56,10 @@ Visualization = new function() {
 	this.dataToDisplay = [];
 	this.allocatorsMap = new Array();
 	
+	this.update = function() {
+		this.chart.update();
+	}
+	
 	this.addAllocator = function(alloc) {
 		//TODO error checking
 		this.allocatorsMap.push(alloc);
@@ -59,6 +71,10 @@ Visualization = new function() {
 				id: alloc.id,
 				label: global.SeenStrings.get(alloc.nameId),
 				fill: false,
+				lineTension: 0,
+				pointRadius: 0,
+				steppedLine: true,
+				//pointStyle: 'line',
 				data: []
 		});
 	}
