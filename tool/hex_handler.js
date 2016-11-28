@@ -20,6 +20,10 @@ intToHex = function(int) {
   return out;
 }
 
+hexToInt = function(hexString) {
+  return parseInt(hexString, 16)
+}
+
 hexToBin = function(hexString) {
   var out = new Array();
   var string;
@@ -38,7 +42,7 @@ hexToBin = function(hexString) {
 }
 
 removeLeadingZeroes = function(hexString) {
-  var string;
+  var string = "";
   if(hexString.slice(0,2) == '0x')
   {
     string = hexString.slice(2); //remove 0x
@@ -49,11 +53,12 @@ removeLeadingZeroes = function(hexString) {
   var i = 0;
   while (string.charAt(i) == '0') {
     string = string.slice(1);
+    ++i;
   }
   return string;
 }
 
-addSizeToHex = function(hexString,size) {
+addIntToHex = function(hexString,size) {
   var bin = hexToBin(hexString);
   var binSize = hexToBin(intToHex(size));
   var out = bin;
@@ -73,6 +78,28 @@ addSizeToHex = function(hexString,size) {
     throw "overflow"
   }
   return out;
+}
+
+addHexToHex = function(hexString1, hexString2) {
+  var bin = hexToBin(hexString1);
+  var binSize = hexToBin(hexString2);
+  var out = bin;
+  var minLength = Math.min(bin.length, binSize.length);
+  var carry = 0;
+  for(var i = 1; i <= minLength; ++i) {
+    var num = bin[bin.length - i] + binSize[binSize.length - i] + carry;
+    if(num > 255){
+      carry = 1;
+    }
+    else {
+      carry = 0;
+    }
+    out[bin.length - i] = num;
+  }
+  if(carry){
+    throw "overflow"
+  }
+  return binToHex(out);
 }
 
 hexLess = function(hexString1, hexString2) {
@@ -121,7 +148,7 @@ hexCompare = function(hexString1, comp, hexString2) {
     case 'greater':
       return hexGreater(hexString1,hexString2);
       break;
-    case 'equals':
+    case 'equal':
       return hexEquals(hexString1,hexString2);
       break;
     case 'less or equal':

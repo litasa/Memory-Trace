@@ -16,7 +16,7 @@ window.onload = function () {
 					duration: 0
 				},
 				tooltips: {
-					enabled: false
+					enabled: true
 				},
 				scales: {
 					xAxes: [{
@@ -57,9 +57,7 @@ Visualization = new function() {
 	this.allocatorsMap = new Array();
 
 	this.update = function() {
-		if (Math.floor((Math.random() * 10) + 1) %3){
 		    this.chart.update();
-      }
 	}
 
 	this.addAllocator = function(alloc) {
@@ -70,11 +68,11 @@ Visualization = new function() {
 		alloc.usedMemory = 0;
 
 		this.chart.data.datasets.push({
-				id: alloc.id,
+				id: hexToInt(alloc.id),
 				label: global.SeenStrings.get(alloc.nameId),
 				fill: false,
 				lineTension: 0,
-				pointRadius: 0,
+				pointRadius: 4,
 				steppedLine: true,
 				//pointStyle: 'line',
 				data: []
@@ -88,10 +86,12 @@ Visualization = new function() {
 		//TODO Make sure that high values also get added
 		core.usedMemory += size;
 
-		lineData.datasets[allocator.id].data.push({x: time, y: core.usedMemory});
+		var id = hexToInt(allocator.id);
 
-		if(lineData.datasets[allocator.id].data.length > Visualization.MaxHorizontal){
-			lineData.datasets[allocator.id].data.splice(0,1);
+		lineData.datasets[id].data.push({x: time, y: core.usedMemory});
+
+		if(lineData.datasets[id].data.length > Visualization.MaxHorizontal){
+			lineData.datasets[id].data.splice(0,1);
 		}
 	}
 
@@ -101,8 +101,8 @@ Visualization = new function() {
 		allocator.cores.push(core);
 		core.allocs = [];
 		core.usedMemory = 0;
-		//TODO Make sure that high values also get added
-		allocator.managedSize += core.size.low;
+		allocator.managedSize += hexToInt(core.size);
+		core.end = addHexToHex(core.start, core.size);
 	}
 
 	this.addAllocation = function(alloc) {
@@ -112,10 +112,10 @@ Visualization = new function() {
 		core.allocs.push(alloc);
 
 		//TODO Use high value of timestamp as well
-		var time = alloc.head.timestamp.low / global.timerFrequency.low;
+		var time = hexToInt(alloc.head.timestamp) / hexToInt(global.timerFrequency);
 
 		//TODO use special container for visualization to be able to show different stuffs
-		chartDataUpdate(allocator,core, time, alloc.size.low);
+		chartDataUpdate(allocator,core, time, hexToInt(alloc.size));
 	}
 
 	this.removeAllocation = function(alloc) {
@@ -123,17 +123,17 @@ Visualization = new function() {
 		var core = getCore(allocator.cores,alloc.pointer).value;
 		var allocation = getAlloc(core.allocs,alloc.pointer);
 
-		var time = alloc.head.timestamp.low / global.timerFrequency.low;
+		var time = hexToInt(alloc.head.timestamp) / hexToInt(global.timerFrequency);
 
 		//negative size to remove
-		chartDataUpdate(allocator,core, time, -allocation.value.size.low);
+		chartDataUpdate(allocator,core, time, -hexToInt(allocation.value.size));
 
 		core.allocs.splice(allocation.key,1);
 	}
 
 	var getAlloc = function(allocs, pointer){
 		for(var i = 0; i < allocs.length; ++i) {
-			if(pointerEquals(allocs[i].pointer,pointer)){
+			if(hexCompare(allocs[i].pointer,'equal',pointer)){
 				return {
 					key: i,
 					value: allocs[i]}
@@ -144,7 +144,7 @@ Visualization = new function() {
 
 	var getCore = function(cores,pointer) {
 		for(var i = 0; i < cores.length; ++i){
-			if(pointerInsideCore(pointer,cores[i].base)){
+			if(pointerInsideCore(pointer,cores[i])){
 				return {
 					index: i,
 					value: cores[i]}
@@ -156,7 +156,7 @@ Visualization = new function() {
 	var getAllocator = function(id){
 		for(var i = 0; i < Visualization.allocatorsMap.length; ++i){
 			var allocator = Visualization.allocatorsMap[i];
-			if(allocator.id === id){
+			if(hexCompare(allocator.id, 'equal', id)){
 				return {
 					index: i,
 					value: allocator}

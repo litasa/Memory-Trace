@@ -29,7 +29,7 @@ var EventReader = new function() {
 
   global.HeapsAlive = new Map();
   global.HeapsDead = new Map();
-  
+
   this.oneEvent = function oneStepRead(buffer, fromIndex){
     var header = {
       event: null,
@@ -68,20 +68,20 @@ var EventReader = new function() {
     }
     //var totalMemory = getTotalMemory(global.HeapsAlive);
     //addChartData(meep, { x: header.timestamp, y: totalMemory});
-	
+
 	return true;
   }
-	
+
 	function readHeaderData(header, buffer){
 	var ret = [];
     if(!STREAM.read32Byte(ret, buffer)) { return false; }  //code
     if(!STREAM.read32Byte(ret, buffer))  { return false; } //scope
-	
+
     if (ret[1] != 0) {
       if(!STREAM.readStringIndex(ret, buffer)) { return false; } //scope name
 	  header.scopeDataIndex = ret.pop();
     }
-	
+
     if(!STREAM.read64Byte(ret, buffer)) {return false; } //timestamp
 	if(!STREAM.readBacktraceIndex(ret, buffer)) {return false;} //callstack index
 
@@ -89,7 +89,7 @@ var EventReader = new function() {
 	header.scope       = ret[1];
 	header.timestamp   = ret[2];
 	header.callstackId = ret[3];
-		
+
     return true;
   }
 
@@ -97,19 +97,19 @@ var EventReader = new function() {
       //TODO -- check that magic number is correct etc
 	var beginStreamEvent = {};
 	var ret = [];
-    
+
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Stream Magic
 	if(!STREAM.readString(ret, buffer)) { return false;} //Platform name
 	if(!STREAM.read32Byte(ret, buffer)) { return false;} //Pointer size
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Timer frequency
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Common address
-	
+
 	beginStreamEvent.magicNumber       = ret[0];
 	beginStreamEvent.platform          = ret[1];
 	beginStreamEvent.pointerSize       = ret[2];
 	global.timerFrequency   		   = ret[3];
 	beginStreamEvent.initCommonAddress = ret[4];
-	
+
 	return true;
   }
 
@@ -125,7 +125,7 @@ var EventReader = new function() {
 		{
 			break;
 		}
-		
+
 		if(!STREAM.readString(ret, buffer)) { return false; } //module name
 		if(!STREAM.read64Byte(ret, buffer)) { return false; } //module handle
 		if(!STREAM.read64Byte(ret, buffer)) { return false; } //size
@@ -137,7 +137,7 @@ var EventReader = new function() {
 	}
 	//add to global modules
 	global.Modules = tempSymData;
-	
+
 	return true;
   }
 
@@ -150,9 +150,9 @@ var EventReader = new function() {
 	  Allocator.head   = head;
 	  Allocator.id     = ret[0];
 	  Allocator.nameId = ret[1];
-	  
+
 	  Visualization.addAllocator(Allocator);
-	  
+
 	  return true;
   }
 
@@ -160,10 +160,10 @@ var EventReader = new function() {
     var heapDestroy = {};
 	var ret = [];
 	if(!STREAM.read32Byte(ret,buffer)) {return false;} //id
-	
+
 	heapDestroy.head = head;
 	heapDestroy.id   = ret[0];
-	
+
 	return true;
   }
 
@@ -173,49 +173,49 @@ var EventReader = new function() {
 	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
-	
-	core.head = head;
-	core.id   = ret[0];
-	core.base = ret[1];
-	core.size = ret[2];
-	
+
+	core.head  = head;
+	core.id    = ret[0];
+	core.start = ret[1];
+	core.size  = ret[2];
+
 	Visualization.addCore(core);
-	
+
 	return true;
   }
 
   function readHeapAllocate(buffer, head) {
     var allocation = {};
 	var ret = [];
-	
+
 	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to start
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
-	
-	//TODO check so allocation is not already made	
+
+	//TODO check so allocation is not already made
 	allocation.id      = ret[0];
 	allocation.pointer = ret[1];
 	allocation.size    = ret[2];
 	allocation.head    = head;
-	
+
 	Visualization.addAllocation(allocation);
-	
+
 	return true;
   }
 
   function readHeapFree(buffer,head) {
     var heapFree = {};
 	var ret = [];
-	
+
 	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer;
-	
+
 	heapFree.head    = head;
 	heapFree.id      = ret[0];
 	heapFree.pointer = ret[1];
-	
+
 	Visualization.removeAllocation(heapFree);
-	
+
 	return true;
   }
 }

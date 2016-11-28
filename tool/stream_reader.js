@@ -7,52 +7,39 @@ var STREAM = new function () {
   this.read32Byte = function readByte(code, stream){
     var val = 0;
     var mul = 1;
+    var out = [];
     do {
       var b = stream.getNextValue();
 
-		if(stream.readOverflow())
-		{
-			code = 0;
-			return false;
-		}
-      val |= b*mul;
-      mul <<= 7;
+  		if(stream.readOverflow())
+  		{
+  			code = 0;
+  			return false;
+  		}
+      out.push(b);
     } while (b < 0x80);
-
-    val &= ~mul;
-	  code.push(val);
+    out[out.length -1] -= 0x80;
+	  code.push(binToHex(out));
 
     return true;
   }
 
   this.read64Byte = function read64Byte(code, stream){
     var val = 0;
-    var point = { high: 0, low: 0};
     var mul = 1;
+    var out = [];
     do {
-		var b = stream.getNextValue();
-		if(stream.readOverflow()) {
-			code = 0;
-			return false;
-		}
-		val |= b*mul;
-		mul <<= 7;
-		if (mul > HIGH_THREASHOLD_64BIT) {
-			point.low = val;
-			mul = 1;
-			val = 0;
-		}
+  		var b = stream.getNextValue();
+  		if(stream.readOverflow()) {
+  			code = 0;
+  			return false;
+  		}
+      out.push(b);
     } while (b < 128);
-    val &= ~mul;
-    if (point.low > 0) { //we have 64 bit
-      point.high = val;
-    }
-    else {
-      point.low = val;
-    }
-    code.push(point);
+    out[out.length -1] -= 0x80;
+    code.push(binToHex(out));
 
-	return true;
+	   return true;
   }
 
   this.readString = function readString(ret, stream)
@@ -98,7 +85,7 @@ var STREAM = new function () {
 	  if(!this.read64Byte(temp,stream)){ return false; }
 	  var sequence = temp.pop();
 
-	  if(pointerLessVal(sequence, global.SeenStacks.size))
+	  if(hexCompare(sequence,'less', intToHex(global.SeenStacks.size)))
 	  {
 		  ret.push(sequence);
 		  return true;
@@ -127,7 +114,7 @@ var STREAM = new function () {
 		ret.push(-1);
 		return false;
 	  }
-	  var index = ret.pop();
+	  var index = hexToInt(ret.pop());
 
 	  if(index < global.SeenStacks.size)
 	  {
@@ -145,7 +132,7 @@ var STREAM = new function () {
 		  ret.push(-1);
 		  return false;
 	  }
-	  var frame_count = ret.pop();
+	  var frame_count = hexToInt(ret.pop());
 	  var frames = new Array();
 
 	  for(i = 0; i < frame_count; ++i)
