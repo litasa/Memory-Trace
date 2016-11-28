@@ -131,20 +131,23 @@ hexLess = function(hexString1, hexString2) {
   }
 }
 
-binLess = function(bin1,bin2) {
-  if(bin1.length < bin2.length) {
-    return true;
-  }
-  else if (bin1.length === bin2.length) {
+binComp = function(bin1,bin2) {
+  if (bin1.length === bin2.length) {
     for(var i =0; i < bin1.length;++i) {
       if(bin1[i] < bin2[i]) {
-        return true;
+        return 'less';
+      }
+      else if (bin1[i] > bin2[i]) {
+        return 'greater';
       }
     }
-    return false;
+    return 'equal';
+  }
+  else if (bin1.length < bin2.length) {
+    return 'less'
   }
   else {
-    return false;
+    return 'greater';
   }
 }
 
@@ -205,21 +208,28 @@ hexCompare = function(lhs, comp, rhs) {
 }
 
 binCompare = function(lhs, comp, rhs) {
-  switch (comp) {
+  var ret = binComp(lhs,rhs);
+
+  switch (comp){
     case 'less':
-      return binLess(lhs,rhs);
+    case '<':
+      return ret == 'less';
       break;
     case 'greater':
-      return binGreater(lhs,rhs);
+    case '>':
+      return ret == 'greater';
       break;
     case 'equal':
-      return binEquals(lhs,rhs);
+    case '==':
+      return ret == 'equal';
       break;
     case 'less or equal':
-      return binLess(lhs,rhs) || binEquals(lhs,rhs);
+    case '<=':
+      return ret == 'less' || ret == 'equal';
       break;
     case 'greater or equal':
-      return binGreater(lhs,rhs) || binEquals(lhs, rhs);
+    case '>=':
+      return ret == 'greater' || ret == 'equal';
       break;
     default:
       throw "Unknown compare";

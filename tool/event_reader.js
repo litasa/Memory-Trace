@@ -84,7 +84,7 @@ var EventReader = new function() {
 
     if (ret[1] != 0) {
       if(!STREAM.readStringIndex(ret, buffer)) { return false; } //scope name
-	  header.scopeDataIndex = ret.pop();
+	  	header.scopeDataIndex = ret.pop();
     }
 
     if(!STREAM.read64Byte(ret, buffer)) {return false; } //timestamp
@@ -105,7 +105,7 @@ var EventReader = new function() {
 
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Stream Magic
 	if(!STREAM.readString(ret, buffer)) { return false;} //Platform name
-	if(!STREAM.readByte(ret, buffer)) { return false;} //Pointer size
+	if(!STREAM.readByte(ret, buffer))   { return false;} //Pointer size
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Timer frequency
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Common address
 
@@ -191,19 +191,17 @@ var EventReader = new function() {
 
 	function readHeapRemoveCore(buffer,head) {
 		var ret = [];
+		var core = {};
 		if(!STREAM.readByte(ret,buffer)) { return false; } //id
 		if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
 		if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
-
-		var core = {};
-		var ret = [];
 
 		core.head  = head;
 		core.id    = ret[0];
 		core.start = ret[1];
 		core.size  = ret[2];
 
-		Visualization.removeCore(core);
+		//Visualization.removeCore(core);
 
 		return true;
 	}
