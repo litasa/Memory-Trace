@@ -24,6 +24,10 @@ hexToInt = function(hexString) {
   return parseInt(hexString, 16)
 }
 
+binToInt = function(bin) {
+  return hexToInt(binToHex(bin));
+}
+
 hexToBin = function(hexString) {
   var out = new Array();
   var string;
@@ -81,25 +85,30 @@ addIntToHex = function(hexString,size) {
 }
 
 addHexToHex = function(hexString1, hexString2) {
-  var bin = hexToBin(hexString1);
-  var binSize = hexToBin(hexString2);
-  var out = bin;
-  var minLength = Math.min(bin.length, binSize.length);
+  var bin1 = hexToBin(hexString1);
+  var bin2 = hexToBin(hexString2);
+  var out = addBinToBin(bin1,bin2);
+  return binToHex(out);
+}
+
+addBinToBin = function(bin1, bin2) {
+  var out = bin1.slice(0); //copy by value
+  var minLength = Math.min(bin1.length, bin2.length);
   var carry = 0;
   for(var i = 1; i <= minLength; ++i) {
-    var num = bin[bin.length - i] + binSize[binSize.length - i] + carry;
+    var num = bin1[bin1.length - i] + bin2[bin2.length - i] + carry;
     if(num > 255){
       carry = 1;
     }
     else {
       carry = 0;
     }
-    out[bin.length - i] = num;
+    out[bin1.length - i] = num;
   }
   if(carry){
     throw "overflow"
   }
-  return binToHex(out);
+  return out;
 }
 
 hexLess = function(hexString1, hexString2) {
@@ -112,6 +121,23 @@ hexLess = function(hexString1, hexString2) {
 
     for(var i = 0; i < hex1.length; ++i) {
       if(parseInt(hex1[i],16) < parseInt(hex2[i],16)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  else {
+    return false;
+  }
+}
+
+binLess = function(bin1,bin2) {
+  if(bin1.length < bin2.length) {
+    return true;
+  }
+  else if (bin1.length === bin2.length) {
+    for(var i =0; i < bin1.length;++i) {
+      if(bin1[i] < bin2[i]) {
         return true;
       }
     }
@@ -136,26 +162,64 @@ hexEquals = function(hexString1, hexString2) {
   return true;
 }
 
+binEquals = function(lhs,rhs) {
+  if (lhs.length != rhs.length) {
+    return false;
+  }
+  for(var i = 0; i < rhs.length; ++i) {
+    if(lhs[i] != rhs[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 hexGreater = function(hexString1, hexString2) {
   return !hexLess(hexString1,hexString2) && !hexEquals(hexString1,hexString2);
 }
 
-hexCompare = function(hexString1, comp, hexString2) {
+binGreater = function(lhs, rhs) {
+  return !binLess(lhs,rhs) && !binEquals(lhs,rhs);
+}
+
+hexCompare = function(lhs, comp, rhs) {
   switch (comp) {
     case 'less':
-      return hexLess(hexString1,hexString2);
+      return hexLess(lhs,rhs);
       break;
     case 'greater':
-      return hexGreater(hexString1,hexString2);
+      return hexGreater(lhs,rhs);
       break;
     case 'equal':
-      return hexEquals(hexString1,hexString2);
+      return hexEquals(lhs,rhs);
       break;
     case 'less or equal':
-      return hexLess(hexString1,hexString2) || hexEquals(hexString1,hexString2);
+      return hexLess(lhs,rhs) || hexEquals(lhs,rhs);
       break;
     case 'greater or equal':
-      return hexGreater(hexString1,hexString2) || hexEquals(hexString1, hexString2);
+      return hexGreater(lhs,rhs) || hexEquals(lsh, rhs);
+      break;
+    default:
+      throw "Unknown compare";
+  }
+}
+
+binCompare = function(lhs, comp, rhs) {
+  switch (comp) {
+    case 'less':
+      return binLess(lhs,rhs);
+      break;
+    case 'greater':
+      return binGreater(lhs,rhs);
+      break;
+    case 'equal':
+      return binEquals(lhs,rhs);
+      break;
+    case 'less or equal':
+      return binLess(lhs,rhs) || binEquals(lhs,rhs);
+      break;
+    case 'greater or equal':
+      return binGreater(lhs,rhs) || binEquals(lhs, rhs);
       break;
     default:
       throw "Unknown compare";

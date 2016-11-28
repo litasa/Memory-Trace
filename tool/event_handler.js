@@ -73,7 +73,7 @@ Visualization = new function() {
 				fill: false,
 				lineTension: 0,
 				pointRadius: 4,
-				steppedLine: true,
+				steppedLine: false,
 				//pointStyle: 'line',
 				data: []
 		});
@@ -86,12 +86,10 @@ Visualization = new function() {
 		//TODO Make sure that high values also get added
 		core.usedMemory += size;
 
-		var id = hexToInt(allocator.id);
+		lineData.datasets[allocator.id].data.push({x: time, y: core.usedMemory});
 
-		lineData.datasets[id].data.push({x: time, y: core.usedMemory});
-
-		if(lineData.datasets[id].data.length > Visualization.MaxHorizontal){
-			lineData.datasets[id].data.splice(0,1);
+		if(lineData.datasets[allocator.id].data.length > Visualization.MaxHorizontal){
+			lineData.datasets[allocator.id].data.splice(0,1);
 		}
 	}
 
@@ -102,7 +100,7 @@ Visualization = new function() {
 		core.allocs = [];
 		core.usedMemory = 0;
 		allocator.managedSize += hexToInt(core.size);
-		core.end = addHexToHex(core.start, core.size);
+		core.end = addBinToBin(core.start, core.size);
 	}
 
 	this.addAllocation = function(alloc) {
@@ -112,7 +110,7 @@ Visualization = new function() {
 		core.allocs.push(alloc);
 
 		//TODO Use high value of timestamp as well
-		var time = hexToInt(alloc.head.timestamp) / hexToInt(global.timerFrequency);
+		var time = binToInt(alloc.head.timestamp) / binToInt(global.timerFrequency);
 
 		//TODO use special container for visualization to be able to show different stuffs
 		chartDataUpdate(allocator,core, time, hexToInt(alloc.size));
@@ -123,7 +121,7 @@ Visualization = new function() {
 		var core = getCore(allocator.cores,alloc.pointer).value;
 		var allocation = getAlloc(core.allocs,alloc.pointer);
 
-		var time = hexToInt(alloc.head.timestamp) / hexToInt(global.timerFrequency);
+		var time = binToInt(alloc.head.timestamp) / binToInt(global.timerFrequency);
 
 		//negative size to remove
 		chartDataUpdate(allocator,core, time, -hexToInt(allocation.value.size));
@@ -133,7 +131,7 @@ Visualization = new function() {
 
 	var getAlloc = function(allocs, pointer){
 		for(var i = 0; i < allocs.length; ++i) {
-			if(hexCompare(allocs[i].pointer,'equal',pointer)){
+			if(binCompare(allocs[i].pointer,'equal',pointer)){
 				return {
 					key: i,
 					value: allocs[i]}
@@ -156,7 +154,7 @@ Visualization = new function() {
 	var getAllocator = function(id){
 		for(var i = 0; i < Visualization.allocatorsMap.length; ++i){
 			var allocator = Visualization.allocatorsMap[i];
-			if(hexCompare(allocator.id, 'equal', id)){
+			if(allocator.id == id){
 				return {
 					index: i,
 					value: allocator}

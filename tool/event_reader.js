@@ -57,6 +57,9 @@ var EventReader = new function() {
     else if (header.event == global.typeEnum.HeapAddCore) {
       if(!readHeapAddCore(buffer,header)) { return false; }
     }
+		else if(header.event == global.typeEnum.HeapRemoveCore) {
+			if(!readHeapRemoveCore(buffer,header)) { return false; }
+		}
     else if (header.event == global.typeEnum.HeapAllocate) {
       if(!readHeapAllocate(buffer,header)) { return false; }
     }
@@ -66,16 +69,18 @@ var EventReader = new function() {
     else if (header.event == global.typeEnum.EndStream) {
       //TODO -- Check so that no leaks have happened
     }
+		else {
+			return false;
+		}
     //var totalMemory = getTotalMemory(global.HeapsAlive);
     //addChartData(meep, { x: header.timestamp, y: totalMemory});
-
 	return true;
   }
 
 	function readHeaderData(header, buffer){
 	var ret = [];
-    if(!STREAM.read32Byte(ret, buffer)) { return false; }  //code
-    if(!STREAM.read32Byte(ret, buffer))  { return false; } //scope
+    if(!STREAM.readByte(ret, buffer)) { return false; }  //code
+    if(!STREAM.readByte(ret, buffer))  { return false; } //scope
 
     if (ret[1] != 0) {
       if(!STREAM.readStringIndex(ret, buffer)) { return false; } //scope name
@@ -100,7 +105,7 @@ var EventReader = new function() {
 
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Stream Magic
 	if(!STREAM.readString(ret, buffer)) { return false;} //Platform name
-	if(!STREAM.read32Byte(ret, buffer)) { return false;} //Pointer size
+	if(!STREAM.readByte(ret, buffer)) { return false;} //Pointer size
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Timer frequency
 	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Common address
 
@@ -120,7 +125,7 @@ var EventReader = new function() {
 	{
 		var dump = {};
 		var ret = [];
-		if(!STREAM.read32Byte(ret,buffer)) {return false;} //keep going code ( 0 == stop )
+		if(!STREAM.readByte(ret,buffer)) {return false;} //keep going code ( 0 == stop )
 		if(ret.pop() == 0)
 		{
 			break;
@@ -144,7 +149,7 @@ var EventReader = new function() {
   function readHeapCreate(buffer, head) {
 	  var Allocator = {};
 	  var ret = [];
-	  if(!STREAM.read32Byte(ret, buffer)) { return false; } //id
+	  if(!STREAM.readByte(ret, buffer)) { return false; } //id
 	  if(!STREAM.readStringIndex(ret,buffer)) { return false; } //name
 	  //begin out event
 	  Allocator.head   = head;
@@ -159,7 +164,7 @@ var EventReader = new function() {
   function readHeapDestroy(buffer, head) {
     var heapDestroy = {};
 	var ret = [];
-	if(!STREAM.read32Byte(ret,buffer)) {return false;} //id
+	if(!STREAM.readByte(ret,buffer)) {return false;} //id
 
 	heapDestroy.head = head;
 	heapDestroy.id   = ret[0];
@@ -169,26 +174,45 @@ var EventReader = new function() {
 
   function readHeapAddCore(buffer,head) {
     var core = {};
-	var ret = [];
-	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
-	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
-	if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
+		var ret = [];
+		if(!STREAM.readByte(ret,buffer)) { return false; } //id
+		if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
+		if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
 
-	core.head  = head;
-	core.id    = ret[0];
-	core.start = ret[1];
-	core.size  = ret[2];
+		core.head  = head;
+		core.id    = ret[0];
+		core.start = ret[1];
+		core.size  = ret[2];
 
-	Visualization.addCore(core);
+		Visualization.addCore(core);
 
-	return true;
+		return true;
   }
+
+	function readHeapRemoveCore(buffer,head) {
+		var ret = [];
+		if(!STREAM.readByte(ret,buffer)) { return false; } //id
+		if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
+		if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
+
+		var core = {};
+		var ret = [];
+
+		core.head  = head;
+		core.id    = ret[0];
+		core.start = ret[1];
+		core.size  = ret[2];
+
+		Visualization.removeCore(core);
+
+		return true;
+	}
 
   function readHeapAllocate(buffer, head) {
     var allocation = {};
 	var ret = [];
 
-	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
+	if(!STREAM.readByte(ret,buffer)) { return false; } //id
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to start
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
 
@@ -207,7 +231,7 @@ var EventReader = new function() {
     var heapFree = {};
 	var ret = [];
 
-	if(!STREAM.read32Byte(ret,buffer)) { return false; } //id
+	if(!STREAM.readByte(ret,buffer)) { return false; } //id
 	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer;
 
 	heapFree.head    = head;
