@@ -1,4 +1,4 @@
-var rem = require('electron').remote; 
+var rem = require('electron').remote;
 var dialog = rem.dialog;
 var fs = require('fs');
 var net = require('net');
@@ -10,7 +10,7 @@ function readFile(filepath){
               return;
           }
           var client = new net.Socket();
-		  client.connect(8080, '192.168.1.123', function() {
+		  client.connect(8080, server.address(), function() {
 			client.write(data);
 		  });
     });
@@ -30,5 +30,5 @@ document.getElementById('select-file').addEventListener('click',function(){
                     }else{
                         readFile(fileNames[0]);
                     }
-                }); 
+                });
             },false);

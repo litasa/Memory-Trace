@@ -6,7 +6,7 @@ window.onload = function () {
 			labels: [],
 			datasets: [],
 		};
-		
+
 		Visualization.chart = new Chart(ctx, {
 			type: 'line',
 			data: lineData,
@@ -23,7 +23,7 @@ window.onload = function () {
 						type: 'linear',
 						position: 'bottom'
 					}]
-				}, 
+				},
 				zoom: {
 					enabled: true,
 					drag: false,
@@ -38,9 +38,9 @@ window.onload = function () {
 		});
 		count = 0;
 		Visualization.chart.update();
-			
+
 			//update frequency
-			
+
 }
 /*
 Required for a chart object
@@ -52,21 +52,23 @@ Required for a chart object
 Visualization = new function() {
 	this.MaxHorizontal = 1000;
 	this.Scale = 100;
-	
+
 	this.dataToDisplay = [];
 	this.allocatorsMap = new Array();
-	
+
 	this.update = function() {
-		this.chart.update();
+		if (Math.floor((Math.random() * 10) + 1) %3){
+		    this.chart.update();
+      }
 	}
-	
+
 	this.addAllocator = function(alloc) {
 		//TODO error checking
 		this.allocatorsMap.push(alloc);
 		alloc.cores = [];
 		alloc.managedSize = 0;
 		alloc.usedMemory = 0;
-		
+
 		this.chart.data.datasets.push({
 				id: alloc.id,
 				label: global.SeenStrings.get(alloc.nameId),
@@ -78,21 +80,21 @@ Visualization = new function() {
 				data: []
 		});
 	}
-	
+
 	var chartDataUpdate = function (allocator, core, time, size){
-		
+
 		//TODO Make sure that high values also get added
 		allocator.usedMemory += size;
 		//TODO Make sure that high values also get added
 		core.usedMemory += size;
-		
+
 		lineData.datasets[allocator.id].data.push({x: time, y: core.usedMemory});
-		
+
 		if(lineData.datasets[allocator.id].data.length > Visualization.MaxHorizontal){
 			lineData.datasets[allocator.id].data.splice(0,1);
 		}
 	}
-	
+
 	this.addCore = function(core) {
 		//TODO error checking
 		var allocator = getAllocator(core.id).value;
@@ -106,29 +108,29 @@ Visualization = new function() {
 	this.addAllocation = function(alloc) {
 		var allocator = getAllocator(alloc.id).value;
 		var core = getCore(allocator.cores,alloc.pointer).value;
-		
+
 		core.allocs.push(alloc);
-		
+
 		//TODO Use high value of timestamp as well
 		var time = alloc.head.timestamp.low / global.timerFrequency.low;
-		
+
 		//TODO use special container for visualization to be able to show different stuffs
 		chartDataUpdate(allocator,core, time, alloc.size.low);
 	}
-	
+
 	this.removeAllocation = function(alloc) {
 		var allocator = getAllocator(alloc.id).value;
 		var core = getCore(allocator.cores,alloc.pointer).value;
 		var allocation = getAlloc(core.allocs,alloc.pointer);
 
 		var time = alloc.head.timestamp.low / global.timerFrequency.low;
-		
+
 		//negative size to remove
 		chartDataUpdate(allocator,core, time, -allocation.value.size.low);
-		
+
 		core.allocs.splice(allocation.key,1);
 	}
-	
+
 	var getAlloc = function(allocs, pointer){
 		for(var i = 0; i < allocs.length; ++i) {
 			if(pointerEquals(allocs[i].pointer,pointer)){
@@ -139,7 +141,7 @@ Visualization = new function() {
 		}
 		return null;
 	}
-	
+
 	var getCore = function(cores,pointer) {
 		for(var i = 0; i < cores.length; ++i){
 			if(pointerInsideCore(pointer,cores[i].base)){
@@ -150,7 +152,7 @@ Visualization = new function() {
 		}
 		return null;
 	}
-	
+
 	var getAllocator = function(id){
 		for(var i = 0; i < Visualization.allocatorsMap.length; ++i){
 			var allocator = Visualization.allocatorsMap[i];

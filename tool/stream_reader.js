@@ -1,7 +1,7 @@
 
 var STREAM = new function () {
-  
-  
+
+
   global.Modules = [];
 
   this.read32Byte = function readByte(code, stream){
@@ -20,8 +20,8 @@ var STREAM = new function () {
     } while (b < 0x80);
 
     val &= ~mul;
-	code.push(val);
-	
+	  code.push(val);
+
     return true;
   }
 
@@ -51,32 +51,32 @@ var STREAM = new function () {
       point.low = val;
     }
     code.push(point);
-	
+
 	return true;
   }
-  
+
   this.readString = function readString(ret, stream)
   {
 	  if(!this.read32Byte(ret, stream)) { return false; }
 	  var index = ret.pop();
-	  
+
 	  if(index < global.SeenStrings.size)
 	  {
 		  string = global.SeenStrings.get(index);
 		  return true;
 	  }
-	  
+
 	  if(!this.read32Byte(ret, stream)) { return false; }
 	  var length = ret.pop();
-	  
+
 	  var string = String("");
 	  for(i=0; i < length; ++i)
 	  {
 		  if(stream.readOverflow()) { return false; }
-		  
+
 		  string += String.fromCharCode(stream.getNextValue());
 	  }
-	  
+
 	  ++global.seenStringRollback;
 		/* dunno what this is atm
 		string shared;
@@ -88,22 +88,22 @@ var STREAM = new function () {
 		*/
 	  global.SeenStrings.set(index,string);
 	  ret.push(string);
-	  
+
 	  return true;
   }
-  
+
   this.readStringIndex = function readStringIndex(ret, stream)
   {
 	  var temp = [];
 	  if(!this.read64Byte(temp,stream)){ return false; }
 	  var sequence = temp.pop();
-	  
+
 	  if(pointerLessVal(sequence, global.SeenStacks.size))
 	  {
 		  ret.push(sequence);
 		  return true;
 	  }
-	  
+
 	  if(!this.read32Byte(temp, stream)) { return false; }
 	  var length = temp.pop();
 	  var string = new String("");
@@ -112,11 +112,11 @@ var STREAM = new function () {
 		  if(stream.readOverflow()) { return false; }
 		  string += String.fromCharCode(stream.getNextValue());
 	  }
-	  
+
 	  ++stream.seenStringRollback;
 	  global.SeenStrings.set(sequence, string);
 	  ret.push(global.SeenStrings.size - 1);
-	  
+
 	  return true;
   }
 
@@ -128,18 +128,18 @@ var STREAM = new function () {
 		return false;
 	  }
 	  var index = ret.pop();
-	  
+
 	  if(index < global.SeenStacks.size)
 	  {
 		  ret.push(index);
 		  return true;
 	  }
-	  
+
 	  if(index != global.SeenStacks.size)
 	  {
 		  throw "Unexpected stack index"
 	  }
-	  
+
 	  if(!this.read32Byte(ret,stream))
 	  {
 		  ret.push(-1);
@@ -147,7 +147,7 @@ var STREAM = new function () {
 	  }
 	  var frame_count = ret.pop();
 	  var frames = new Array();
-	  
+
 	  for(i = 0; i < frame_count; ++i)
 	  {
 		  if(!this.read64Byte(frames,stream))
@@ -164,7 +164,7 @@ var STREAM = new function () {
 	  ++global.seenStringRollback;
 	  global.SeenStacks.set(index, frames);
 	  ret.push(index);
-	  
+
 	  return true;
   }
 };

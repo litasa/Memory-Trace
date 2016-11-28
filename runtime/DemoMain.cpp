@@ -105,31 +105,50 @@ public:
 
 static void TestCustomAllocator()
 {
-  MemTrace::UserMark("Custom Allocator Test Starting");
-
-  BlockAllocator a(16, 256, "Allocator A");
-  BlockAllocator b(32, 256, "Allocator B");
-
-  for (int i = 0; i < 200; ++i)
+	BlockAllocator a(16, 256, "Allocator A");
+	BlockAllocator b(32, 256, "Allocator B");
+  
+  while(true)
   {
-    if (i & 2) a.Alloc();
-    if (i & 3) b.Alloc();
-  }
+	
+	std::vector<void*> ptrA;
+	std::vector<void*> ptrB;
+	  for (int i = 0; i < 200; ++i)
+	  {
+		if (i & 2)
+		{
+			ptrA.push_back(a.Alloc());
+		}
+		if (i & 3)
+		{
+			ptrB.push_back(b.Alloc());
+		}
+	  }
 
-  MemTrace::UserMark("Custom Allocator Test Ending");
+	  for (int i = 0; i < 100; ++i)
+	  {
+		a.Free(ptrA[i]);
+	  }
+	  for (int i = 0; i < 100; ++i)
+	  {
+		b.Free(ptrB[i]);
+	  }
+  }
 }
 
 #define PRINT 0
 
 int main(int argc, char* argv[])
 {
-  //TestCustomAllocator();
+  
 
 
 	MemTrace::InitSocket("10.150.44.212",8080);
 	//MemTrace::InitFile("temp.txt");
 	
-	MemTrace::HeapId id = MemTrace::HeapCreate("test");
+	TestCustomAllocator();
+
+	/*MemTrace::HeapId id = MemTrace::HeapCreate("test");
 	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");
 	
 	int *buf  = new int[5*sizeof(int)];
@@ -139,10 +158,16 @@ int main(int argc, char* argv[])
 		int *p = new (buf) int(3);
 		int *q = new (buf2) int(1);
 
-		for (int i = 0; i < 10000; i++)
+		for (int i = 0; i < 200; i++)
 		{
-			MemTrace::HeapAllocate(id,p,4);
-			MemTrace::HeapAllocate(id2,q,40);
+			if(i % 2)
+			{
+				MemTrace::HeapAllocate(id,p,4);
+			}
+			if(i % 3)
+			{
+				MemTrace::HeapAllocate(id2,q,40);
+			}
 			MemTrace::HeapFree(id,p);
 			MemTrace::HeapFree(id2,q); 
 		}
@@ -150,6 +175,6 @@ int main(int argc, char* argv[])
 		MemTrace::HeapDestroy(id);
 		MemTrace::HeapDestroy(id2);
 		MemTrace::Flush();
-	MemTrace::Shutdown();
+	MemTrace::Shutdown();*/
   return 0;
 }
