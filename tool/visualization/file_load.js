@@ -10,7 +10,7 @@ function readFile(filepath){
               return;
           }
           var client = new net.Socket();
-		  client.connect(8080, server.address(), function() {
+		  client.connect(server.port, server.address, function() {
 			client.write(data);
 		  });
     });

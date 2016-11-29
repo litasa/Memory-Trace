@@ -107,33 +107,22 @@ static void TestCustomAllocator()
 {
 	BlockAllocator a(16, 256, "Allocator A");
 	BlockAllocator b(32, 256, "Allocator B");
-  
-  while(true)
-  {
-	
 	std::vector<void*> ptrA;
 	std::vector<void*> ptrB;
-	  for (int i = 0; i < 200; ++i)
+	  for (int i = 0; i < 2; ++i)
 	  {
-		if (i & 2)
-		{
 			ptrA.push_back(a.Alloc());
-		}
-		if (i & 3)
-		{
 			ptrB.push_back(b.Alloc());
-		}
 	  }
 
-	  for (int i = 0; i < 100; ++i)
+	  for (int i = 0; i < 1; ++i)
 	  {
 		a.Free(ptrA[i]);
 	  }
-	  for (int i = 0; i < 100; ++i)
+	  for (int i = 0; i < 1; ++i)
 	  {
 		b.Free(ptrB[i]);
 	  }
-  }
 }
 
 #define PRINT 0
@@ -144,7 +133,7 @@ int main(int argc, char* argv[])
 
 
 	MemTrace::InitSocket("10.150.44.212",8080);
-	//MemTrace::InitFile("temp.txt");
+	//MemTrace::InitFile("shit.txt");
 	
 	TestCustomAllocator();
 
@@ -174,7 +163,7 @@ int main(int argc, char* argv[])
 		
 		MemTrace::HeapDestroy(id);
 		MemTrace::HeapDestroy(id2);
-		MemTrace::Flush();
-	MemTrace::Shutdown();*/
+		MemTrace::Flush();*/
+	MemTrace::Shutdown();
   return 0;
 }

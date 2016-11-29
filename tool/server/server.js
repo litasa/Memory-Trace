@@ -1,14 +1,15 @@
-
+const ipc = require('electron').ipcRenderer
+const BrowserWindow = require('electron').remote.BrowserWindow
 total_data_handled = 0;
 numEvents = 0;
 // server
 var server = require('net').createServer(function (socket) {
     console.log("connected");
     var total_data_recieved = 0;
-	
+
 	var ringBuffersize = 128*1024;
 	var ringBuffer =  new CircularBuffer(ringBuffersize);
-	
+
     socket.on('data', function (data) {
         var buffer = {
           data: Buffer.from(data,'hex'),
@@ -18,12 +19,12 @@ var server = require('net').createServer(function (socket) {
         };
         console.log("data recieved, Length: " + buffer.data.length);
         total_data_handled += data.length;
-		
+
 		ringBuffer.resetRead();
 		var index = 0;
 		do{
 			index = ringBuffer.populate(buffer.data, index);
-			
+
 			do{
 				if(!EventReader.oneEvent(ringBuffer)) {
 					ringBuffer.read = ringBuffer.rollback;
@@ -36,28 +37,19 @@ var server = require('net').createServer(function (socket) {
 		} while(index < buffer.data.length);
 
         console.log("done with buffer" + total_data_handled);
-		console.log("Number of handled events: " + numEvents);
+		    console.log("Number of handled events: " + numEvents);
     })
 })
 .listen(8080);
-
-function getTotalMemory(heapsalive)
-{
-  var ret = 0;
-  for (var i = 0; i < heapsalive.size; i++) {
-    if (heapsalive.has(i)) {
-    for (var j  = 0; j < heapsalive.get(i).cores.length; j++) {
-      ret += heapsalive.get(i).getMemoryUsage();
-      }
-    }
-  }
-  return ret;
-}
 
 server.on('close', function() {
   console.log("connection closed, hmm");
 });
 
-require('dns').lookup(require('os').hostname(), function (err, add, fam) {
-  console.log('Address: '+ add + '\n socket: ' + server.address().port);
-});
+server.on('listening', function() {
+  require('dns').lookup(require('os').hostname(), function (err, add, fam) {
+    const toWindow = BrowserWindow.fromId(1)
+    msg = 'Address: '+ add + '\n socket: ' + server.address().port
+    toWindow.webContents.send('server-init', {address: add, port: server.address().port})
+  });
+})

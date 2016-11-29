@@ -1,5 +1,5 @@
 
-window.onload = function () {
+initChart = function () {
 		Chart.defaults.global.animation.duration = 0;
 		var ctx = document.getElementById("myChart");
 		lineData = {
@@ -38,9 +38,6 @@ window.onload = function () {
 		});
 		count = 0;
 		Visualization.chart.update();
-
-			//update frequency
-
 }
 /*
 Required for a chart object
