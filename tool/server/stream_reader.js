@@ -4,15 +4,15 @@ var STREAM = new function () {
 
   global.Modules = [];
 
-  this.readByte = function readByte(code, stream){
+  this.readByte = function readByte(buffer, ret){
     var val = 0;
     var mul = 1;
     do {
-      var b = stream.getNextValue();
+      var b = buffer.getNextValue();
 
-		if(stream.readOverflow())
+		if(buffer.readOverflow())
 		{
-			code = 0;
+			ret = 0;
 			return false;
 		}
       val |= b*mul;
@@ -20,32 +20,32 @@ var STREAM = new function () {
     } while (b < 0x80);
 
     val &= ~mul;
-    code.push(val);
+    ret.push(val);
     return true;
   }
 
-  this.read64Byte = function read64Byte(code, stream){
+  this.read64Byte = function read64Byte(buffer, ret){
     var val = 0;
     var mul = 1;
     var out = [];
     do {
-  		var b = stream.getNextValue();
-  		if(stream.readOverflow()) {
-  			code = 0;
+  		var b = buffer.getNextValue();
+  		if(buffer.readOverflow()) {
+  			ret = 0;
   			return false;
   		}
       out.push(b);
     } while (b < 128);
     out[out.length -1] -= 0x80;
 
-    code.push(out.reverse());
+    ret.push(out.reverse());
 
 	   return true;
   }
 
-  this.readString = function readString(ret, stream)
+  this.readString = function readString(buffer, ret)
   {
-	  if(!this.readByte(ret, stream)) { return false; }
+	  if(!this.readByte(buffer, ret)) { return false; }
 	  var index = ret.pop();
 
 	  if(index < global.SeenStrings.size)
@@ -54,15 +54,15 @@ var STREAM = new function () {
 		  return true;
 	  }
 
-	  if(!this.readByte(ret, stream)) { return false; }
+	  if(!this.readByte(buffer, ret)) { return false; }
 	  var length = ret.pop();
 
 	  var string = String("");
 	  for(i=0; i < length; ++i)
 	  {
-		  if(stream.readOverflow()) { return false; }
+		  if(buffer.readOverflow()) { return false; }
 
-		  string += String.fromCharCode(stream.getNextValue());
+		  string += String.fromCharCode(buffer.getNextValue());
 	  }
 
 	  ++global.seenStringRollback;
@@ -80,37 +80,37 @@ var STREAM = new function () {
 	  return true;
   }
 
-  this.readStringIndex = function readStringIndex(ret, stream)
+  this.readStringIndex = function readStringIndex(buffer, ret)
   {
 	  var temp = [];
-	  if(!this.read64Byte(temp,stream)){ return false; }
+	  if(!this.readByte(buffer, temp)){ return false; }
 	  var sequence = temp.pop();
 
-	  if(hexToInt(sequence) < global.SeenStacks.size)
+	  if(sequence < global.SeenStacks.size)
 	  {
 		  ret.push(sequence);
 		  return true;
 	  }
 
-	  if(!this.readByte(temp, stream)) { return false; }
+	  if(!this.readByte(buffer, temp)) { return false; }
 	  var length = temp.pop();
 	  var string = new String("");
 	  for(i = 0; i < length; i++)
 	  {
-		  if(stream.readOverflow()) { return false; }
-		  string += String.fromCharCode(stream.getNextValue());
+		  if(buffer.readOverflow()) { return false; }
+		  string += String.fromCharCode(buffer.getNextValue());
 	  }
 
-	  ++stream.seenStringRollback;
+	  ++buffer.seenStringRollback;
 	  global.SeenStrings.set(sequence, string);
 	  ret.push(global.SeenStrings.size - 1);
 
 	  return true;
   }
 
-  this.readBacktraceIndex = function readBacktraceIndex(ret, stream)
+  this.readBacktraceIndex = function readBacktraceIndex(buffer, ret)
   {
-	  if(!this.readByte(ret, stream))
+	  if(!this.readByte(buffer, ret))
 	  {
 		    ret.push(-1);
 		    return false;
@@ -128,7 +128,7 @@ var STREAM = new function () {
 		  throw "Unexpected stack index"
 	  }
 
-	  if(!this.readByte(ret,stream))
+	  if(!this.readByte(buffer, ret))
 	  {
 		  ret.push(-1);
 		  return false;
@@ -138,7 +138,7 @@ var STREAM = new function () {
 
 	  for(i = 0; i < frame_count; ++i)
 	  {
-		  if(!this.read64Byte(frames,stream))
+		  if(!this.read64Byte(buffer, frames))
 		  {
 			  ret.push(-1);
 			  return false;

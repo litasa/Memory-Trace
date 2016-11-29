@@ -48,8 +48,12 @@ server.on('close', function() {
 
 server.on('listening', function() {
   require('dns').lookup(require('os').hostname(), function (err, add, fam) {
-    const toWindow = BrowserWindow.fromId(1)
-    msg = 'Address: '+ add + '\n socket: ' + server.address().port
-    toWindow.webContents.send('server-init', {address: add, port: server.address().port})
+    sendEvent('server-init', {address: add, port: server.address().port})
   });
 })
+
+
+sendEvent = function(channel, data) {
+  const toWindow = BrowserWindow.fromId(1)
+  toWindow.webContents.send(channel,data);
+}

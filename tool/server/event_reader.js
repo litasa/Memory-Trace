@@ -31,15 +31,18 @@ var EventReader = new function() {
   global.HeapsDead = new Map();
 
   this.oneEvent = function oneStepRead(buffer, fromIndex){
+		var ret;
     var header = {
       event: null,
       scope: null,
-	  scopeDataIndex: -1,
+	    scopeDataIndex: -1,
       timestamp: null,
       callstackId: null
     };
-	buffer.rollback = buffer.read;
-    if(!readHeaderData(header, buffer)) { return false; }
+
+	  buffer.rollback = buffer.read;
+
+		if(!readHeaderData(buffer, header)) { return false; }
 
     if (header.event == global.typeEnum.BeginStream) {
       //TODO -- check that magic number is correct etc
@@ -77,23 +80,23 @@ var EventReader = new function() {
 	return true;
   }
 
-	function readHeaderData(header, buffer){
+	function readHeaderData(buffer, header){
 	var ret = [];
-    if(!STREAM.readByte(ret, buffer)) { return false; }  //code
-    if(!STREAM.readByte(ret, buffer))  { return false; } //scope
+    if(!STREAM.readByte(buffer, ret)) { return false; }  //code
+    if(!STREAM.readByte(buffer, ret))  { return false; } //scope
 
     if (ret[1] != 0) {
-      if(!STREAM.readStringIndex(ret, buffer)) { return false; } //scope name
+      if(!STREAM.readStringIndex(buffer, ret)) { return false; } //scope name
 	  	header.scopeDataIndex = ret.pop();
     }
 
-    if(!STREAM.read64Byte(ret, buffer)) {return false; } //timestamp
-	if(!STREAM.readBacktraceIndex(ret, buffer)) {return false;} //callstack index
+    if(!STREAM.read64Byte(buffer, ret)) {return false; } //timestamp
+	  if(!STREAM.readBacktraceIndex(buffer, ret)) {return false;} //callstack index
 
-	header.event       = ret[0];
-	header.scope       = ret[1];
-	header.timestamp   = ret[2];
-	header.callstackId = ret[3];
+	  header.event       = ret[0];
+	  header.scope       = ret[1];
+	  header.timestamp   = ret[2];
+	  header.callstackId = ret[3];
 
     return true;
   }
@@ -103,11 +106,11 @@ var EventReader = new function() {
 	var beginStreamEvent = {};
 	var ret = [];
 
-	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Stream Magic
-	if(!STREAM.readString(ret, buffer)) { return false;} //Platform name
-	if(!STREAM.readByte(ret, buffer))   { return false;} //Pointer size
-	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Timer frequency
-	if(!STREAM.read64Byte(ret, buffer)) { return false;} //Common address
+	if(!STREAM.read64Byte(buffer, ret)) { return false;} //Stream Magic
+	if(!STREAM.readString(buffer, ret)) { return false;} //Platform name
+	if(!STREAM.readByte(buffer, ret))   { return false;} //Pointer size
+	if(!STREAM.read64Byte(buffer, ret)) { return false;} //Timer frequency
+	if(!STREAM.read64Byte(buffer, ret)) { return false;} //Common address
 
 	beginStreamEvent.magicNumber       = ret[0];
 	beginStreamEvent.platform          = ret[1];
@@ -125,15 +128,15 @@ var EventReader = new function() {
 	{
 		var dump = {};
 		var ret = [];
-		if(!STREAM.readByte(ret,buffer)) {return false;} //keep going code ( 0 == stop )
+		if(!STREAM.readByte(buffer, ret)) {return false;} //keep going code ( 0 == stop )
 		if(ret.pop() == 0)
 		{
 			break;
 		}
 
-		if(!STREAM.readString(ret, buffer)) { return false; } //module name
-		if(!STREAM.read64Byte(ret, buffer)) { return false; } //module handle
-		if(!STREAM.read64Byte(ret, buffer)) { return false; } //size
+		if(!STREAM.readString(buffer, ret)) { return false; } //module name
+		if(!STREAM.read64Byte(buffer, ret)) { return false; } //module handle
+		if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
 		dump.name = ret[0];
 		dump.base = ret[1];
 		dump.size = ret[2];
@@ -149,8 +152,8 @@ var EventReader = new function() {
   function readHeapCreate(buffer, head) {
 	  var Allocator = {};
 	  var ret = [];
-	  if(!STREAM.readByte(ret, buffer)) { return false; } //id
-	  if(!STREAM.readStringIndex(ret,buffer)) { return false; } //name
+	  if(!STREAM.readByte(buffer, ret)) { return false; } //id
+	  if(!STREAM.readStringIndex(buffer, ret)) { return false; } //name
 	  //begin out event
 	  Allocator.head   = head;
 	  Allocator.id     = ret[0];
@@ -164,7 +167,7 @@ var EventReader = new function() {
   function readHeapDestroy(buffer, head) {
     var heapDestroy = {};
 	var ret = [];
-	if(!STREAM.readByte(ret,buffer)) {return false;} //id
+	if(!STREAM.readByte(buffer, ret)) {return false;} //id
 
 	heapDestroy.head = head;
 	heapDestroy.id   = ret[0];
@@ -175,9 +178,9 @@ var EventReader = new function() {
   function readHeapAddCore(buffer,head) {
     var core = {};
 		var ret = [];
-		if(!STREAM.readByte(ret,buffer)) { return false; } //id
-		if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
-		if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
+		if(!STREAM.readByte(buffer, ret)) { return false; } //id
+		if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer to core start
+		if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
 
 		core.head  = head;
 		core.id    = ret[0];
@@ -192,9 +195,9 @@ var EventReader = new function() {
 	function readHeapRemoveCore(buffer,head) {
 		var ret = [];
 		var core = {};
-		if(!STREAM.readByte(ret,buffer)) { return false; } //id
-		if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to core start
-		if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
+		if(!STREAM.readByte(buffer, ret)) { return false; } //id
+		if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer to core start
+		if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
 
 		core.head  = head;
 		core.id    = ret[0];
@@ -210,9 +213,9 @@ var EventReader = new function() {
     var allocation = {};
 	var ret = [];
 
-	if(!STREAM.readByte(ret,buffer)) { return false; } //id
-	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer to start
-	if(!STREAM.read64Byte(ret,buffer)) { return false; } //size
+	if(!STREAM.readByte(buffer, ret)) { return false; } //id
+	if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer to start
+	if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
 
 	//TODO check so allocation is not already made
 	allocation.id      = ret[0];
@@ -229,8 +232,8 @@ var EventReader = new function() {
     var heapFree = {};
 	var ret = [];
 
-	if(!STREAM.readByte(ret,buffer)) { return false; } //id
-	if(!STREAM.read64Byte(ret,buffer)) { return false; } //pointer;
+	if(!STREAM.readByte(buffer, ret)) { return false; } //id
+	if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer;
 
 	heapFree.head    = head;
 	heapFree.id      = ret[0];
