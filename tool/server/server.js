@@ -21,13 +21,10 @@ var server = require('net').createServer(function (socket) {
           rollbackNeeded: false,
           rollback: 0
         };
-        console.log("Size of socketed buffer: " + socket.bufferSize);
-        console.log("data recieved, Length: " + buffer.data.length);
-        total_data_handled += data.length;
 
+        total_data_handled += data.length;
     		do{
     			index = ringBuffer.populate(buffer.data);
-
     			do{
     				if(!EventReader.oneEvent(ringBuffer)) {
     					break;
@@ -38,11 +35,18 @@ var server = require('net').createServer(function (socket) {
     			} while(ringBuffer.remaining());
           ringBuffer.rollback();
     		} while(index);
-
-        console.log("done with buffer" + total_data_handled);
-		    console.log("Number of handled events: " + numEvents);
-        console.log("Size of socketed buffer: " + socket.bufferSize);
+        var sendData = {
+          total_handled: total_data_handled,
+          total_recieved: total_data_recieved,
+          number_of_events: numEvents
+        }
+        sendEvent('event-done', sendData);
     })
+
+    socket.on('end', function(data) {
+      console.log("connection ended")
+    })
+
 })
 .listen(8080);
 

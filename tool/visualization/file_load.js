@@ -4,15 +4,17 @@ var fs = require('fs');
 var net = require('net');
 
 function readFile(filepath){
+    var client = new net.Socket();
     fs.readFile(filepath, function (err, data) {
           if(err){
               alert("An error ocurred reading the file :" + err.message);
               return;
           }
-          var client = new net.Socket();
-		  client.connect(server.port, server.address, function() {
-			     client.write(data);
+
+		      client.connect(server.port, server.address, function() {
+			    client.end(data);
 		  });
+
     });
 }
 

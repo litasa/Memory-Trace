@@ -109,7 +109,7 @@ static void TestCustomAllocator()
 	BlockAllocator b(32, 256, "Allocator B");
 	std::vector<void*> ptrA;
 	std::vector<void*> ptrB;
-	for(int j = 0; j < 10000000; ++j)
+	for(int j = 0; j < 10000; ++j)
 	{
 	  for (int i = 0; i < 2; ++i)
 	  {

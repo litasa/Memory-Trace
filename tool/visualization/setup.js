@@ -21,13 +21,8 @@ ipcRenderer.once('connection-established', function() {
   connected = true;
 })
 
-setInterval(function() {
-  if(connected){
-    serverWindow.webContents.send('get-data')
-  }
-}, 10)
-
-
-ipcRenderer.on('data-sent', function(event,data) {
-  console.log(JSON.stringify(data));
+ipcRenderer.on('event-done', function(event, data) {
+  console.log(data.total_handled);
+  console.log(data.total_recieved);
+  console.log(data.number_of_events)
 })

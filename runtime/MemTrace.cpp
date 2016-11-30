@@ -64,6 +64,7 @@ static int lastEvent = -1;
 // Vsnprintf() is OK because it doesn't allocate.
 static void MemTracePrint(const char* fmt, ...)
 {
+	/*
   using namespace MemTrace;
 
   char msg[1024];
@@ -72,6 +73,7 @@ static void MemTracePrint(const char* fmt, ...)
   Vsnprintf(msg, sizeof msg, fmt, args);
   va_end(args);
   OutputDebugStringA(msg);
+  */
 }
 
 namespace MemTrace
