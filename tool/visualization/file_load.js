@@ -11,7 +11,7 @@ function readFile(filepath){
           }
           var client = new net.Socket();
 		  client.connect(server.port, server.address, function() {
-			client.write(data);
+			     client.write(data);
 		  });
     });
 }

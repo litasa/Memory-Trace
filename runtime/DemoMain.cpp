@@ -109,6 +109,8 @@ static void TestCustomAllocator()
 	BlockAllocator b(32, 256, "Allocator B");
 	std::vector<void*> ptrA;
 	std::vector<void*> ptrB;
+	for(int j = 0; j < 10000000; ++j)
+	{
 	  for (int i = 0; i < 2; ++i)
 	  {
 			ptrA.push_back(a.Alloc());
@@ -123,6 +125,7 @@ static void TestCustomAllocator()
 	  {
 		b.Free(ptrB[i]);
 	  }
+	}
 }
 
 #define PRINT 0
@@ -133,10 +136,8 @@ int main(int argc, char* argv[])
 
 
 	MemTrace::InitSocket("10.150.44.212",8080);
-	//MemTrace::InitFile("shit.txt");
-	
+	//MemTrace::InitFile("skit.bin");
 	TestCustomAllocator();
-
 	/*MemTrace::HeapId id = MemTrace::HeapCreate("test");
 	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");
 	

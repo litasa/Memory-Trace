@@ -8,16 +8,16 @@ var STREAM = new function () {
     var val = 0;
     var mul = 1;
     do {
-      var b = buffer.getNextValue();
+      var b = buffer.next();
 
-		if(buffer.readOverflow())
-		{
-			ret = 0;
-			return false;
-		}
+  		if(b === null)
+  		{
+  			ret = 0;
+  			return false;
+  		}
       val |= b*mul;
       mul <<= 7;
-    } while (b < 0x80);
+    } while (b < 128);
 
     val &= ~mul;
     ret.push(val);
@@ -29,8 +29,8 @@ var STREAM = new function () {
     var mul = 1;
     var out = [];
     do {
-  		var b = buffer.getNextValue();
-  		if(buffer.readOverflow()) {
+  		var b = buffer.next();
+  		if(b === null) {
   			ret = 0;
   			return false;
   		}
@@ -60,9 +60,7 @@ var STREAM = new function () {
 	  var string = String("");
 	  for(i=0; i < length; ++i)
 	  {
-		  if(buffer.readOverflow()) { return false; }
-
-		  string += String.fromCharCode(buffer.getNextValue());
+		  string += String.fromCharCode(buffer.next());
 	  }
 
 	  ++global.seenStringRollback;
@@ -97,8 +95,7 @@ var STREAM = new function () {
 	  var string = new String("");
 	  for(i = 0; i < length; i++)
 	  {
-		  if(buffer.readOverflow()) { return false; }
-		  string += String.fromCharCode(buffer.getNextValue());
+		  string += String.fromCharCode(buffer.next());
 	  }
 
 	  ++buffer.seenStringRollback;
