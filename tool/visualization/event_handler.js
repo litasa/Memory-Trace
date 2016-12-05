@@ -66,7 +66,7 @@ Visualization = new function() {
 
 		this.chart.data.datasets.push({
 				id: hexToInt(alloc.id),
-				label: global.SeenStrings.get(alloc.nameId),
+				label: 0,//global.SeenStrings.get(alloc.nameId),
 				fill: false,
 				lineTension: 0,
 				pointRadius: 4,
@@ -74,6 +74,10 @@ Visualization = new function() {
 				//pointStyle: 'line',
 				data: []
 		});
+	}
+
+	this.beginStream = function (streamInfo) {
+		global.timerFrequency = streamInfo.timerFrequency;
 	}
 
 	var chartDataUpdate = function (allocator, core, time, size){
@@ -107,7 +111,7 @@ Visualization = new function() {
 		core.allocs.push(alloc);
 
 		//TODO Use high value of timestamp as well
-		var time = binToInt(alloc.head.timestamp) / binToInt(global.timerFrequency);
+		var time = binToInt(alloc.header.timestamp) / binToInt(global.timerFrequency);
 
 		//TODO use special container for visualization to be able to show different stuffs
 		chartDataUpdate(allocator,core, time, hexToInt(alloc.size));
@@ -118,7 +122,7 @@ Visualization = new function() {
 		var core = getCore(allocator.cores,alloc.pointer).value;
 		var allocation = getAlloc(core.allocs,alloc.pointer);
 
-		var time = binToInt(alloc.head.timestamp) / binToInt(global.timerFrequency);
+		var time = binToInt(alloc.header.timestamp) / binToInt(global.timerFrequency);
 
 		//negative size to remove
 		chartDataUpdate(allocator,core, time, -hexToInt(allocation.value.size));

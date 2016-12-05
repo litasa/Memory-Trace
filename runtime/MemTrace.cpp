@@ -64,7 +64,6 @@ static int lastEvent = -1;
 // Vsnprintf() is OK because it doesn't allocate.
 static void MemTracePrint(const char* fmt, ...)
 {
-	/*
   using namespace MemTrace;
 
   char msg[1024];
@@ -73,7 +72,6 @@ static void MemTracePrint(const char* fmt, ...)
   Vsnprintf(msg, sizeof msg, fmt, args);
   va_end(args);
   OutputDebugStringA(msg);
-  */
 }
 
 namespace MemTrace
@@ -506,8 +504,7 @@ namespace MemTrace
     //-----------------------------------------------------------------------------
     // Emit common data that goes with every event.  
     void BeginEvent(EventCode code)
-    {
-	  lastEvent = code;
+	{
       EmitUnsigned(code);
       EmitUnsigned(s_Scope.m_Kind);
       if (s_Scope.m_Kind != kScopeNone)
@@ -770,8 +767,9 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
   }
 
   // Set send buffer size appropriately to avoid blocking needlessly.
-  int sndbufsize = 4 * kBufferSize;
-  if (0 != setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*) &sndbufsize, sizeof sndbufsize))
+  int sndbufsize = 15* kBufferSize;
+  int result = setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*) &sndbufsize, sizeof sndbufsize);
+  if (0 != result)
   {
     MemTracePrint("MemTrace: Warning: Couldn't set send buffer size to %d bytes\n", sndbufsize);
   }
@@ -798,12 +796,13 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     // If we don't have a socket, we drop everything on the floor.
     if (INVALID_SOCKET == S.m_Socket)
       return;
-
+	uint64_t before_send_time = TimerGetSystemCounter();
     if (size != send(S.m_Socket, (const char*) block, (int) size, 0))
     {
       MemTracePrint("MemTrace: send() failed - shutting down\n");
       MemTrace::ErrorShutdown();
     }
+	uint64_t delta = TimerGetSystemCounter() - before_send_time;
 	FileWrite(S.m_BootFile, block, size);
 	total_data_sent+= size;
 	MemTracePrint("sent data: %i\n, last event: %i, total data sent: %i\n",size, lastEvent, total_data_sent);
@@ -1142,7 +1141,7 @@ void MemTrace::RefreshLoadedModulesUnlocked()
   S.m_LastModuleRefreshTime = TimerGetSystemCounter();
 
 #if defined(MEMTRACE_WINDOWS)
-
+  
   S.m_Encoder.BeginEvent(kModuleDump);
 
   HMODULE modules[1024];
@@ -1172,6 +1171,7 @@ void MemTrace::RefreshLoadedModulesUnlocked()
   }
   S.m_Encoder.EmitUnsigned(0);
   S.m_Encoder.EndEvent(kModuleDump);
+ 
 #endif
 
   // @@@ If you're a licensed Durango dev we can provide module walking code.

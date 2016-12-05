@@ -52,9 +52,9 @@ RingBuffer.prototype.rollback = function(index) {
 		this.setRollback(index);
 	}
 	var pos = this.position_;
-	if(pos == 0) { //special case that pos have overflown
-		pos = this.size_;
-	}
+  if(pos < this.rollback_) { //if pos wrapped around
+    pos += this.size_;
+  }
 	var diff = pos - this.rollback_;
 	this.position_ = this.rollback_;
 	this.remaining_ += diff;

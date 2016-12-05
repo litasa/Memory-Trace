@@ -112,6 +112,9 @@ var STREAM = new function () {
 		    ret.push(-1);
 		    return false;
 	  }
+    if(ret[3] === undefined) {
+      throw "problemos"
+    }
 	  var index = ret.pop();
 
 	  if(index < global.SeenStacks.size)
@@ -122,7 +125,7 @@ var STREAM = new function () {
 
 	  if(index != global.SeenStacks.size)
 	  {
-		  throw "Unexpected stack index"
+		  console.log("Unexpected stack index")
 	  }
 
 	  if(!this.readByte(buffer, ret))

@@ -1,4 +1,6 @@
 const electron = require('electron')
+
+const ipc = electron.ipcMain
 // Module to control application life.
 const app = electron.app
 // Module to create native browser window.
@@ -6,26 +8,26 @@ const BrowserWindow = electron.BrowserWindow
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow
-let childWindow
+let chartWindow
+let serverWindow
 
 function createWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600})
-  childWindow = new BrowserWindow({widt: 800, height: 600})
+  chartWindow = new BrowserWindow({width: 800, height: 600})
+  serverWindow = new BrowserWindow({widt: 800, height: 600})
   // and load the index.html of the app.
-  mainWindow.loadURL(`file://${__dirname}/visualization/visualization.html`)
-  childWindow.loadURL(`file://${__dirname}/server/server.html`)
+  chartWindow.loadURL(`file://${__dirname}/visualization/visualization.html`)
+  serverWindow.loadURL(`file://${__dirname}/server/server.html`)
   // Open the DevTools.
-  mainWindow.webContents.openDevTools()
-  childWindow.webContents.openDevTools()
+  chartWindow.webContents.openDevTools()
+  serverWindow.webContents.openDevTools()
   // Emitted when the window is closed.
-  mainWindow.on('closed', function () {
+  chartWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    mainWindow = null
-    childWindow = null
+    chartWindow = null
+    serverWindow = null
   })
 }
 
@@ -46,10 +48,17 @@ app.on('window-all-closed', function () {
 app.on('activate', function () {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
+  if (chartWindow === null) {
     createWindow()
   }
 })
 
+ipc.on('to-chart', function(event, data) {
+  chartWindow.webContents.send(data.channel, data);
+})
+
+ipc.on('to-server', function(event, data) {
+  serverWindow.webContents.send(data.channel, data);
+})
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
