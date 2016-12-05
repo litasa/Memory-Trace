@@ -20,6 +20,8 @@ ipcRenderer.once('connection-established', function() {
 })
 
 ipcRenderer.on('event-done', function(event, data) {
+  console.log('data recieved: ')
+  /*
   for (var i = 0; i < data.events.length; i++) {
     var event = data.events[i];
     var eventID = event.header.event;
@@ -55,5 +57,6 @@ ipcRenderer.on('event-done', function(event, data) {
       return null;
     }
   }
-  Visualization.update();
+  //Visualization.update();
+  */
 })

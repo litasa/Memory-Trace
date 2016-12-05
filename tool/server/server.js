@@ -21,7 +21,6 @@ var server = require('net').createServer(function (socket) {
     })
 
     socket.on('data', function (data) {
-      socket.pause();
       var start = Date.now();
       var daff = performance.now() - last_time;
       console.log("data recieved, time since last: " + daff);
@@ -63,8 +62,7 @@ var server = require('net').createServer(function (socket) {
         var diff = Date.now() - start;
         console.log("data ended with process time: " + diff);
         last_time = performance.now();
-        //sendEvent('event-done', processed);
-        socket.resume();
+        sendEvent('event-done', {});
     })
 
     socket.on('drain', function(error) {
