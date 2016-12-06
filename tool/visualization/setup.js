@@ -1,6 +1,5 @@
 const ipcRenderer = require('electron').ipcRenderer
 
-
 connected = false;
 
 window.onload = function() {

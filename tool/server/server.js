@@ -1,8 +1,22 @@
-const ipc = require('electron').ipcRenderer
+const ipc = require('node-ipc');
+const ipcRenderer = require('electron').ipcRenderer
 const RingBuffer = require("./ringbuffer.js")
+
 total_data_handled = 0;
 numEvents = 0;
 lastTime = 0;
+
+ipc.config.id = 'server';
+ipc.config.retry = 1;
+ipc.config.maxRetries = 2;
+ipc.config.silent = true;
+
+ipc.connectToNet('database');
+ipc.of.database.on('connect', function() {
+    console.log("connected! ")
+})
+
+
 // server
 var server = require('net').createServer(function (socket) {
     var last_event;
@@ -54,9 +68,12 @@ var server = require('net').createServer(function (socket) {
     				else{
     					numEvents++;
               processed.events.push(oneEvent);
-              last_event = oneEvent;
+              /*db.insert(oneEvent, function(err, newdoc) {
+                if(err) {console.log(err)}
+              });*/
     				}
     			} while(ringBuffer.remaining());
+          ipc.of.database.emit('save-to-db',processed.events);
           ringBuffer.rollback();
     		} while(index);
         var diff = Date.now() - start;
@@ -72,7 +89,6 @@ var server = require('net').createServer(function (socket) {
     socket.on('end', function(data) {
       var diff = Date.now() - start_time;
       console.log("connection ended in: " + diff);
-
     })
 
     socket.on('error', function(error) {
@@ -108,11 +124,7 @@ server.on('error', function(error) {
   console.log("server error")
 })
 
-ipc.on('get-data', function(event) {
-    sendEvent('data-sent', JSON.stringify({x: lastTime, y:numEvents}));
-})
-
 sendEvent = function(channel, data) {
   data.channel = channel;
-  ipc.send('to-chart',data);
+  ipcRenderer.send('to-chart',data);
 }
