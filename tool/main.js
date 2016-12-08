@@ -10,22 +10,18 @@ const BrowserWindow = electron.BrowserWindow
 // be closed automatically when the JavaScript object is garbage collected.
 let chartWindow
 let serverWindow
-let databaseWindow
 
 function createWindow () {
   // Create the browser window.
   chartWindow = new BrowserWindow({width: 800, height: 600})
   serverWindow = new BrowserWindow({width: 800, height: 600})
-  databaseWindow = new BrowserWindow({width: 800, height: 600});
   // and load the index.html of the app.
   chartWindow.loadURL(`file://${__dirname}/visualization/visualization.html`)
-  databaseWindow.loadURL(`file://${__dirname}/database/database.html`)
   serverWindow.loadURL(`file://${__dirname}/server/server.html`)
 
   // Open the DevTools.
   chartWindow.webContents.openDevTools()
   serverWindow.webContents.openDevTools()
-  databaseWindow.webContents.openDevTools()
   // Emitted when the window is closed.
   chartWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows
@@ -33,7 +29,6 @@ function createWindow () {
     // when you should delete the corresponding element.
     chartWindow = null
     serverWindow = null
-    databaseWindow = null
   })
 }
 

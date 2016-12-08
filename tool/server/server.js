@@ -1,22 +1,12 @@
-const ipc = require('node-ipc');
 const ipcRenderer = require('electron').ipcRenderer
+const fs = require('fs');
 const RingBuffer = require("./ringbuffer.js")
+//const cp = require('child_process')
+//const n = cp.fork(`${__dirname}/database.js`)
 
 total_data_handled = 0;
 numEvents = 0;
 lastTime = 0;
-
-ipc.config.id = 'server';
-ipc.config.retry = 1;
-ipc.config.maxRetries = 2;
-ipc.config.silent = true;
-
-ipc.connectToNet('database');
-ipc.of.database.on('connect', function() {
-    console.log("connected! ")
-})
-
-
 // server
 var server = require('net').createServer(function (socket) {
     var last_event;
@@ -26,6 +16,15 @@ var server = require('net').createServer(function (socket) {
     var last_time = 0;
 	var ringBuffersize = 128*1024;
 	var ringBuffer =  new RingBuffer(ringBuffersize);
+
+  var date = new Date();
+  var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
+  var name =  "./database/test_" + time + ".db";
+    var stream = fs.createWriteStream(name);
+
+    //write input data to file
+    socket.pipe(stream);
+
     socket.on('close', function(data) {
       console.log("socket close")
     })
@@ -35,6 +34,7 @@ var server = require('net').createServer(function (socket) {
     })
 
     socket.on('data', function (data) {
+
       var start = Date.now();
       var daff = performance.now() - last_time;
       console.log("data recieved, time since last: " + daff);
@@ -68,12 +68,8 @@ var server = require('net').createServer(function (socket) {
     				else{
     					numEvents++;
               processed.events.push(oneEvent);
-              /*db.insert(oneEvent, function(err, newdoc) {
-                if(err) {console.log(err)}
-              });*/
     				}
     			} while(ringBuffer.remaining());
-          ipc.of.database.emit('save-to-db',processed.events);
           ringBuffer.rollback();
     		} while(index);
         var diff = Date.now() - start;
