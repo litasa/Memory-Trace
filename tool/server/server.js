@@ -1,39 +1,43 @@
 const ipcRenderer = require('electron').ipcRenderer
+const net = require('net');
 const fs = require('fs');
-const RingBuffer = require("./ringbuffer.js")
-//const cp = require('child_process')
-//const n = cp.fork(`${__dirname}/database.js`)
+const RingBuffer = require("../util/ringbuffer.js");
+const stream = require('stream');
 
 total_data_handled = 0;
 numEvents = 0;
 lastTime = 0;
-// server
-var server = require('net').createServer(function (socket) {
-    var last_event;
-    var total_data_recieved = 0;
-    var first_connect = true;
-    var start_time = 0;
-    var last_time = 0;
+
+//list = 8182;
+list = '\\\\.\\pipe\\internal_server'
+
+var internal_socket = net.createConnection(list);
+// external_server
+var external_server = net.createServer(function (external_socket) {
+  var total_data_recieved = 0;
+  var first_connect = true;
+  var start_time = 0;
+  var last_time = 0;
 	var ringBuffersize = 128*1024;
 	var ringBuffer =  new RingBuffer(ringBuffersize);
 
   var date = new Date();
   var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
   var name =  "./database/test_" + time + ".db";
-    var stream = fs.createWriteStream(name);
+  var unmodified_stream = fs.createWriteStream(name);
 
     //write input data to file
-    socket.pipe(stream);
+    external_socket.pipe(internal_socket).pipe(unmodified_stream);
 
-    socket.on('close', function(data) {
+    external_socket.on('close', function(data) {
       console.log("socket close")
     })
 
-    socket.on('connect', function(data) {
+    external_socket.on('connect', function(data) {
       console.log("socket connected")
     })
 
-    socket.on('data', function (data) {
+    external_socket.on('data', function (data) {
 
       var start = Date.now();
       var daff = performance.now() - last_time;
@@ -48,79 +52,81 @@ var server = require('net').createServer(function (socket) {
         sendEvent('connection-established', {});
       }
 
-        var buffer = {
-          data: Buffer.from(data,'hex'),
-          index: 0,
-          rollbackNeeded: false,
-          rollback: 0
-        };
-
         total_data_handled += data.length;
-        var processed = { events: []};
-
+        /*
     		do{
-    			index = ringBuffer.populate(buffer.data);
+          //add as much as possible to the ringBuffer
+    			index = ringBuffer.populate(data);
     			do{
+            //read one event
             var oneEvent = EventReader.oneEvent(ringBuffer);
     				if(oneEvent === null) {
+              // break if unsucessful
     					break;
     				}
     				else{
     					numEvents++;
               processed.events.push(oneEvent);
+              //internal_socket.write(JSON.stringify(oneEvent));
     				}
     			} while(ringBuffer.remaining());
+          for(var i = 0; i < processed.events.length; ++i) {
+            internal_socket.write(JSON.stringify(processed.events[i]));
+          }
           ringBuffer.rollback();
     		} while(index);
+        */
         var diff = Date.now() - start;
         console.log("data ended with process time: " + diff);
         last_time = performance.now();
-        sendEvent('event-done', {});
+        sendEvent('event-done');
     })
-
-    socket.on('drain', function(error) {
+    external_socket.on('drain', function(error) {
       console.log("socket drain")
     })
 
-    socket.on('end', function(data) {
+    external_socket.on('end', function(data) {
       var diff = Date.now() - start_time;
       console.log("connection ended in: " + diff);
     })
 
-    socket.on('error', function(error) {
+    external_socket.on('error', function(error) {
       console.log("socket error");
     })
 
-    socket.on('lookup', function(error) {
+    external_socket.on('lookup', function(error) {
       console.log("socket lookup")
     })
 
-    socket.on('timeout', function(error) {
+    external_socket.on('timeout', function(error) {
       console.log("socket timeout")
     })
 
 })
 .listen(8181);
 
-server.on('close', function() {
+external_server.on('close', function() {
   console.log("server close");
 });
 
-server.on('connection', function(socket) {
+external_server.on('connection', function(socket) {
   console.log("server connection" + socket);
 });
 
-server.on('listening', function() {
+external_server.on('listening', function() {
   require('dns').lookup(require('os').hostname(), function (err, add, fam) {
-    sendEvent('server-init', {address: add, port: server.address().port})
+    sendEvent('server-init', {address: add, port: external_server.address().port})
   });
 })
 
-server.on('error', function(error) {
+external_server.on('error', function(error) {
   console.log("server error")
 })
 
 sendEvent = function(channel, data) {
+  if(data === undefined) {
+    data = {}
+  }
   data.channel = channel;
   ipcRenderer.send('to-chart',data);
 }

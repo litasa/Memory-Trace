@@ -10,18 +10,23 @@ const BrowserWindow = electron.BrowserWindow
 // be closed automatically when the JavaScript object is garbage collected.
 let chartWindow
 let serverWindow
+let internalServerWindow
 
 function createWindow () {
   // Create the browser window.
-  chartWindow = new BrowserWindow({width: 800, height: 600})
-  serverWindow = new BrowserWindow({width: 800, height: 600})
+  internalServerWindow = new BrowserWindow({width: 800, height: 600, title: "InternalServer"})
+  chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
+  serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server"})
   // and load the index.html of the app.
+  internalServerWindow.loadURL(`file://${__dirname}/internal-server/internal-server.html`)
   chartWindow.loadURL(`file://${__dirname}/visualization/visualization.html`)
   serverWindow.loadURL(`file://${__dirname}/server/server.html`)
+
 
   // Open the DevTools.
   chartWindow.webContents.openDevTools()
   serverWindow.webContents.openDevTools()
+  internalServerWindow.webContents.openDevTools()
   // Emitted when the window is closed.
   chartWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows
@@ -29,6 +34,7 @@ function createWindow () {
     // when you should delete the corresponding element.
     chartWindow = null
     serverWindow = null
+    internalServerWindow = null
   })
 }
 
@@ -60,6 +66,10 @@ ipc.on('to-chart', function(event, data) {
 
 ipc.on('to-server', function(event, data) {
   serverWindow.webContents.send(data.channel, data);
+})
+
+ipc.on('to-internal-server', function(event, data) {
+  internalServerWindow.webContents.send(data.channel, data);
 })
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
