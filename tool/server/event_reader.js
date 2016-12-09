@@ -139,7 +139,6 @@ var EventReader = new function() {
 	  //begin out event
 	  data.id     = ret[0];
 	  data.nameId = ret[1];
-
 	  return true;
   }
 
@@ -159,9 +158,9 @@ var EventReader = new function() {
 		if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer to core start
 		if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
 
-		data.id    = ret[0];
-		data.start = ret[1];
-		data.size  = ret[2];
+		data.id      = ret[0];
+		data.pointer = ret[1];
+		data.size    = ret[2];
 
 		return true;
   }
@@ -190,7 +189,6 @@ var EventReader = new function() {
 		data.id      = ret[0];
 		data.pointer = ret[1];
 		data.size    = ret[2];
-
 		return true;
   }
 
