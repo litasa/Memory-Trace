@@ -36,12 +36,19 @@ RingBuffer.prototype.remaining = function() {
 	return this.remaining_;
 }
 
-RingBuffer.prototype.populate = function(buffer) {
+RingBuffer.prototype.populate = function(buffer, num_data_left) {
 	//fill first to the end of buffer_
 	//then fill from start to position_
   var spaceLeft = this.size_ - this.remaining_;
+  if (spaceLeft == 0) {
+    spaceLeft = this.size_;
+  }
 	var numToAdd = Math.min(buffer.length, spaceLeft);
-	for (var i = 0; i < numToAdd; i++) {
+  var start = buffer.length - num_data_left;
+  if(start != 0) { //so we get correct value
+    start -= 1;
+  }
+  for (var i = start; i < numToAdd; i++) {
 		this.add(buffer[i]);
 	}
 	return buffer.length - numToAdd;
