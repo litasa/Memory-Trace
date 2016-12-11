@@ -27,7 +27,8 @@ var external_server = net.createServer(function (external_socket) {
   var unmodified_stream = fs.createWriteStream(name);
 
     //write input data to file
-    external_socket.pipe(internal_socket).pipe(unmodified_stream);
+    external_socket.pipe(internal_socket);
+    external_socket.pipe(unmodified_stream);
 
     external_socket.on('close', function(data) {
       console.log("socket close")
@@ -39,7 +40,7 @@ var external_server = net.createServer(function (external_socket) {
 
     external_socket.on('data', function (data) {
 
-      var start = Date.now();
+      var start = performance.now();
       var daff = performance.now() - last_time;
       console.log("data recieved, time since last: " + daff);
       if(data === undefined) {
@@ -76,7 +77,7 @@ var external_server = net.createServer(function (external_socket) {
           ringBuffer.rollback();
     		} while(index);
         */
-        var diff = Date.now() - start;
+        var diff = performance.now() - start;
         console.log("data ended with process time: " + diff);
         last_time = performance.now();
         sendEvent('event-done');
