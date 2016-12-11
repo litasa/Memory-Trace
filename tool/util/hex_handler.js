@@ -94,20 +94,25 @@ addHexToHex = function(hexString1, hexString2) {
 addBinToBin = function(bin1, bin2) {
   var out = bin1.slice(0); //copy by value
   var minLength = Math.min(bin1.length, bin2.length);
-  var carry = 0;
+  var carry = false;
   for(var i = 1; i <= minLength; ++i) {
     var num = bin1[bin1.length - i] + bin2[bin2.length - i] + carry;
     if(num > 255){
       carry = 1;
+      num -= 256;
     }
     else {
-      carry = 0;
+      carry = true;
     }
     out[bin1.length - i] = num;
   }
   if(carry){
-    throw "overflow"
+    if(out.length >= 8) { //cant handle larger then 64 bits
+      throw "overflow"
+    }
+    out.unshift(1)
   }
+  
   return out;
 }
 
