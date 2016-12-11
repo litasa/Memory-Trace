@@ -1,12 +1,7 @@
 const ipcRenderer = require('electron').ipcRenderer
 const net = require('net');
 const fs = require('fs');
-const RingBuffer = require("../util/ringbuffer.js");
 const stream = require('stream');
-
-total_data_handled = 0;
-numEvents = 0;
-lastTime = 0;
 
 //list = 8182;
 list = '\\\\.\\pipe\\internal_server'
@@ -18,8 +13,6 @@ var external_server = net.createServer(function (external_socket) {
   var first_connect = true;
   var start_time = 0;
   var last_time = 0;
-	var ringBuffersize = 128*1024;
-	var ringBuffer =  new RingBuffer(ringBuffersize);
 
   var date = new Date();
   var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
@@ -53,35 +46,13 @@ var external_server = net.createServer(function (external_socket) {
         sendEvent('connection-established', {});
       }
 
-        total_data_handled += data.length;
-        /*
-    		do{
-          //add as much as possible to the ringBuffer
-    			index = ringBuffer.populate(data);
-    			do{
-            //read one event
-            var oneEvent = EventReader.oneEvent(ringBuffer);
-    				if(oneEvent === null) {
-              // break if unsucessful
-    					break;
-    				}
-    				else{
-    					numEvents++;
-              processed.events.push(oneEvent);
-              //internal_socket.write(JSON.stringify(oneEvent));
-    				}
-    			} while(ringBuffer.remaining());
-          for(var i = 0; i < processed.events.length; ++i) {
-            internal_socket.write(JSON.stringify(processed.events[i]));
-          }
-          ringBuffer.rollback();
-    		} while(index);
-        */
-        var diff = performance.now() - start;
-        console.log("data ended with process time: " + diff);
-        last_time = performance.now();
-        sendEvent('event-done');
+      total_data_recieved += data.length;
+      var diff = performance.now() - start;
+      console.log("data ended with process time: " + diff);
+      last_time = performance.now();
+      sendEvent('event-done');
     })
+
     external_socket.on('drain', function(error) {
       console.log("socket drain")
     })
