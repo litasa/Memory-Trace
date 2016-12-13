@@ -1,3 +1,6 @@
+const MemoryState = require('./memory_state.js');
+
+var currentState = new MemoryState();
 var EventReader = new function() {
 
 
@@ -21,6 +24,8 @@ var EventReader = new function() {
 
 		if(!readHeaderData(buffer, header)) { return null; }
 
+		data.header = header
+
     if (header.event == global.typeEnum.BeginStream) {
       //TODO -- check that magic number is correct etc
       if(!readBeginStream(buffer,data)) { return null; }
@@ -30,21 +35,27 @@ var EventReader = new function() {
     }
     else if (header.event == global.typeEnum.HeapCreate) {
       if(!readHeapCreate(buffer,data)) { return null; }
+			currentState.createHeap(data);
     }
     else if (header.event == global.typeEnum.HeapDestroy) {
       if(!readHeapDestroy(buffer,data)) { return null; }
+			currentState.removeHeap(data);
     }
     else if (header.event == global.typeEnum.HeapAddCore) {
       if(!readHeapAddCore(buffer,data)) { return null; }
+			currentState.createCore(data);
     }
 		else if(header.event == global.typeEnum.HeapRemoveCore) {
 			if(!readHeapRemoveCore(buffer,data)) { return null; }
+			currentState.removeCore(data);
 		}
     else if (header.event == global.typeEnum.HeapAllocate) {
       if(!readHeapAllocate(buffer,data)) { return null; }
+			currentState.createAllocation(data);
     }
     else if (header.event == global.typeEnum.HeapFree) {
       if(!readHeapFree(buffer,data)) { return null; }
+			currentState.removeAllocation(data);
     }
     else if (header.event == global.typeEnum.EndStream) {
       //TODO -- Check so that no leaks have happened
@@ -52,8 +63,6 @@ var EventReader = new function() {
 		else {
 			return null;
 		}
-
-		data.header = header
 
 		buffer.setRollback();
 
@@ -68,20 +77,20 @@ var EventReader = new function() {
 			console.log("unexpected header code: " + ret[0])
 		}
 
-    if(!STREAM.readByte(buffer, ret))  { return false; } //scope
+    //if(!STREAM.readByte(buffer, ret))  { return false; } //scope
 
-    if (ret[1] != 0) {
-      if(!STREAM.readStringIndex(buffer, ret)) { return false; } //scope name
-	  	data.scopeDataIndex = ret.pop();
-    }
+    //if (ret[1] != 0) {
+    //  if(!STREAM.readStringIndex(buffer, ret)) { return false; } //scope name
+	  //	data.scopeDataIndex = ret.pop();
+    //}
 
     if(!STREAM.read64Byte(buffer, ret)) {return false; } //timestamp
-	  if(!STREAM.readBacktraceIndex(buffer, ret)) {return false;} //callstack index
+	  //if(!STREAM.readBacktraceIndex(buffer, ret)) {return false;} //callstack index
 
 	  data.event       = ret[0];
-	  data.scope       = ret[1];
+	  //data.scope       = ret[1];
 	  data.timestamp   = ret[2];
-	  data.callstackId = ret[3];
+	  //data.callstackId = ret[3];
 		//no need for data.type in header
     return true;
   }
@@ -94,17 +103,17 @@ var EventReader = new function() {
 	if(!STREAM.readString(buffer, ret)) { return false;} //Platform name
 	if(!STREAM.readByte  (buffer, ret)) { return false;} //Pointer size
 	if(!STREAM.read64Byte(buffer, ret)) { return false;} //Timer frequency
-	if(!STREAM.read64Byte(buffer, ret)) { return false;} //Common address
+	//if(!STREAM.read64Byte(buffer, ret)) { return false;} //Common address
 
 	data.magicNumber       = ret[0];
 	data.platform          = ret[1];
 	data.pointerSize       = ret[2];
 	data.timerFrequency    = ret[3];
-	data.initCommonAddress = ret[4];
+	//data.initCommonAddress = ret[4];
 
 	return true;
   }
-
+	/*
   function readModuleDump(buffer, data) {
     //TODO -- save symData somewhere
 		var tempSymData = [];
@@ -130,12 +139,12 @@ var EventReader = new function() {
 
 		return true;
   }
-
+*/
   function readHeapCreate(buffer, data) {
 	  var Allocator = {};
 	  var ret = [];
 	  if(!STREAM.readByte(buffer, ret)) { return false; } //id
-	  if(!STREAM.readStringIndex(buffer, ret)) { return false; } //name
+	  if(!STREAM.readString(buffer, ret)) { return false; } //name
 	  //begin out event
 	  data.id     = ret[0];
 	  data.nameId = ret[1];
@@ -172,7 +181,7 @@ var EventReader = new function() {
 		if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
 
 		data.id    = ret[0];
-		data.start = ret[1];
+		data.pointer = ret[1];
 		data.size  = ret[2];
 
 		return true;

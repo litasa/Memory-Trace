@@ -1,24 +1,42 @@
-require('hex_handler.js')
+const SortedMap = require("collections/sorted-map");
 
-var Allocator = function(id, name) {
+var Heap = function(id, name) {
   this.id_ = id;
   this.name_ = name;
-  this.cores_ = new Map();
+  this.cores_ = new SortedMap();
+  this.allocations_ = new SortedMap();
+  this.managedMemory_ = 0;
+  this.currentMemory_ = 0;
 };
 
-Allocator.prototype.addCore = function (core){
-  this.cores_.set(core.pointer,core);
+Heap.prototype.addCore = function(data) {
+  this.cores_.set(data.pointer, data);
+  this.managedMemory_ += data.size.readUInt32LE();
 }
 
-Allocator.prototype.addAllocation = function (allocation) {
-  this.allocations_.set(allocation.pointer,allocation);
+Heap.prototype.removeCore = function(data) {
+  var core = this.cores_.get(data.pointer);
+  this.managedMemory_ -= core.size.readUInt32LE();
+  if(!this.cores_.delete(data.pointer)) {
+    throw "core does not exist for deletion";
+  }
 }
 
-
-
-var Core = function(pointer, size) {
-  this.pointer_ = pointer;
-  this.size_ = size;
+Heap.prototype.addAllocation = function(data) {
+  this.allocations_.set(data.pointer,data);
+  this.currentMemory_ += data.size.readUInt32LE();
 }
 
-module.exports = Allocator;
+Heap.prototype.removeAllocation = function(data) {
+  var alloc = this.allocations_.get(data.pointer);
+  this.currentMemory_ -= alloc.size.readUInt32LE();
+  if(!this.allocations_.delete(data.pointer)) {
+    throw "allocation does not exist for deletion";
+  }
+}
+
+Heap.prototype.printMemoryStats = function() {
+  console.log("Id: " + this.id_ + " Managed memory: " + this.managedMemory_ + ", Used memory: " + this.currentMemory_);
+}
+
+module.exports = Heap;

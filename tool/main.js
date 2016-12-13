@@ -11,22 +11,26 @@ const BrowserWindow = electron.BrowserWindow
 let chartWindow
 let serverWindow
 let internalServerWindow
+let testWindow
 
 function createWindow () {
   // Create the browser window.
   internalServerWindow = new BrowserWindow({width: 800, height: 600, title: "InternalServer"})
   chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
   serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server"})
+  //testWindow = new BrowserWindow({width: 800, height: 600, title: "Test"})
   // and load the index.html of the app.
   internalServerWindow.loadURL(`file://${__dirname}/internal-server/internal-server.html`)
   chartWindow.loadURL(`file://${__dirname}/visualization/visualization.html`)
   serverWindow.loadURL(`file://${__dirname}/server/server.html`)
+  //testWindow.loadURL(`file://${__dirname}/test-place/test.html`)
 
 
   // Open the DevTools.
   chartWindow.webContents.openDevTools()
   serverWindow.webContents.openDevTools()
   internalServerWindow.webContents.openDevTools()
+  //testWindow.webContents.openDevTools()
   // Emitted when the window is closed.
   chartWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows

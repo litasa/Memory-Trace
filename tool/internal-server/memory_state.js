@@ -1,54 +1,56 @@
 const Allocator = require('./memory_objects.js')
-
-//var list = 8182;
-//var list = '\\\\.\\pipe\\internal_server'
+require('../util/hex_handler.js')
+const SortedMap = require("collections/sorted-map");
 
 var MemoryState = function() {
-  this.allocators_ = new Map();
-
-  this.cores_ = new Map();
-
-  this.managedMemory = 0;
-  
-  this.usedMemory = 0;
+  this.heaps_ = new SortedMap();
 }
 
-MemoryState.prototype.createAllocator = function(data) {
-  var alloc = new Allocator(data.id, data.nameId);
-  this.allocators_.set(data.id, alloc);
-  console.log('Allocator added')
+MemoryState.prototype.createHeap = function(data) {
+  var alloc = new Heap(data.id, data.nameId);
+  this.heaps_.set(data.id, alloc);
+  console.log('MemoryState: created Heap with key: ' + data.id)
+  this.print();
+}
+
+MemoryState.prototype.removeHeap = function(data) {
+  this.heaps_.delete(data.id);
+  console.log('MemoryState: removed Heap with key: ' + data.id)
+  this.print();
 }
 
 MemoryState.prototype.createCore = function(data) {
-  var allocator = this.allocators_.get(data.id);
-  allocator.addCore(data);
-  console.log('Core added')
-}
-
-MemoryState.prototype.createAllocation = function(data) {
-  var allocator = this.allocators_.get(data.id);
-  allocator.addAllocation(data.pointer);
-  console.log('Allocation added')
-}
-
-MemoryState.prototype.removeAllocator = function(data) {
-  var allocator = this.allocators_.get(data.id);
-  var coresToRemove = allocator.getCores();
-  var allocationsToRemove = allocator.getAllocations();
-  coresToRemove.forEach(function(element) {
-    this.cores_.delete(element)
-    console.log("this should not happen")
-  }, this)
-  allocationsToRemove.forEach(function(element) {
-    this.allocations_.delete(element)
-    console.log("this should not happen")
-  }, this)
-  this.allocators_.delete(data.id);
+  var alloc = this.heaps_.get(data.id);
+  alloc.addCore(data);
+  console.log('MemoryState: created Core with key: ' + data.pointer.toString('hex'))
+  this.print();
 }
 
 MemoryState.prototype.removeCore = function(data) {
-  var allocator = this.allocators_.get(data.id);
+  var alloc = this.heaps_.get(data.id);
+  alloc.removeCore(data);
+  console.log('MemoryState: removed Core with key: ' + data.pointer.toString('hex'));
+  this.print();
+}
 
+MemoryState.prototype.createAllocation = function(data) {
+  var alloc = this.heaps_.get(data.id);
+  alloc.addAllocation(data);
+  console.log('MemoryState: created Allocation with key: ' + data.pointer.toString('hex'))
+  this.print();
+}
+
+MemoryState.prototype.removeAllocation = function(data) {
+  var alloc = this.heaps_.get(data.id);
+  alloc.removeAllocation(data);
+  console.log('MemoryState: removed Allocation with key: ' + data.pointer.toString('hex'))
+  this.print();
+}
+
+MemoryState.prototype.print = function() {
+  this.heaps_.forEach(function(heap) {
+    heap.printMemoryStats();
+  })
 }
 
 module.exports = MemoryState;

@@ -42,24 +42,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma comment(lib, "ws2_32")
 #endif
 
-// Choice of hash function is arbitrary, nothing is assumed across the wire
-// about this function.  It's used purely to avoid resending data on the client
-// side. But it should be a good hash function, we don't store string data to be
-// able to re-verify a conflict for performance/memory reasons.
-static uint64_t Fnv1A_64(const char* str)
-{
-  uint64_t hash = 14695981039346656037ull;
-  while (uint8_t ch = (uint8_t) *str++)
-  {
-    hash ^= ch;
-    hash *= 1099511628211;
-  }
-  return hash;
-}
-
-static const uint32_t kCrtHeapId = 0;
-static int lastEvent = -1;
-
 // We can't use Printf/printf() in general because they're not initialized yet.
 // Vsnprintf() is OK because it doesn't allocate.
 static void MemTracePrint(const char* fmt, ...)
@@ -127,190 +109,11 @@ namespace MemTrace
   } s_Stats;
 
   //-----------------------------------------------------------------------------
-  // Per-thread current scope tracker.
-  THREAD_LOCAL_STORAGE static struct
-  {
-    ScopeKind m_Kind;
-    const char* m_String;
-  } s_Scope;
-
-  //-----------------------------------------------------------------------------
-  // Platform-dependent routine to walk stack and generate a backtrace
-  static int GetBackTrace(uintptr_t frames[], uint64_t *hash_out, int skip_levels);
-
-  //-----------------------------------------------------------------------------
-  // Minimal hash table mapping 64-bit numbers to 64-bit numbers.
-  // Used exclusively by the slot cache. 
-  //
-  template <size_t MaxCount>
-  struct FixedHash64
-  {
-    enum
-    {
-      kArraySize = MaxCount * 2,
-      kArrayMask = kArraySize - 1   // Power of 2
-    };
-
-    int       m_Count;
-
-    uint64_t  m_Keys[kArraySize];
-    uint64_t  m_Values[kArraySize];
-
-    void Init()
-    {
-      m_Count = 0;
-      memset(m_Keys, 0, sizeof m_Keys);
-    }
-
-    uint64_t* Find(uint64_t key)
-    {
-      uint32_t index = uint32_t(key & kArrayMask);
-      // Because we never fill the table entirely this loop is guaranteed to terminate.
-      for (;;)
-      {
-        const uint64_t candidate = m_Keys[index];
-
-        if (candidate == key)
-        {
-          return &m_Values[index];
-        }
-        else if (candidate == 0)
-        {
-          return nullptr;
-        }
-
-        index = (index + 1) & kArrayMask;
-      }
-    }
-
-    void Insert(uint64_t key, uint64_t value)
-    {
-      // Client code guarantees that the thing is not in the table, so no need
-      // to look. Just insert it into the first open slot.
-
-      uint32_t index = uint32_t(key & kArrayMask);
-
-      for (;;)
-      {
-        if (0 == m_Keys[index])
-        {
-          m_Keys[index] = key;
-          m_Values[index] = value;
-          return;
-        }
-
-        index = (index + 1) & kArrayMask;
-      }
-    }
-
-    void Remove(uint64_t key)
-    {
-      uint32_t index = uint32_t(key & kArrayMask);
-
-      while (m_Keys[index] && m_Keys[index] != key)
-      {
-        index = (index + 1) & kArrayMask;
-      }
-
-      if (m_Keys[index] != key)
-      {
-        return;
-      }
-
-      m_Keys[index] = 0;
-      m_Values[index] = 0;
-
-      // Move following items that may have landed there due to collisions.
-      uint32_t src_index = (index + 1) & kArrayMask;
-
-      for (;;)
-      {
-        uint64_t k = m_Keys[src_index];
-
-        if (!k)
-        {
-          // Stop moving if the slot is unused
-          break;
-        }
-        else if ((k & kArrayMask) != src_index)
-        {
-          // Skip things that are in the right place.
-
-          uint64_t bv = m_Values[src_index];
-
-          m_Keys[src_index]   = 0;
-          m_Values[src_index] = 0;
-
-          Insert(k, bv);
-
-          index               = src_index;
-        }
-        src_index           = (src_index + 1) & kArrayMask;
-      }
-    }
-  };
-
-  //-----------------------------------------------------------------------------
-  // An O(1) windowing lookup structure for compression purposes.
-  // The idea is to keep a window of hashes of previously seen things and their indices.
-  // This is used for both strings and stack backtraces.
-  template <size_t MaxCount>
-  class SlotCache
-  {
-  private:
-    uint64_t              m_SequenceNumber;   // Current sequence number
-    uint64_t              m_Hashes[MaxCount]; // Cyclic buffer of previous hashes
-    FixedHash64<MaxCount> m_Table;
-
-  public:
-    void Init()
-    {
-      m_SequenceNumber = 0;
-      m_Table.Init();
-    }
-
-  public:
-    bool Find(uint64_t hash, uint64_t* seqno_out)
-    {
-      if (const uint64_t *seqno = m_Table.Find(hash))
-      {
-        // We know about this thing; just emit its old sequence number.
-        // The decoder will reuse the old value.
-        *seqno_out = *seqno;
-        return true;
-      }
-
-      // Pick next sequence number
-      const uint64_t seqno = m_SequenceNumber++;
-
-      // Compute lookup index.
-      const uint64_t index = seqno & (MaxCount - 1);
-
-      // Drop the oldest thing from the lookup (if we're reusing it)
-      if (uint64_t old_hash = m_Hashes[index])
-      {
-        m_Table.Remove(old_hash);
-      }
-
-      // Insert new hash
-      m_Hashes[index] = hash;
-      m_Table.Insert(hash, seqno);
-      *seqno_out = seqno;
-      return false;
-    }
-  };
-
-  //-----------------------------------------------------------------------------
   // Type of callback to transmit an encoded block of event data to output stream
   typedef void (TransmitBlockFn)(const void* block, size_t size_bytes);
 
   //-----------------------------------------------------------------------------
   // Local functions.
-
- // Refresh loaded modules, send a module dump event if changed.
-  void    RefreshLoadedModules();
-  // As above, but avoids taking the lock.
-  void    RefreshLoadedModulesUnlocked();
 
   // Common init routine.
   static void InitCommon(TransmitBlockFn* fn);
@@ -327,8 +130,6 @@ namespace MemTrace
     TransmitBlockFn*              m_TransmitFn;                     // Function to transmit (partially) filled blocks
     uint64_t                      m_StartTime;                      // System timer for initial event. We use a delta to generate smaller numbers.
 
-    SlotCache<kMaxStrings>        m_Strings;                        // Window of recently sent strings
-    SlotCache<kMaxStacks>         m_Stacks;                         // Window of recently sent backtraces
     int                           m_CurBuffer;                      // Index of current encoding buffer
     uint8_t                       m_Buffers[2][kBufferSize];        // Raw encoding buffers
 
@@ -385,9 +186,6 @@ namespace MemTrace
       m_WriteOffset  = 0;
       m_TransmitFn   = transmit_fn;
       m_StartTime    = TimerGetSystemCounter();
-
-      m_Strings.Init();
-      m_Stacks.Init();
     }
 
     //-----------------------------------------------------------------------------
@@ -421,7 +219,8 @@ namespace MemTrace
 
       do
       {
-        byte     = (uint8_t) (val & 0x7f);
+		uint64_t var = (val & 0x7f);
+        byte     = (uint8_t) (var);
         out[i++] = byte;
         val    >>= 7;
       } while (val);
@@ -447,18 +246,6 @@ namespace MemTrace
 
       s_Stats.m_StringCount++;
 
-      const uint64_t hash  = Fnv1A_64(str);
-      uint64_t       seqno;
-
-      const bool     reuse = m_Strings.Find(hash, &seqno);
-
-      EmitUnsigned(seqno);
-
-      if (reuse)
-      {
-        s_Stats.m_ReusedStringCount++;
-        return;
-      }
 
       const size_t   len   = strlen(str);
       EmitUnsigned(len);
@@ -467,190 +254,30 @@ namespace MemTrace
     }
 
     //-----------------------------------------------------------------------------
-    // Emit a stack back trace to the output stream
-    void EmitCallStack(int levels_to_skip)
-    {
-      s_Stats.m_StackCount++;
-
-      uintptr_t frames[kMaxFrames];
-      uint64_t stack_hash;
-      uint64_t seqno;
-
-      const int  count = GetBackTrace(frames, &stack_hash, levels_to_skip);
-      const bool reuse = m_Stacks.Find(stack_hash, &seqno);
-
-      if (count == kMaxFrames)
-      {
-        MemTracePrint("MemTrace: Error: Call stack too deep; bump kMaxFrames\n");
-        ErrorShutdown();
-      }
-
-      EmitUnsigned(seqno);
-
-      if (reuse)
-      {
-        s_Stats.m_ReusedStackCount++;
-        return;
-      }
-
-      EmitUnsigned(count);
-
-      for (int i = 0; i < count; ++i)
-      {
-        EmitUnsigned(frames[i]);
-      }
-    }
-
-    //-----------------------------------------------------------------------------
     // Emit common data that goes with every event.  
     void BeginEvent(EventCode code)
 	{
       EmitUnsigned(code);
-      EmitUnsigned(s_Scope.m_Kind);
-      if (s_Scope.m_Kind != kScopeNone)
-        EmitString(s_Scope.m_String);
       EmitTimeStamp();
-      EmitCallStack(2);
     }
 
-	void EndEvent(EventCode code)
-	{
-		//EmitUnsigned(code);
-	}
   };
 
   //-----------------------------------------------------------------------------
   // Subsystem global state
   struct
   {
-    int             m_Active;                     // Non-zero if the system is active
+    bool            m_Active;                     // Non-zero if the system is active
     Encoder         m_Encoder;                    // Encoder
     uint32_t        m_NextHeapId;                 // Next free heap ID
     CriticalSection m_Lock;                       // Synchronizes access to encoder/stream
-    int64_t         m_LastModuleRefreshTime;      // Timer used to periodically refresh list of modules and send a module dump
-    uint64_t        m_ModuleChecksum;             // Checksum of previous module dump to avoid retransmitting redundant information
 
     FileHandle      m_BootFile;
     SOCKET          m_Socket;                     // Output socket during normal operation
     char            m_BootFileName[128];
 
-  } S;
+  } State;
 }
-
-#if defined(MEMTRACE_WINDOWS)
-//-----------------------------------------------------------------------------
-// Wrapper functions for malloc-like functions MS likes to use in their own DLLs.
-
-static void* (*Original_calloc)(size_t _Count, size_t _Size);
-static void* Wrapped_calloc(size_t _Count, size_t _Size)
-{
-  void* result = (*Original_calloc)(_Count, _Size);
-  MemTrace::HeapAllocate(kCrtHeapId, result, _Count * _Size);
-  return result;
-}
-
-static void (*Original_free)(void* _Memory);
-static void Wrapped_free(void* _Memory)
-{
-  MemTrace::HeapFree(kCrtHeapId, _Memory);
-  (*Original_free)(_Memory);
-}
-
-static void* (*Original_malloc)(size_t _Size);
-static void* Wrapped_malloc(size_t _Size)
-{
-  void* result = (*Original_malloc)(_Size);
-  MemTrace::HeapAllocate(kCrtHeapId, result, _Size);
-  return result;
-}
-
-static void TraceCrtRealloc(void* oldp, void* newp, size_t newsize)
-{
-  if (newp)
-  {
-    if (oldp)
-      MemTrace::HeapReallocate(kCrtHeapId, oldp, newp, newsize);
-    else
-      MemTrace::HeapAllocate(kCrtHeapId, newp, newsize);
-  }
-  else if (0 == newsize)
-  {
-    MemTrace::HeapFree(kCrtHeapId, oldp);
-  }
-}
-
-static void* (*Original_realloc)(void* _Memory, size_t _NewSize);
-static void* Wrapped_realloc(void* _Memory, size_t _NewSize)
-{
-  void *result = (*Original_realloc)(_Memory, _NewSize);
-  TraceCrtRealloc(_Memory, result, _NewSize);
-  return result;
-}
-
-static void* (*Original__recalloc)(void * _Memory, size_t _Count, size_t _Size);
-static void* Wrapped__recalloc(void * _Memory, size_t _Count, size_t _Size)
-{
-  void* result = (*Original__recalloc)(_Memory, _Count, _Size);
-  TraceCrtRealloc(_Memory, result, _Count * _Size);
-  return result;
-}
-
-static void (*Original__aligned_free)(void * _Memory);
-static void Wrapped__aligned_free(void * _Memory)
-{
-  MemTrace::HeapFree(kCrtHeapId, _Memory);
-  (*Original__aligned_free)(_Memory);
-}
-
-static void* (*Original__aligned_malloc)(size_t _Size, size_t _Alignment);
-static void* Wrapped__aligned_malloc(size_t _Size, size_t _Alignment)
-{
-  void* result = (*Original__aligned_malloc)(_Size, _Alignment);
-  MemTrace::HeapAllocate(kCrtHeapId, result, _Size);
-  return result;
-}
-
-static void* (*Original__aligned_offset_malloc)(size_t _Size, size_t _Alignment, size_t _Offset);
-static void* Wrapped__aligned_offset_malloc(size_t _Size, size_t _Alignment, size_t _Offset)
-{
-  void* result = (*Original__aligned_offset_malloc)(_Size, _Alignment, _Offset);
-  MemTrace::HeapAllocate(kCrtHeapId, result, _Size);
-  return result;
-}
-
-static void* (*Original__aligned_realloc)(void* _Memory, size_t _NewSize, size_t _Alignment);
-static void* Wrapped__aligned_realloc(void* _Memory, size_t _NewSize, size_t _Alignment)
-{
-  void* result = (*Original__aligned_realloc)(_Memory, _NewSize, _Alignment);
-  TraceCrtRealloc(_Memory, result, _NewSize);
-  return result;
-}
-
-static void* (*Original__aligned_recalloc)(void* _Memory, size_t _Count, size_t _Size, size_t _Alignment);
-static void* Wrapped__aligned_recalloc(void* _Memory, size_t _Count, size_t _Size, size_t _Alignment)
-{
-  void* result = (*Original__aligned_recalloc)(_Memory, _Count, _Size, _Alignment);
-  TraceCrtRealloc(_Memory, result, _Count * _Size);
-  return result;
-}
-
-static void* (*Original__aligned_offset_realloc)(void* _Memory, size_t _NewSize, size_t _Alignment, size_t _Offset);
-static void* Wrapped__aligned_offset_realloc(void* _Memory, size_t _NewSize, size_t _Alignment, size_t _Offset)
-{
-  void* result = (*Original__aligned_offset_realloc)(_Memory, _NewSize, _Alignment, _Offset);
-  TraceCrtRealloc(_Memory, result, _NewSize);
-  return result;
-}
-
-static void* (*Original__aligned_offset_recalloc)(void* _Memory, size_t _Count, size_t _Size, size_t _Alignment, size_t _Offset);
-static void* Wrapped__aligned_offset_recalloc(void* _Memory, size_t _Count, size_t _Size, size_t _Alignment, size_t _Offset)
-{
-  void* result = (*Original__aligned_offset_recalloc)(_Memory, _Count, _Size, _Alignment, _Offset);
-  TraceCrtRealloc(_Memory, result, _Count * _Size);
-  return result;
-}
-
-#endif
 
 //-----------------------------------------------------------------------------
 // Dummy to force initialization object to exist in top-level executable
@@ -663,7 +290,7 @@ static void* Wrapped__aligned_offset_recalloc(void* _Memory, size_t _Count, size
 
 static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn)
 {
-  if (S.m_Active)
+  if (State.m_Active)
   {
 #if defined(MEMTRACE_WINDOWS)
     DebugBreak();
@@ -672,23 +299,18 @@ static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn)
 #endif
   }
 
-  S.m_Active     = 1;
-  S.m_Socket     = INVALID_SOCKET;
-  S.m_NextHeapId = kCrtHeapId;
+  State.m_Active     = true;
+  State.m_Socket     = INVALID_SOCKET;
 
-  S.m_Lock.Init();
-  S.m_Encoder.Init(write_block_fn);
+  State.m_Lock.Init();
+  State.m_Encoder.Init(write_block_fn);
 
-  S.m_Encoder.BeginEvent(kBeginStream);
-  S.m_Encoder.EmitUnsigned(kStreamMagic);
-  S.m_Encoder.EmitString(kPlatformName);
-  S.m_Encoder.EmitUnsigned(sizeof(void*));
-  S.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
-  S.m_Encoder.EmitPointer((const void*) MemTrace::InitCommon);
-  S.m_Encoder.EndEvent(kBeginStream);
-  
-  RefreshLoadedModules();
-  
+  State.m_Encoder.BeginEvent(kBeginStream);
+  State.m_Encoder.EmitUnsigned(kStreamMagic);
+  State.m_Encoder.EmitString(kPlatformName);
+  State.m_Encoder.EmitUnsigned(sizeof(void*));
+  State.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
+  //State.m_Encoder.EmitPointer((const void*) MemTrace::InitCommon);
 }
 
 //-----------------------------------------------------------------------------
@@ -703,14 +325,14 @@ void MemTrace::InitFile(const char* trace_temp_file)
   }
 
   // Stash the boot filename so we can delete it later.
-  Strcpy(S.m_BootFileName, ARRAY_SIZE(S.m_BootFileName), trace_temp_file);
+  Strcpy(State.m_BootFileName, ARRAY_SIZE(State.m_BootFileName), trace_temp_file);
 
-  S.m_BootFile = hf;
+  State.m_BootFile = hf;
 
   // Callback that dumps event buffer data using async writes to our socket.
   auto write_block_fn = [](const void* block, size_t size) -> void
   {
-    FileWrite(S.m_BootFile, block, size);
+    FileWrite(State.m_BootFile, block, size);
   };
 
   InitCommon(write_block_fn);
@@ -725,11 +347,11 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 
   // Remember if we were already active; if we were we need to protect against memory allocations
   // on other threads trying to trace while we're switching protocols.
-  const int was_active = S.m_Active;
+  const bool was_active = State.m_Active;
 
   if (was_active)
   {
-    S.m_Lock.Enter();
+    State.m_Lock.Enter();
   }
 
 #if defined(MEMTRACE_WINDOWS)
@@ -774,52 +396,35 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     MemTracePrint("MemTrace: Warning: Couldn't set send buffer size to %d bytes\n", sndbufsize);
   }
 
-  /*-----------------------------------REMOVE THIS LATER ----------------------*/
-  //so we log the output as well
-  const char* trace_temp_file = "text.txt";
-  FileHandle hf = FileOpenForReadWrite(trace_temp_file);
-
-  if (hf == kInvalidFileHandle)
-  {
-    MemTracePrint("MemTrace: Failed to open %s for writing, disabling system\n", trace_temp_file);
-    return;
-  }
-
-  // Stash the boot filename so we can delete it later.
-  Strcpy(S.m_BootFileName, ARRAY_SIZE(S.m_BootFileName), trace_temp_file);
-
-  S.m_BootFile = hf;
-  /*-------------------------------------END REMOVE THIS LATER-------------------------*/
-
   auto write_block_fn = [](const void* block, size_t size) -> void
   {
     // If we don't have a socket, we drop everything on the floor.
-    if (INVALID_SOCKET == S.m_Socket)
+    if (INVALID_SOCKET == State.m_Socket)
       return;
 	uint64_t before_send_time = TimerGetSystemCounter();
-    if (size != send(S.m_Socket, (const char*) block, (int) size, 0))
+    if (size != send(State.m_Socket, (const char*) block, (int) size, 0))
     {
       MemTracePrint("MemTrace: send() failed - shutting down\n");
       MemTrace::ErrorShutdown();
     }
 	uint64_t delta = TimerGetSystemCounter() - before_send_time;
-	FileWrite(S.m_BootFile, block, size);
+	FileWrite(State.m_BootFile, block, size);
 	total_data_sent+= size;
-	MemTracePrint("sent data: %i\n, last event: %i, total data sent: %i\n",size, lastEvent, total_data_sent);
+	MemTracePrint("sent data: %i\n, total data sent: %i\n",size, total_data_sent);
   };
 
   if (!was_active)
   {
     InitCommon(write_block_fn);
-    S.m_Socket = sock;
+    State.m_Socket = sock;
   }
   else
   {
-    S.m_Socket = sock;
+    State.m_Socket = sock;
     MemTracePrint("MemTrace: Switching to socket transport\n");
-    S.m_Encoder.Flush();
+    State.m_Encoder.Flush();
 
-    FileHandle fh = S.m_BootFile;
+    FileHandle fh = State.m_BootFile;
 
     if (int64_t sz = FileSize(fh))
     {
@@ -845,22 +450,22 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     }
 
     FileClose(fh);
-    S.m_BootFile = kInvalidFileHandle;
+    State.m_BootFile = kInvalidFileHandle;
 
     // Clean up the temporary file.
 #if defined(MEMTRACE_WINDOWS)
-    DeleteFileA(S.m_BootFileName);
+    DeleteFileA(State.m_BootFileName);
 #else
-    remove(S.m_BootFileName);
+    remove(State.m_BootFileName);
 #endif
 
     // Switch to socket transmit method
-    S.m_Encoder.SetTransmitFn(write_block_fn);
+    State.m_Encoder.SetTransmitFn(write_block_fn);
   }
 
   if (was_active)
   {
-    S.m_Lock.Leave();
+    State.m_Lock.Leave();
   }
 
   if (error)
@@ -871,55 +476,54 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 
 void MemTrace::ErrorShutdown()
 {
-  int was_active = S.m_Active;
+  bool was_active = State.m_Active;
 
   if (was_active)
-    S.m_Lock.Enter();
+    State.m_Lock.Enter();
 
-  if (S.m_BootFile != kInvalidFileHandle)
+  if (State.m_BootFile != kInvalidFileHandle)
   {
-    FileClose(S.m_BootFile);
-    S.m_BootFile = kInvalidFileHandle;
+    FileClose(State.m_BootFile);
+    State.m_BootFile = kInvalidFileHandle;
 
 #if defined(MEMTRACE_WINDOWS)
-    if (S.m_BootFileName[0])
+    if (State.m_BootFileName[0])
     {
-      DeleteFileA(S.m_BootFileName);
+      DeleteFileA(State.m_BootFileName);
     }
 #endif
   }
 
-  if (S.m_Socket != INVALID_SOCKET)
+  if (State.m_Socket != INVALID_SOCKET)
   {
-    closesocket(S.m_Socket);
-    S.m_Socket = INVALID_SOCKET;
+    closesocket(State.m_Socket);
+    State.m_Socket = INVALID_SOCKET;
   }
 
-  S.m_Active = 0;
+  State.m_Active = false;
 
   if (was_active)
-    S.m_Lock.Leave();
+    State.m_Lock.Leave();
 }
 
 void MemTrace::Flush()
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.Flush();
+  State.m_Encoder.Flush();
 }
 
 void MemTrace::Shutdown()
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  S.m_Lock.Enter();
+  State.m_Lock.Enter();
 
-  S.m_Encoder.BeginEvent(kEndStream);
-  S.m_Encoder.EndEvent(kEndStream);
+  State.m_Encoder.BeginEvent(kEndStream);
 
   MemTracePrint("MemTrace: Shutting down..\n");
 
@@ -928,24 +532,24 @@ void MemTrace::Shutdown()
   // 1. Thread checks m_Active, finds 1, is timesliced before taking the lock
   // 2. Main thread calls Shutdown(), destroying everything
   // 3. Thread resumes
-  S.m_Active = 0;
+  State.m_Active = false;
 
   // Flush and shut down writer.
-  S.m_Encoder.Flush();
+  State.m_Encoder.Flush();
 
-  closesocket(S.m_Socket);
+  closesocket(State.m_Socket);
 
   MemTracePrint("MemTrace: %u strings written, of which %u were reused\n", s_Stats.m_StringCount, s_Stats.m_ReusedStringCount);
   MemTracePrint("MemTrace: %u stacks written, of which %u were reused\n", s_Stats.m_StackCount, s_Stats.m_ReusedStackCount);
 
-  S.m_Lock.Leave();
-  S.m_Lock.Destroy();
+  State.m_Lock.Leave();
+  State.m_Lock.Destroy();
 }
 
 
 void MemTrace::UserMark(const char* label, ...)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
   va_list args;
@@ -954,252 +558,151 @@ void MemTrace::UserMark(const char* label, ...)
   Vsnprintf(buffer, sizeof buffer, label, args);
   va_end(args);
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.BeginEvent(kMark);
-  S.m_Encoder.EmitString(buffer);
-  S.m_Encoder.EndEvent(kMark);
+  State.m_Encoder.BeginEvent(kMark);
+  State.m_Encoder.EmitString(buffer);
 }
 
 void MemTrace::AddressAllocate(
     const void* base, size_t size_bytes, const char* name)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.BeginEvent(kAddressAllocate);
-  S.m_Encoder.EmitPointer(base);
-  S.m_Encoder.EmitUnsigned(size_bytes);
-  S.m_Encoder.EmitString(name);
-  S.m_Encoder.EndEvent(kAddressAllocate);
+  State.m_Encoder.BeginEvent(kAddressAllocate);
+  State.m_Encoder.EmitPointer(base);
+  State.m_Encoder.EmitUnsigned(size_bytes);
+  State.m_Encoder.EmitString(name);
 }
 
 void MemTrace::AddressFree(const void* base)
 {
-  if (!S.m_Active || base == NULL)
+  if (!State.m_Active || base == NULL)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.BeginEvent(kAddressFree);
-  S.m_Encoder.EmitPointer(base);
-  S.m_Encoder.EndEvent(kAddressFree);
+  State.m_Encoder.BeginEvent(kAddressFree);
+  State.m_Encoder.EmitPointer(base);
 }
 
 void MemTrace::VirtualCommit(const void* base, size_t size_bytes)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.BeginEvent(kVirtualCommit);
-  S.m_Encoder.EmitPointer(base);
-  S.m_Encoder.EmitUnsigned(size_bytes);
-  S.m_Encoder.EndEvent(kVirtualCommit);
+  State.m_Encoder.BeginEvent(kVirtualCommit);
+  State.m_Encoder.EmitPointer(base);
+  State.m_Encoder.EmitUnsigned(size_bytes);
 }
 
 void MemTrace::VirtualDecommit(const void* base, size_t size_bytes)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.BeginEvent(kVirtualDecommit);
-  S.m_Encoder.EmitPointer(base);
-  S.m_Encoder.EmitUnsigned(size_bytes);
-  S.m_Encoder.EndEvent(kVirtualDecommit);
+  State.m_Encoder.BeginEvent(kVirtualDecommit);
+  State.m_Encoder.EmitPointer(base);
+  State.m_Encoder.EmitUnsigned(size_bytes);
 }
 
 MemTrace::HeapId MemTrace::HeapCreate(const char* name)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return ~0u;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  HeapId id = S.m_NextHeapId++;
+  HeapId id = State.m_NextHeapId++;
 
-  S.m_Encoder.BeginEvent(kHeapCreate);
-  S.m_Encoder.EmitUnsigned(id);
-  S.m_Encoder.EmitString(name);
-  S.m_Encoder.EndEvent(kHeapCreate);
+  State.m_Encoder.BeginEvent(kHeapCreate);
+  State.m_Encoder.EmitUnsigned(id);
+  State.m_Encoder.EmitString(name);
 
   return id;
 }
 
 void MemTrace::HeapDestroy(HeapId heap_id)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.BeginEvent(kHeapDestroy);
-  S.m_Encoder.EmitUnsigned(heap_id);
-  S.m_Encoder.EndEvent(kHeapDestroy);
+  State.m_Encoder.BeginEvent(kHeapDestroy);
+  State.m_Encoder.EmitUnsigned(heap_id);
 }
 
 void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.BeginEvent(kHeapAddCore);
-  S.m_Encoder.EmitUnsigned(heap_id);
-  S.m_Encoder.EmitPointer(base);
-  S.m_Encoder.EmitUnsigned(size_bytes);
-  S.m_Encoder.EndEvent(kHeapAddCore);
+  State.m_Encoder.BeginEvent(kHeapAddCore);
+  State.m_Encoder.EmitUnsigned(heap_id);
+  State.m_Encoder.EmitPointer(base);
+  State.m_Encoder.EmitUnsigned(size_bytes);
 }
 
 void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  S.m_Encoder.BeginEvent(kHeapRemoveCore);
-  S.m_Encoder.EmitUnsigned(heap_id);
-  S.m_Encoder.EmitPointer(base);
-  S.m_Encoder.EmitUnsigned(size_bytes);
-  S.m_Encoder.EndEvent(kHeapRemoveCore);
+  State.m_Encoder.BeginEvent(kHeapRemoveCore);
+  State.m_Encoder.EmitUnsigned(heap_id);
+  State.m_Encoder.EmitPointer(base);
+  State.m_Encoder.EmitUnsigned(size_bytes);
 }
 
 void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  RefreshLoadedModulesUnlocked();
-
-  S.m_Encoder.BeginEvent(kHeapAllocate);
-  S.m_Encoder.EmitUnsigned(id);
-  S.m_Encoder.EmitPointer(ptr);
-  S.m_Encoder.EmitUnsigned(size_bytes);
-  S.m_Encoder.EndEvent(kHeapAllocate);
+  State.m_Encoder.BeginEvent(kHeapAllocate);
+  State.m_Encoder.EmitUnsigned(id);
+  State.m_Encoder.EmitPointer(ptr);
+  State.m_Encoder.EmitUnsigned(size_bytes);
 }
 
 void MemTrace::HeapReallocate(HeapId id, const void* ptr_in, const void* ptr_out, size_t new_size_bytes)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  RefreshLoadedModulesUnlocked();
-
-  S.m_Encoder.BeginEvent(kHeapReallocate);
-  S.m_Encoder.EmitUnsigned(id);
-  S.m_Encoder.EmitPointer(ptr_in);
-  S.m_Encoder.EmitPointer(ptr_out);
-  S.m_Encoder.EmitUnsigned(new_size_bytes);
-  S.m_Encoder.EndEvent(kHeapReallocate);
+  State.m_Encoder.BeginEvent(kHeapReallocate);
+  State.m_Encoder.EmitUnsigned(id);
+  State.m_Encoder.EmitPointer(ptr_in);
+  State.m_Encoder.EmitPointer(ptr_out);
+  State.m_Encoder.EmitUnsigned(new_size_bytes);
 }
 
 void MemTrace::HeapFree(HeapId id, const void* ptr)
 {
-  if (!S.m_Active)
+  if (!State.m_Active)
     return;
 
-  CSAutoLock lock(S.m_Lock);
+  CSAutoLock lock(State.m_Lock);
 
-  RefreshLoadedModulesUnlocked();
-
-  S.m_Encoder.BeginEvent(kHeapFree);
-  S.m_Encoder.EmitUnsigned(id);
-  S.m_Encoder.EmitPointer(ptr);
-  S.m_Encoder.EndEvent(kHeapFree);
+  State.m_Encoder.BeginEvent(kHeapFree);
+  State.m_Encoder.EmitUnsigned(id);
+  State.m_Encoder.EmitPointer(ptr);
 }
-
-void MemTrace::PushScope(ScopeKind kind, const char* str, ScopeKind* old_kind, const char** old_str)
-{
-  *old_kind = s_Scope.m_Kind;
-  *old_str = s_Scope.m_String;
-  s_Scope.m_Kind = kind;
-  s_Scope.m_String = str;
-}
-
-void MemTrace::RestoreScope(ScopeKind kind, const char* str)
-{
-  s_Scope.m_Kind = kind;
-  s_Scope.m_String = str;
-}
-
-void MemTrace::RefreshLoadedModulesUnlocked()
-{
-  if (TimerGetSystemDeltaInSeconds(S.m_LastModuleRefreshTime) < 10.0)
-    return;
-
-  S.m_LastModuleRefreshTime = TimerGetSystemCounter();
-
-#if defined(MEMTRACE_WINDOWS)
-  
-  S.m_Encoder.BeginEvent(kModuleDump);
-
-  HMODULE modules[1024];
-  DWORD bytes_needed = 0;
-  if (EnumProcessModules(GetCurrentProcess(), modules, sizeof modules, &bytes_needed))
-  {
-    size_t bytes = sizeof modules;
-    if (bytes > bytes_needed)
-      bytes = bytes_needed;
-    size_t nmods = bytes / sizeof modules[0];
-    for (size_t i = 0; i < nmods; ++i)
-    {
-      HMODULE mod = modules[i];
-      MODULEINFO modinfo;
-      if (GetModuleInformation(GetCurrentProcess(), mod, &modinfo, sizeof modinfo))
-      {
-        char modname[256];
-        if (DWORD namelen = GetModuleFileNameExA(GetCurrentProcess(), mod, modname, sizeof modname))
-        {
-          S.m_Encoder.EmitUnsigned(1);
-          S.m_Encoder.EmitString(modname);
-          S.m_Encoder.EmitPointer(mod);
-          S.m_Encoder.EmitUnsigned(modinfo.SizeOfImage);
-        }
-      }
-    }
-  }
-  S.m_Encoder.EmitUnsigned(0);
-  S.m_Encoder.EndEvent(kModuleDump);
- 
-#endif
-
-  // @@@ If you're a licensed Durango dev we can provide module walking code.
-  // NDA material.
-}
-
-void MemTrace::RefreshLoadedModules()
-{
-  if (!S.m_Active)
-    return;
-
-  CSAutoLock lock(S.m_Lock);
-
-  RefreshLoadedModulesUnlocked();
-}
-
-#if defined(MEMTRACE_WINDOWS)
-int MemTrace::GetBackTrace(uintptr_t frames[], uint64_t *hash_out, int skip_levels)
-{
-  DWORD hash = 0;
-
-  int count = RtlCaptureStackBackTrace(skip_levels, kMaxFrames, (void**) frames, &hash);
-
-  // Make sure we don't hash to zero.
-  *hash_out = (uint64_t(hash) << 1) | 1;
-
-  return count;
-}
-#endif
 
 #endif // MEMTRACE_ENABLE

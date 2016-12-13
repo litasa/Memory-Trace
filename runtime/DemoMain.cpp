@@ -78,7 +78,8 @@ public:
 
   ~BlockAllocator()
   {
-    MemTrace::HeapRemoveCore(m_HeapId, m_MemRange, m_ElemSize * m_ElemCount);
+	  int rem = m_ElemSize * m_ElemCount;
+    MemTrace::HeapRemoveCore(m_HeapId, m_MemRange, rem);
     MemTrace::HeapDestroy(m_HeapId);
     free(m_MemRange);
   }
@@ -108,7 +109,7 @@ static void TestCustomAllocator()
 	BlockAllocator a(16, 256, "Allocator A");
 	BlockAllocator b(32, 256, "Allocator B");
 
-	for(int j = 0; j < 10000000; ++j)
+	for(int j = 0; j < 1; ++j)
 	{
 		auto ap = a.Alloc();
 		auto bp = b.Alloc();
@@ -125,7 +126,7 @@ int main(int argc, char* argv[])
 
 
 	MemTrace::InitSocket("10.150.44.212",8181);
-	//MemTrace::InitFile("skit.bin");
+	//MemTrace::InitFile("nasdnas.bin");
 	TestCustomAllocator();
 	/*MemTrace::HeapId id = MemTrace::HeapCreate("test");
 	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");

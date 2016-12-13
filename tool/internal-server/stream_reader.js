@@ -25,26 +25,41 @@ var STREAM = new function () {
   }
 
   this.read64Byte = function read64Byte(buffer, ret){
-    var val = 0;
-    var mul = 1;
-    var out = [];
+    var count = 0;
+    var out = Buffer.alloc(8);
     do {
   		var b = buffer.next();
   		if(b === null) {
   			ret = 0;
   			return false;
   		}
-      out.push(b);
+      out[count++] = b;
     } while (b < 128);
-    out[out.length -1] -= 0x80;
-
-    ret.push(out.reverse());
-
-	   return true;
+    out[count -1] -= 0x80;
+    ret.push(decodeBuffer(out));
+	  return true;
   }
+
+	decodeBuffer = function decodeBuffer(buffer) {
+    var s = "";
+    for(var i = 0; i < buffer.length; ++i) {
+        var tmp = buffer[i].toString(2);
+        while(tmp.length < 8) tmp = '0' + tmp;
+        tmp = tmp.substr(1);
+        s = tmp + s;
+    }
+    //add the last 8 zeroes
+    s = "00000000" + s;
+    for(var i = 0; i < buffer.length; ++i) {
+        buffer[i] = parseInt(s.slice(i*8, i*8+8), 2);
+    }
+    
+    return buffer;
+	}
 
   this.readString = function readString(buffer, ret)
   {
+		/*
 	  if(!this.readByte(buffer, ret)) { return false; }
 	  var index = ret.pop();
 
@@ -53,7 +68,7 @@ var STREAM = new function () {
 		  string = global.SeenStrings.get(index);
 		  return true;
 	  }
-
+		*/
 	  if(!this.readByte(buffer, ret)) { return false; }
 	  var length = ret.pop();
 
@@ -63,7 +78,6 @@ var STREAM = new function () {
 		  string += String.fromCharCode(buffer.next());
 	  }
 
-	  ++global.seenStringRollback;
 		/* dunno what this is atm
 		string shared;
       if (!m_StringCache.TryGetValue(data, out shared))
@@ -72,7 +86,7 @@ var STREAM = new function () {
         m_StringCache.Add(data, data);
       }
 		*/
-	  global.SeenStrings.set(index,string);
+	  //global.SeenStrings.set(index,string);
 	  ret.push(string);
 
 	  return true;

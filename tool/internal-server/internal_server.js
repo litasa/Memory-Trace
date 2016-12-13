@@ -1,14 +1,6 @@
 const net = require('net');
 const ipcRenderer = require('electron').ipcRenderer
-const ReadStream = require('../util/read_stream.js')
-const WriteStream = require('../util/write_stream.js')
 const RingBuffer = require("../util/ringbuffer.js");
-
-
-var read_stream = new ReadStream();
-var write_stream = new WriteStream();
-
-//read_stream.pipe(write_stream);
 
 var ringBuffersize = 128*1024;
 var ringBuffer =  new RingBuffer(ringBuffersize);
@@ -50,6 +42,7 @@ var server = net.createServer(function(socket) {
 
 server.on('listening', function(data) {
   console.log("listening to: " + server.address())
+  sendEvent('please-connect', {addr: list});
 })
 
 sendEvent = function(channel, data) {

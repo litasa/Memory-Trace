@@ -3,10 +3,7 @@ const net = require('net');
 const fs = require('fs');
 const stream = require('stream');
 
-//list = 8182;
-list = '\\\\.\\pipe\\internal_server'
-
-var internal_socket = net.createConnection(list);
+var internal_socket;
 // external_server
 var external_server = net.createServer(function (external_socket) {
   var total_data_recieved = 0;
@@ -102,3 +99,8 @@ sendEvent = function(channel, data) {
   data.channel = channel;
   ipcRenderer.send('to-chart',data);
 }
+
+
+ipcRenderer.on('please-connect', function(event, data) {
+  internal_socket = net.createConnection(data.addr);
+})
