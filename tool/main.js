@@ -8,6 +8,9 @@ const BrowserWindow = electron.BrowserWindow
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
+
+var testing = true;
+
 let chartWindow
 let serverWindow
 let internalServerWindow
@@ -18,19 +21,25 @@ function createWindow () {
   internalServerWindow = new BrowserWindow({width: 800, height: 600, title: "InternalServer"})
   chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
   serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server"})
-  //testWindow = new BrowserWindow({width: 800, height: 600, title: "Test"})
+  //
   // and load the index.html of the app.
   internalServerWindow.loadURL(`file://${__dirname}/internal-server/internal-server.html`)
   chartWindow.loadURL(`file://${__dirname}/visualization/visualization.html`)
   serverWindow.loadURL(`file://${__dirname}/server/server.html`)
-  //testWindow.loadURL(`file://${__dirname}/test-place/test.html`)
+  //
 
 
   // Open the DevTools.
   chartWindow.webContents.openDevTools()
   serverWindow.webContents.openDevTools()
   internalServerWindow.webContents.openDevTools()
-  //testWindow.webContents.openDevTools()
+
+  if(testing){
+    testWindow = new BrowserWindow({width: 800, height: 600, title: "Test"})
+    testWindow.loadURL(`file://${__dirname}/test-place/test.html`)
+    testWindow.webContents.openDevTools()
+  }
+  //
   // Emitted when the window is closed.
   chartWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows

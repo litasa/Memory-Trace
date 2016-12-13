@@ -1,3 +1,7 @@
+const MemoryState = require('./memory_state.js');
+
+var currentState = new MemoryState();
+
 const net = require('net');
 const ipcRenderer = require('electron').ipcRenderer
 const RingBuffer = require("../util/ringbuffer.js");
@@ -5,33 +9,40 @@ const RingBuffer = require("../util/ringbuffer.js");
 var ringBuffersize = 128*1024;
 var ringBuffer =  new RingBuffer(ringBuffersize);
 var numEvents = 0;
-var processed = {events: []};
-//var list = 8182;
+
+var last_time;
+
 var list = '\\\\.\\pipe\\internal_server'
-var arr = [];
+
+var interval = setInterval(function() {
+  currentState.print();
+},1000)
+
 var server = net.createServer(function(socket) {
   console.log('Connected to internal_server');
 
   socket.on('data', function(data) {
     var num_data_left = data.length;
-    console.log('data recieved internal_server: ' + data.length )
+    //console.log('data recieved internal_server: ' + data.length )
     do{
       //add as much as possible to the ringBuffer
       num_data_left = ringBuffer.populate(data, num_data_left);
       do{
         //read one event
-        var oneEvent = EventReader.oneEvent(ringBuffer);
+        var oneEvent = EventReader.oneEvent(ringBuffer, currentState);
         if(oneEvent === null) {
           // break if unsucessful
           break;
         }
         else{
           numEvents++;
-          processed.events.push(oneEvent);
+          last_time = oneEvent.timestamp;
         }
       } while(ringBuffer.remaining());
       ringBuffer.rollback();
     } while(num_data_left);
+
+   console.log('last logged time: ' + last_time.readUInt32BE() + ' ' + last_time.readUInt32BE(4))
   })
 
   socket.on('error', function(err) {
@@ -53,6 +64,8 @@ sendEvent = function(channel, data) {
   ipcRenderer.send('to-server',data);
 }
 
-ipcRenderer.on('memory-usage', function(event, data) {
-  console.log("recieved memory")
+ipcRenderer.on('stream-end', function(event, data) {
+  clearInterval(interval);
+  console.log('last state of memory');
+  currentState.print();
 })

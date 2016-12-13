@@ -1,213 +1,165 @@
-const MemoryState = require('./memory_state.js');
-
-var currentState = new MemoryState();
 var EventReader = new function() {
 
-
-  global.SeenStacks = new Map();
-  global.SeenStrings = new Map();
-
-  global.HeapsAlive = new Map();
-  global.HeapsDead = new Map();
-
-  this.oneEvent = function oneStepRead(buffer, fromIndex){
+  this.oneEvent = function oneStepRead(buffer, currentState){
 		var data = {};
-    var header = {
-      event: null,
-      scope: null,
-	    scopeDataIndex: -1,
-      timestamp: null,
-      callstackId: null
-    };
 
 	  buffer.setRollback();
 
-		if(!readHeaderData(buffer, header)) { return null; }
+		if(!BeginEvent(buffer, data)) { return null; }
 
-		data.header = header
+		switch(data.event) {
+			
+			case(global.typeEnum.BeginStream) :
+      	if(!BeginStream(buffer,data)) {
+					return null;
+				}
+				//TODO -- check that magic number is correct etc
+			break;
 
-    if (header.event == global.typeEnum.BeginStream) {
-      //TODO -- check that magic number is correct etc
-      if(!readBeginStream(buffer,data)) { return null; }
-    }
-    else if (header.event == global.typeEnum.ModuleDump) {
-        if(!readModuleDump(buffer,data)) { return null; }
-    }
-    else if (header.event == global.typeEnum.HeapCreate) {
-      if(!readHeapCreate(buffer,data)) { return null; }
-			currentState.createHeap(data);
-    }
-    else if (header.event == global.typeEnum.HeapDestroy) {
-      if(!readHeapDestroy(buffer,data)) { return null; }
-			currentState.removeHeap(data);
-    }
-    else if (header.event == global.typeEnum.HeapAddCore) {
-      if(!readHeapAddCore(buffer,data)) { return null; }
-			currentState.createCore(data);
-    }
-		else if(header.event == global.typeEnum.HeapRemoveCore) {
-			if(!readHeapRemoveCore(buffer,data)) { return null; }
-			currentState.removeCore(data);
+			case(global.typeEnum.HeapCreate) :
+				if(!HeapCreate(buffer,data)) {
+					return null;
+				}
+				currentState.createHeap(data);
+			break;
+
+			case(global.typeEnum.HeapDestroy) :
+				if(!HeapDestroy(buffer,data)) {
+					return null;
+				}
+				currentState.removeHeap(data);
+			break;
+
+			case(global.typeEnum.HeapAddCore) :
+				if(!HeapAddCore(buffer,data)) {
+					return null;
+				}
+				currentState.createCore(data);
+			break;
+
+			case(global.typeEnum.HeapRemoveCore) :
+				if(!HeapRemoveCore(buffer,data)) {
+					return null;
+				}
+				currentState.removeCore(data);
+			break;
+
+			case(global.typeEnum.HeapAllocate) :
+				if(!HeapAllocate(buffer,data)) {
+					return null;
+				}
+				currentState.createAllocation(data);
+			break;
+
+			case(global.typeEnum.HeapFree) :
+				if(!HeapFree(buffer,data)) {
+					return null;
+				}
+				currentState.removeAllocation(data);
+			break;
+
+			case(global.typeEnum.EndStream) :
+				//TODO -- Check so that no leaks have happened
+				//no additional data sent other than the Begin Event
+			break;
+			default:
+				return null;
 		}
-    else if (header.event == global.typeEnum.HeapAllocate) {
-      if(!readHeapAllocate(buffer,data)) { return null; }
-			currentState.createAllocation(data);
-    }
-    else if (header.event == global.typeEnum.HeapFree) {
-      if(!readHeapFree(buffer,data)) { return null; }
-			currentState.removeAllocation(data);
-    }
-    else if (header.event == global.typeEnum.EndStream) {
-      //TODO -- Check so that no leaks have happened
-    }
-		else {
-			return null;
-		}
-
 		buffer.setRollback();
 
 		return data;
   }
 
-	function readHeaderData(buffer, data){
+	function BeginEvent(buffer, data) {
 		var ret = [];
     if(!STREAM.readByte(buffer, ret)) { return false; }  //code
+    if(!STREAM.readByte(buffer, ret)) { return false; } //timestamp
 
-		if(ret[0] == 0) {
-			console.log("unexpected header code: " + ret[0])
-		}
+	  data.event     = ret[0].readUInt32BE(4);
+	  data.timestamp = ret[1];
 
-    //if(!STREAM.readByte(buffer, ret))  { return false; } //scope
-
-    //if (ret[1] != 0) {
-    //  if(!STREAM.readStringIndex(buffer, ret)) { return false; } //scope name
-	  //	data.scopeDataIndex = ret.pop();
-    //}
-
-    if(!STREAM.read64Byte(buffer, ret)) {return false; } //timestamp
-	  //if(!STREAM.readBacktraceIndex(buffer, ret)) {return false;} //callstack index
-
-	  data.event       = ret[0];
-	  //data.scope       = ret[1];
-	  data.timestamp   = ret[2];
-	  //data.callstackId = ret[3];
-		//no need for data.type in header
     return true;
   }
 
-  function readBeginStream(buffer, data){
-      //TODO -- check that magic number is correct etc
-	var ret = [];
+  function BeginStream(buffer, data) {
+		var ret = [];
 
-	if(!STREAM.read64Byte(buffer, ret)) { return false;} //Stream Magic
-	if(!STREAM.readString(buffer, ret)) { return false;} //Platform name
-	if(!STREAM.readByte  (buffer, ret)) { return false;} //Pointer size
-	if(!STREAM.read64Byte(buffer, ret)) { return false;} //Timer frequency
-	//if(!STREAM.read64Byte(buffer, ret)) { return false;} //Common address
+		if(!STREAM.readByte(buffer, ret))   { return false;} //Stream Magic
+		if(!STREAM.readString(buffer, ret)) { return false;} //Platform name
+		if(!STREAM.readByte(buffer, ret))   { return false;} //Timer frequency
 
-	data.magicNumber       = ret[0];
-	data.platform          = ret[1];
-	data.pointerSize       = ret[2];
-	data.timerFrequency    = ret[3];
-	//data.initCommonAddress = ret[4];
-
-	return true;
-  }
-	/*
-  function readModuleDump(buffer, data) {
-    //TODO -- save symData somewhere
-		var tempSymData = [];
-	  while(true) {
-			var dump = {};
-			var ret = [];
-			if(!STREAM.readByte(buffer, ret)) {return false;} //keep going code ( 0 == stop )
-			if(ret.pop() == 0) {
-				break;
-			}
-
-			if(!STREAM.readString(buffer, ret)) { return false; } //module name
-			if(!STREAM.read64Byte(buffer, ret)) { return false; } //module handle
-			if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
-			dump.name = ret[0];
-			dump.base = ret[1];
-			dump.size = ret[2];
-			//add to list
-			tempSymData.push(dump);
-		}
-	//add to global modules
-		data.symData = tempSymData;
+		data.magicNumber    = ret[0];
+		data.platform       = ret[1];
+		data.timerFrequency = ret[2];
 
 		return true;
   }
-*/
-  function readHeapCreate(buffer, data) {
-	  var Allocator = {};
+
+  function HeapCreate(buffer, data) {
 	  var ret = [];
-	  if(!STREAM.readByte(buffer, ret)) { return false; } //id
+	  if(!STREAM.readByte(buffer, ret))   { return false; } //id
 	  if(!STREAM.readString(buffer, ret)) { return false; } //name
 	  //begin out event
-	  data.id     = ret[0];
-	  data.nameId = ret[1];
+	  data.id     = ret[0].readUInt32BE(4);
+	  data.name		= ret[1];
 	  return true;
   }
 
-  function readHeapDestroy(buffer, data) {
-    var heapDestroy = {};
+  function HeapDestroy(buffer, data) {
 		var ret = [];
 		if(!STREAM.readByte(buffer, ret)) {return false;} //id
 
-		data.id   = ret[0];
+		data.id   = ret[0].readUInt32BE(4);
 
 		return true;
   }
 
-  function readHeapAddCore(buffer, data) {
+  function HeapAddCore(buffer, data) {
 		var ret = [];
 		if(!STREAM.readByte(buffer, ret)) { return false; } //id
-		if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer to core start
-		if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
+		if(!STREAM.readByte(buffer, ret)) { return false; } //pointer to core start
+		if(!STREAM.readByte(buffer, ret)) { return false; } //size
 
-		data.id      = ret[0];
+		data.id      = ret[0].readUInt32BE(4);
 		data.pointer = ret[1];
-		data.size    = ret[2];
+		data.size    = ret[2].readUInt32BE(4);
 
 		return true;
   }
 
-	function readHeapRemoveCore(buffer, data) {
+	function HeapRemoveCore(buffer, data) {
 		var ret = [];
 		if(!STREAM.readByte(buffer, ret)) { return false; } //id
-		if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer to core start
-		if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
+		if(!STREAM.readByte(buffer, ret)) { return false; } //pointer to core start
+		if(!STREAM.readByte(buffer, ret)) { return false; } //size
 
-		data.id    = ret[0];
+		data.id   	 = ret[0].readUInt32BE(4);
 		data.pointer = ret[1];
-		data.size  = ret[2];
+		data.size 	 = ret[2].readUInt32BE(4);
 
 		return true;
 	}
 
-  function readHeapAllocate(buffer, data) {
+  function HeapAllocate(buffer, data) {
 		var ret = [];
-
 		if(!STREAM.readByte(buffer, ret)) { return false; } //id
-		if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer to start
-		if(!STREAM.read64Byte(buffer, ret)) { return false; } //size
+		if(!STREAM.readByte(buffer, ret)) { return false; } //pointer to start
+		if(!STREAM.readByte(buffer, ret)) { return false; } //size
 
 		//TODO check so allocation is not already made
-		data.id      = ret[0];
+		data.id      = ret[0].readUInt32BE(4);
 		data.pointer = ret[1];
-		data.size    = ret[2];
+		data.size    = ret[2].readUInt32BE(4);
+
 		return true;
   }
 
-  function readHeapFree(buffer, data) {
+  function HeapFree(buffer, data) {
 		var ret = [];
-
 		if(!STREAM.readByte(buffer, ret)) { return false; } //id
-		if(!STREAM.read64Byte(buffer, ret)) { return false; } //pointer;
+		if(!STREAM.readByte(buffer, ret)) { return false; } //pointer;
 
-		data.id      = ret[0];
+		data.id      = ret[0].readUInt32BE(4);
 		data.pointer = ret[1];
 
 		return true;

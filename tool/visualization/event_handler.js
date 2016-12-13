@@ -57,29 +57,6 @@ Visualization = new function() {
 		    this.chart.update();
 	}
 
-	this.addAllocator = function(alloc) {
-		//TODO error checking
-		this.allocatorsMap.push(alloc);
-		alloc.cores = [];
-		alloc.managedSize = 0;
-		alloc.usedMemory = 0;
-
-		this.chart.data.datasets.push({
-				id: hexToInt(alloc.id),
-				label: 0,//global.SeenStrings.get(alloc.nameId),
-				fill: false,
-				lineTension: 0,
-				pointRadius: 4,
-				steppedLine: false,
-				//pointStyle: 'line',
-				data: []
-		});
-	}
-
-	this.beginStream = function (streamInfo) {
-		global.timerFrequency = streamInfo.timerFrequency;
-	}
-
 	var chartDataUpdate = function (allocator, core, time, size){
 
 		//TODO Make sure that high values also get added

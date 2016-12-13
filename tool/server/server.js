@@ -14,11 +14,11 @@ var external_server = net.createServer(function (external_socket) {
   var date = new Date();
   var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
   var name =  "./database/test_" + time + ".db";
-  var unmodified_stream = fs.createWriteStream(name);
+  //var unmodified_stream = fs.createWriteStream(name);
 
     //write input data to file
     external_socket.pipe(internal_socket);
-    external_socket.pipe(unmodified_stream);
+    //external_socket.pipe(unmodified_stream);
 
     external_socket.on('close', function(data) {
       console.log("socket close")
@@ -57,6 +57,9 @@ var external_server = net.createServer(function (external_socket) {
     external_socket.on('end', function(data) {
       var diff = Date.now() - start_time;
       console.log("connection ended in: " + diff);
+      var data = {};
+      data.channel = 'stream-end';
+      ipcRenderer.send('to-internal-server', data)
     })
 
     external_socket.on('error', function(error) {
@@ -99,7 +102,6 @@ sendEvent = function(channel, data) {
   data.channel = channel;
   ipcRenderer.send('to-chart',data);
 }
-
 
 ipcRenderer.on('please-connect', function(event, data) {
   internal_socket = net.createConnection(data.addr);

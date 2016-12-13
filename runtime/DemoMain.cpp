@@ -109,7 +109,7 @@ static void TestCustomAllocator()
 	BlockAllocator a(16, 256, "Allocator A");
 	BlockAllocator b(32, 256, "Allocator B");
 
-	for(int j = 0; j < 1; ++j)
+	for(int j = 0; j < 10000; ++j)
 	{
 		auto ap = a.Alloc();
 		auto bp = b.Alloc();
@@ -122,9 +122,6 @@ static void TestCustomAllocator()
 
 int main(int argc, char* argv[])
 {
-  
-
-
 	MemTrace::InitSocket("10.150.44.212",8181);
 	//MemTrace::InitFile("nasdnas.bin");
 	TestCustomAllocator();
@@ -153,8 +150,8 @@ int main(int argc, char* argv[])
 		}
 		
 		MemTrace::HeapDestroy(id);
-		MemTrace::HeapDestroy(id2);
-		MemTrace::Flush();*/
+		MemTrace::HeapDestroy(id2);*/
+	MemTrace::Flush();
 	MemTrace::Shutdown();
   return 0;
 }

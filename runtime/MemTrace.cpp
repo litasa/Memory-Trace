@@ -62,10 +62,7 @@ namespace MemTrace
   // Various limits
   enum
   {
-    kBufferSize     = 17520,
-    kMaxStrings     = 1024,   // Max string hashes to keep around
-    kMaxStacks      = 1024,   // Max call stack hashes to keep around
-    kMaxFrames      = 256,    // Max frames in single callstack - needs to be large to capture all of it
+    kBufferSize     = 17520
   };
 
   // Start of stream protocol value - to handle version changes without crashing decoder.
@@ -77,36 +74,16 @@ namespace MemTrace
   {
     kBeginStream     = 1,
     kEndStream,
-    kModuleDump,
-    kMark,
 
-    kAddressAllocate = 10,
-    kAddressFree,
-    kVirtualCommit,
-    kVirtualDecommit,
-
-    kPhysicalAllocate,
-    kPhysicalFree,
-    kPhysicalMap,
-    kPhysicalUnmap,
-
-    kHeapCreate,
+    kHeapCreate = 18,
     kHeapDestroy,
+
     kHeapAddCore,
     kHeapRemoveCore,
+
     kHeapAllocate,
-    kHeapReallocate,
     kHeapFree,
   };
-
-  //-----------------------------------------------------------------------------
-  // Statistics
-  static struct {
-    uint32_t        m_StringCount;
-    uint32_t        m_ReusedStringCount;
-    uint32_t        m_StackCount;
-    uint32_t        m_ReusedStackCount;
-  } s_Stats;
 
   //-----------------------------------------------------------------------------
   // Type of callback to transmit an encoded block of event data to output stream
@@ -171,11 +148,12 @@ namespace MemTrace
 
     //-----------------------------------------------------------------------------
     // Emit a relative time stamp to the stream.
-    void EmitTimeStamp()
+    uint64_t EmitTimeStamp()
     {
       uint64_t t = TimerGetSystemCounter();
       uint64_t delta = t - m_StartTime;
       EmitUnsigned(delta);
+	  return delta;
     }
 
   public:
@@ -244,9 +222,6 @@ namespace MemTrace
       if (!str)
         str = "(null)";
 
-      s_Stats.m_StringCount++;
-
-
       const size_t   len   = strlen(str);
       EmitUnsigned(len);
       memcpy(Reserve(len), str, len);
@@ -258,7 +233,8 @@ namespace MemTrace
     void BeginEvent(EventCode code)
 	{
       EmitUnsigned(code);
-      EmitTimeStamp();
+      uint64_t delta = EmitTimeStamp();
+	  MemTracePrint("event: %i, time: %d\n",code, delta);
     }
 
   };
@@ -305,12 +281,7 @@ static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn)
   State.m_Lock.Init();
   State.m_Encoder.Init(write_block_fn);
 
-  State.m_Encoder.BeginEvent(kBeginStream);
-  State.m_Encoder.EmitUnsigned(kStreamMagic);
-  State.m_Encoder.EmitString(kPlatformName);
-  State.m_Encoder.EmitUnsigned(sizeof(void*));
-  State.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
-  //State.m_Encoder.EmitPointer((const void*) MemTrace::InitCommon);
+  BeginStream();
 }
 
 //-----------------------------------------------------------------------------
@@ -337,8 +308,6 @@ void MemTrace::InitFile(const char* trace_temp_file)
 
   InitCommon(write_block_fn);
 }
-
-static int total_data_sent = 0;
 
 //-----------------------------------------------------------------------------
 void MemTrace::InitSocket(const char *server_ip_address, int server_port)
@@ -409,8 +378,6 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     }
 	uint64_t delta = TimerGetSystemCounter() - before_send_time;
 	FileWrite(State.m_BootFile, block, size);
-	total_data_sent+= size;
-	MemTracePrint("sent data: %i\n, total data sent: %i\n",size, total_data_sent);
   };
 
   if (!was_active)
@@ -539,78 +506,20 @@ void MemTrace::Shutdown()
 
   closesocket(State.m_Socket);
 
-  MemTracePrint("MemTrace: %u strings written, of which %u were reused\n", s_Stats.m_StringCount, s_Stats.m_ReusedStringCount);
-  MemTracePrint("MemTrace: %u stacks written, of which %u were reused\n", s_Stats.m_StackCount, s_Stats.m_ReusedStackCount);
-
   State.m_Lock.Leave();
   State.m_Lock.Destroy();
 }
 
+void MemTrace::BeginStream() {
+	if (!State.m_Active)
+		return;
 
-void MemTrace::UserMark(const char* label, ...)
-{
-  if (!State.m_Active)
-    return;
+	CSAutoLock lock(State.m_Lock);
 
-  va_list args;
-  char buffer[256];
-  va_start(args, label);
-  Vsnprintf(buffer, sizeof buffer, label, args);
-  va_end(args);
-
-  CSAutoLock lock(State.m_Lock);
-
-  State.m_Encoder.BeginEvent(kMark);
-  State.m_Encoder.EmitString(buffer);
-}
-
-void MemTrace::AddressAllocate(
-    const void* base, size_t size_bytes, const char* name)
-{
-  if (!State.m_Active)
-    return;
-
-  CSAutoLock lock(State.m_Lock);
-
-  State.m_Encoder.BeginEvent(kAddressAllocate);
-  State.m_Encoder.EmitPointer(base);
-  State.m_Encoder.EmitUnsigned(size_bytes);
-  State.m_Encoder.EmitString(name);
-}
-
-void MemTrace::AddressFree(const void* base)
-{
-  if (!State.m_Active || base == NULL)
-    return;
-
-  CSAutoLock lock(State.m_Lock);
-
-  State.m_Encoder.BeginEvent(kAddressFree);
-  State.m_Encoder.EmitPointer(base);
-}
-
-void MemTrace::VirtualCommit(const void* base, size_t size_bytes)
-{
-  if (!State.m_Active)
-    return;
-
-  CSAutoLock lock(State.m_Lock);
-
-  State.m_Encoder.BeginEvent(kVirtualCommit);
-  State.m_Encoder.EmitPointer(base);
-  State.m_Encoder.EmitUnsigned(size_bytes);
-}
-
-void MemTrace::VirtualDecommit(const void* base, size_t size_bytes)
-{
-  if (!State.m_Active)
-    return;
-
-  CSAutoLock lock(State.m_Lock);
-
-  State.m_Encoder.BeginEvent(kVirtualDecommit);
-  State.m_Encoder.EmitPointer(base);
-  State.m_Encoder.EmitUnsigned(size_bytes);
+	State.m_Encoder.BeginEvent(kBeginStream);
+	State.m_Encoder.EmitUnsigned(kStreamMagic);
+	State.m_Encoder.EmitString(kPlatformName);
+	State.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
 }
 
 MemTrace::HeapId MemTrace::HeapCreate(const char* name)
@@ -677,20 +586,6 @@ void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
   State.m_Encoder.EmitUnsigned(id);
   State.m_Encoder.EmitPointer(ptr);
   State.m_Encoder.EmitUnsigned(size_bytes);
-}
-
-void MemTrace::HeapReallocate(HeapId id, const void* ptr_in, const void* ptr_out, size_t new_size_bytes)
-{
-  if (!State.m_Active)
-    return;
-
-  CSAutoLock lock(State.m_Lock);
-
-  State.m_Encoder.BeginEvent(kHeapReallocate);
-  State.m_Encoder.EmitUnsigned(id);
-  State.m_Encoder.EmitPointer(ptr_in);
-  State.m_Encoder.EmitPointer(ptr_out);
-  State.m_Encoder.EmitUnsigned(new_size_bytes);
 }
 
 void MemTrace::HeapFree(HeapId id, const void* ptr)

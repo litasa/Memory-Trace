@@ -15,7 +15,3 @@ compareBuffers = function(lhs,rhs) {
   }
   return 'equal';
 }
-
-bufferToInt = function(buff) {
-  
-}

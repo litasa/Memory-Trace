@@ -35,13 +35,6 @@ namespace MemTrace
 {
   typedef uint32_t HeapId;
 
-  enum ScopeKind
-  {
-    kScopeNone,
-    kScopeAsset,
-    kScopeComponent
-  };
-
 #if MEMTRACE_ENABLE
 
   // Get connection parameters specified on the command line, if any (returns true)
@@ -54,56 +47,21 @@ namespace MemTrace
 
   void    Shutdown();
 
-  void    UserMark(const char* label, ...);
-
   void    Flush();
 
-  void    AddressAllocate(const void* base, size_t size_bytes, const char* name);
-  void    AddressFree(const void* base);
-
-  void    VirtualCommit(const void* base, size_t size_bytes);
-  void    VirtualDecommit(const void* base, size_t size_bytes);
+  void	  BeginStream();
 
   HeapId  HeapCreate(const char* name);
   void    HeapDestroy(HeapId heap_id);
+
   void    HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
   void    HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes);
+
   void    HeapAllocate(HeapId heap_id, const void* ptr, size_t size_bytes);
-  void    HeapReallocate(HeapId heap_id, const void* ptr_in, const void* ptr_out, size_t new_size_bytes);
   void    HeapFree(HeapId heap_id, const void* ptr);
 
-  void    PushScope(ScopeKind kind, const char* str, ScopeKind* old_kind, const char** old_str);
-  void    RestoreScope(ScopeKind kind, const char* str);
-
-  class ScopeHelper
-  {
-    ScopeKind m_Kind;
-    const char *m_String;
-
-  public:
-    ScopeHelper(ScopeKind kind, const char* str)
-    {
-      PushScope(kind, str, &m_Kind, &m_String);
-    }
-
-    ~ScopeHelper()
-    {
-      RestoreScope(m_Kind, m_String);
-    }
-  private:
-    ScopeHelper(const ScopeHelper&);
-    ScopeHelper& operator=(const ScopeHelper&);
-  };
 
   void DummyInitFunction(char dummy);
-
-#define MEMTRACE_SCOPE(kind, text) \
-  ::MemTrace::ScopeHelper memtrace_scope_(kind, text)
-
-#else
-
-#define MEMTRACE_SCOPE(kind, text) \
-  do {} while(0)
 
 #endif
 
