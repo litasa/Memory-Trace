@@ -1,4 +1,4 @@
-
+var BigNumber = require('bignumber.js');
 var STREAM = new function () {
   
   global.Modules = [];
@@ -15,7 +15,8 @@ var STREAM = new function () {
       out[count++] = b;
     } while (b < 128);
     out[count -1] -= 0x80;
-    ret.push(decodeBuffer(out));
+    var big = new BigNumber("0x" + decodeBuffer(out).toString('hex'),16);
+    ret.push(big);
 	  return true;
   }
 
@@ -41,7 +42,7 @@ var STREAM = new function () {
   this.readString = function readString(buffer, ret)
   {
 	  if(!this.readByte(buffer, ret)) { return false; }
-	  var length = ret.pop().readUInt32BE(4);;
+	  var length = ret.pop().toNumber();
 
 	  var string = String("");
 	  for(i=0; i < length; ++i)

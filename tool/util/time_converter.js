@@ -3,14 +3,12 @@ var TimeConverter = function() {
 }
 
 TimeConverter.prototype.setFrequency = function(frequency) {
-    this.tick_time_ = 1/(frequency.readUInt32BE(4));
+    var one = new BigNumber(1);
+    this.tick_time_ = one.div(frequency);
 }
 
-TimeConverter.prototype.getSeconds = function(buffer) {
-    if(buffer.readUInt32BE() != 0) {
-        console.log("overflow of number. Need to handle this")
-    }
-    return buffer.readUInt32BE(4)*this.tick_time_;
+TimeConverter.prototype.getSeconds = function(bignum) {
+    return bignum.times(this.tick_time_).toNumber();
 }
 
 module.exports = TimeConverter;

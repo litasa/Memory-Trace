@@ -33,13 +33,14 @@ MemoryState.prototype.createAllocation = function(data) {
   this.current_time_ = data.timestamp;
   var alloc = this.heaps_.get(data.id);
   alloc.addAllocation(data);
-  sendToChart('new-allocation', {id: data.id, timestamp: data.timestamp, size: alloc.currentMemory_.value()})
+  sendToChart('allocation', {id: data.id, timestamp: data.timestamp, size: alloc.currentMemory_.value()})
 }
 
 MemoryState.prototype.removeAllocation = function(data) {
   this.current_time_ = data.timestamp;
   var alloc = this.heaps_.get(data.id);
   alloc.removeAllocation(data);
+  sendToChart('allocation', {id: data.id, timestamp: data.timestamp, size: alloc.currentMemory_.value()})
 }
 
 MemoryState.prototype.print = function() {

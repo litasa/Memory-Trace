@@ -11,6 +11,9 @@ initChart = function () {
 			type: 'line',
 			data: lineData,
 			options: {
+				legend: {
+					display: false
+				},
 				responsive: false,
 				animation: {
 					duration: 0
@@ -47,7 +50,7 @@ Required for a chart object
 			dataPoints: []
 */
 Visualization = new function() {
-	this.MaxHorizontal = 500;
+	this.MaxHorizontal = 100;
 	this.Scale = 100;
 
 	this.dataToDisplay = [];
@@ -67,6 +70,8 @@ Visualization = new function() {
 
 	this.chartNewDataset = function(id, time) {
 		var dataset = {
+			lineTension: 0,
+			fill: false,
 			data: []
 		}
 		dataset.data.push({x: time, y:0})
@@ -74,7 +79,7 @@ Visualization = new function() {
 	}
 }
 
-ipcRenderer.on('new-allocation', function(event, data) {
+ipcRenderer.on('allocation', function(event, data) {
   Visualization.chartDataUpdate(data.id,data.timestamp,data.size);
 })
 

@@ -54,6 +54,7 @@ var EventDecoder = new function() {
 				if(!HeapFree(buffer,data)) {
 					return null;
 				}
+				memory_state.removeAllocation(data);
 			break;
 
 			case(Enum.EndStream) :
@@ -76,7 +77,7 @@ var EventDecoder = new function() {
     	if(!STREAM.readByte(buffer, ret)) { return false; } //code
     	if(!STREAM.readByte(buffer, ret)) { return false; } //timestamp
 
-		data.event     = ret[0].readUInt32BE(4);
+		data.event     = ret[0].toNumber();
 		data.timestamp = time.getSeconds(ret[1]);
 		
 		return true;
@@ -101,7 +102,7 @@ var EventDecoder = new function() {
 	  if(!STREAM.readByte(buffer, ret))   { return false; } //id
 	  if(!STREAM.readString(buffer, ret)) { return false; } //name
 	  //begin out event
-	  data.id   = ret[0].readUInt32BE(4);
+	  data.id   = ret[0].toNumber();
 	  data.name = ret[1];
 	  return true;
   }
@@ -110,7 +111,7 @@ var EventDecoder = new function() {
 		var ret = [];
 		if(!STREAM.readByte(buffer, ret)) {return false;} //id
 
-		data.id = ret[0].readUInt32BE(4);
+		data.id = ret[0].toNumber();
 
 		return true;
   }
@@ -121,9 +122,9 @@ var EventDecoder = new function() {
 		if(!STREAM.readByte(buffer, ret)) { return false; } //pointer to core start
 		if(!STREAM.readByte(buffer, ret)) { return false; } //size
 
-		data.id      = ret[0].readUInt32BE(4);
+		data.id      = ret[0].toNumber();
 		data.pointer = ret[1];
-		data.size    = ret[2].readUInt32BE(4);
+		data.size    = ret[2];
 
 		return true;
 	}
@@ -134,9 +135,9 @@ var EventDecoder = new function() {
 		if(!STREAM.readByte(buffer, ret)) { return false; } //pointer to core start
 		if(!STREAM.readByte(buffer, ret)) { return false; } //size
 
-		data.id   	 = ret[0].readUInt32BE(4);
+		data.id   	 = ret[0].toNumber();
 		data.pointer = ret[1];
-		data.size 	 = ret[2].readUInt32BE(4);
+		data.size 	 = ret[2];
 
 		return true;
 	}
@@ -148,9 +149,9 @@ var EventDecoder = new function() {
 		if(!STREAM.readByte(buffer, ret)) { return false; } //size
 
 		//TODO check so allocation is not already made
-		data.id      = ret[0].readUInt32BE(4);
+		data.id      = ret[0].toNumber();
 		data.pointer = ret[1];
-		data.size    = ret[2].readUInt32BE(4);
+		data.size    = ret[2]
 
 		return true;
   }
@@ -160,7 +161,7 @@ var EventDecoder = new function() {
 		if(!STREAM.readByte(buffer, ret)) { return false; } //id
 		if(!STREAM.readByte(buffer, ret)) { return false; } //pointer;
 
-		data.id      = ret[0].readUInt32BE(4);
+		data.id      = ret[0].toNumber();
 		data.pointer = ret[1];
 
 		return true;

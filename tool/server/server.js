@@ -13,11 +13,11 @@ var external_server = net.createServer(function (external_socket) {
   var date = new Date();
   var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
   var name =  "./database/test_" + time + ".db";
-  //var unmodified_stream = fs.createWriteStream(name);
+  var unmodified_stream = fs.createWriteStream(name);
 
     //write input data to file
     external_socket.pipe(internal_socket);
-    //external_socket.pipe(unmodified_stream);
+    external_socket.pipe(unmodified_stream);
 
     external_socket.on('close', function(data) {
       console.log("socket close")

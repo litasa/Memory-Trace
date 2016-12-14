@@ -3,7 +3,7 @@ const RingBuffer = require("../util/ringbuffer.js");
 
 var ringBuffersize = 128*1024;
 var ringBuffer =  new RingBuffer(ringBuffersize);
-var numEvents = 0;
+var event_count = 0;
 
 var last_time;
 
@@ -27,14 +27,14 @@ var server = net.createServer(function(socket) {
           break;
         }
         else{
-          numEvents++;
+          event_count++;
           last_time = event.timestamp;
         }
       } while(ringBuffer.remaining());
       ringBuffer.rollback();
     } while(num_data_left);
 
-   console.log('last logged time: ' + last_time + ' seconds');
+   console.log('Registerd events: ' + event_count)
   })
 
   socket.on('error', function(err) {
