@@ -1,5 +1,4 @@
-const Allocator = require('./memory_objects.js')
-require('../util/hex_handler.js')
+const Heap = require('./memory_objects.js')
 const SortedMap = require("collections/sorted-map");
 
 var MemoryState = function() {
@@ -9,48 +8,38 @@ var MemoryState = function() {
 
 MemoryState.prototype.createHeap = function(data) {
   this.current_time_ = data.timestamp;
-  var alloc = new Heap(data.id, data.nameId);
+  var alloc = new Heap(data.id, data.nameId, data.timestamp);
   this.heaps_.set(data.id, alloc);
-  //console.log('MemoryState: created Heap with key: ' + data.id)
-  //this.print();
+  sendToChart('heap-created', {id: data.id, timestamp: data.timestamp});
 }
 
 MemoryState.prototype.removeHeap = function(data) {
   this.heaps_.delete(data.id);
-  //console.log('MemoryState: removed Heap with key: ' + data.id)
-  //this.print();
 }
 
 MemoryState.prototype.createCore = function(data) {
   this.current_time_ = data.timestamp;
   var alloc = this.heaps_.get(data.id);
   alloc.addCore(data);
-  //console.log('MemoryState: created Core with key: ' + data.pointer.toString('hex'))
-  //this.print();
 }
 
 MemoryState.prototype.removeCore = function(data) {
   this.current_time_ = data.timestamp;
   var alloc = this.heaps_.get(data.id);
   alloc.removeCore(data);
-  //console.log('MemoryState: removed Core with key: ' + data.pointer.toString('hex'));
-  //this.print();
 }
 
 MemoryState.prototype.createAllocation = function(data) {
   this.current_time_ = data.timestamp;
   var alloc = this.heaps_.get(data.id);
   alloc.addAllocation(data);
-  //console.log('MemoryState: created Allocation with key: ' + data.pointer.toString('hex'))
-  //this.print();
+  sendToChart('new-allocation', {id: data.id, timestamp: data.timestamp, size: alloc.currentMemory_.value()})
 }
 
 MemoryState.prototype.removeAllocation = function(data) {
   this.current_time_ = data.timestamp;
   var alloc = this.heaps_.get(data.id);
   alloc.removeAllocation(data);
-  //console.log('MemoryState: removed Allocation with key: ' + data.pointer.toString('hex'))
-  //this.print();
 }
 
 MemoryState.prototype.print = function() {

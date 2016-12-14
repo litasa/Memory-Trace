@@ -1,13 +1,16 @@
 const SortedMap = require("collections/sorted-map");
 const Numeral = require('numeral');
 
-var Heap = function(id, name) {
+var Heap = function(id, name, time) {
   this.id_ = id;
   this.name_ = name;
   this.cores_ = new SortedMap();
   this.allocations_ = new SortedMap();
   this.managedMemory_ = Numeral(0);
   this.currentMemory_ = Numeral(0);
+  this.birth_ = time;
+
+  sendToChart('Heap-created')
 };
 
 Heap.prototype.addCore = function(data) {

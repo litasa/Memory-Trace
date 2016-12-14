@@ -20,6 +20,8 @@ var STREAM = new function () {
   }
 
 	decodeBuffer = function decodeBuffer(buffer) {
+    //This should probably be done in cpp as a Modules
+    //it is kinda slow
     var s = "";
     for(var i = 0; i < buffer.length; ++i) {
         var tmp = buffer[i].toString(2);
@@ -27,7 +29,7 @@ var STREAM = new function () {
         tmp = tmp.substr(1);
         s = tmp + s;
     }
-    //add the last 8 zeroes
+    //add the last 8 zeroes. is this "needed?"
     s = "00000000" + s;
     for(var i = 0; i < buffer.length; ++i) {
         buffer[i] = parseInt(s.slice(i*8, i*8+8), 2);

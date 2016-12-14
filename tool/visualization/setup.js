@@ -1,6 +1,5 @@
-const ipcRenderer = require('electron').ipcRenderer
-
 connected = false;
+server = null;
 
 window.onload = function() {
   initChart();

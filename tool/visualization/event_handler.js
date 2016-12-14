@@ -11,7 +11,7 @@ initChart = function () {
 			type: 'line',
 			data: lineData,
 			options: {
-				responsive: true,
+				responsive: false,
 				animation: {
 					duration: 0
 				},
@@ -47,7 +47,7 @@ Required for a chart object
 			dataPoints: []
 */
 Visualization = new function() {
-	this.MaxHorizontal = 1000;
+	this.MaxHorizontal = 500;
 	this.Scale = 100;
 
 	this.dataToDisplay = [];
@@ -57,17 +57,31 @@ Visualization = new function() {
 		    this.chart.update();
 	}
 
-	var chartDataUpdate = function (allocator, core, time, size){
+	this.chartDataUpdate = function (id, time, size){
+		lineData.datasets[id].data.push({x: time, y: size});
 
-		//TODO Make sure that high values also get added
-		allocator.usedMemory += size;
-		//TODO Make sure that high values also get added
-		core.usedMemory += size;
-
-		lineData.datasets[allocator.id].data.push({x: time, y: core.usedMemory});
-
-		if(lineData.datasets[allocator.id].data.length > Visualization.MaxHorizontal){
-			lineData.datasets[allocator.id].data.splice(0,1);
+		if(lineData.datasets[id].data.length > Visualization.MaxHorizontal){
+			lineData.datasets[id].data.splice(0,1);
 		}
 	}
+
+	this.chartNewDataset = function(id, time) {
+		var dataset = {
+			data: []
+		}
+		dataset.data.push({x: time, y:0})
+		lineData.datasets.push(dataset);
+	}
 }
+
+ipcRenderer.on('new-allocation', function(event, data) {
+  Visualization.chartDataUpdate(data.id,data.timestamp,data.size);
+})
+
+ipcRenderer.on('heap-created', function(event, data) {
+  Visualization.chartNewDataset(data.id,data.timestamp);
+})
+
+setInterval(function() {
+	Visualization.update()
+},200);

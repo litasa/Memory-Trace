@@ -1,4 +1,4 @@
-global.typeEnum = {
+Enum = {
   'BeginStream' : 1,
   'EndStream': 2,
 
