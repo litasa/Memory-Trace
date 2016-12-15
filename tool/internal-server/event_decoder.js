@@ -8,11 +8,13 @@ var EventDecoder = new function() {
 	  	buffer.setRollback();
 		
 		//Start a new event read, contains eventType and timestamp
-		if(!BeginEvent(buffer, data)) { return null; }
-
+		if(!BeginEvent(buffer, data)) {
+			return null;
+		}
 		switch(data.event) {
 			case(Enum.BeginStream) :
       			if(!BeginStream(buffer,data)) {
+					
 					return null;
 				}
 				//TODO -- check that magic number is correct etc
@@ -62,13 +64,13 @@ var EventDecoder = new function() {
 				//no additional data sent other than the Begin Event
 			break;
 			default:
+				console.log("unhandled event id: " + data.event);
 				//Unknown eventcode results in no read
 				return null;
 		} //end of switch
 
 		//could probably be omitted, but is here for safety.
 		buffer.setRollback();
-
 		return data;
 	}
 

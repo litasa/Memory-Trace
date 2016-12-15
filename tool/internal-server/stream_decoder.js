@@ -5,7 +5,7 @@ var STREAM = new function () {
 
   this.readByte = function read64Byte(buffer, ret){
     var count = 0;
-    var out = Buffer.alloc(8);
+    var out = Buffer.alloc(10);
     do {
   		var b = buffer.next();
   		if(b === null) {
@@ -23,6 +23,7 @@ var STREAM = new function () {
 	decodeBuffer = function decodeBuffer(buffer) {
     //This should probably be done in cpp as a Modules
     //it is kinda slow
+    var ret = Buffer.allocUnsafe(8)
     var s = "";
     for(var i = 0; i < buffer.length; ++i) {
         var tmp = buffer[i].toString(2);
@@ -30,13 +31,13 @@ var STREAM = new function () {
         tmp = tmp.substr(1);
         s = tmp + s;
     }
-    //add the last 8 zeroes. is this "needed?"
-    s = "00000000" + s;
-    for(var i = 0; i < buffer.length; ++i) {
-        buffer[i] = parseInt(s.slice(i*8, i*8+8), 2);
+    //s is length 70 make it 64
+    while(s.length > 64) { s = s.substr(1); }
+    for(var i = 0; i < 8; ++i) {
+        ret[i] = parseInt(s.slice(i*8, i*8+8), 2);
     }
-    
-    return buffer;
+
+    return ret;
 	}
 
   this.readString = function readString(buffer, ret)
@@ -47,7 +48,12 @@ var STREAM = new function () {
 	  var string = String("");
 	  for(i=0; i < length; ++i)
 	  {
-		  string += String.fromCharCode(buffer.next());
+      var b = buffer.next();
+      if(b === null) {
+        ret = 0;
+        return false;
+      }
+		  string += String.fromCharCode(b);
 	  }
 	  ret.push(string);
 

@@ -45,9 +45,12 @@ var server = net.createServer(function(socket) {
 
 server.on('listening', function(data) {
   console.log("listening to: " + server.address())
-  sendToServer('please-connect', {addr: list});
 })
 
 ipcRenderer.on('stream-end', function(event, data) {
   console.log('finished recieving data: ')
 })
+
+window.onload = function() {
+  sendToServer('please-connect', {addr: list});
+}
