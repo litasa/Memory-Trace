@@ -1,4 +1,5 @@
 #include "functions.h"
+#include <string>
 
 NAN_METHOD(nothing) {
 }
@@ -65,35 +66,33 @@ Nan::Persistent<v8::Function> MyObject::constructor;
 
 NAN_MODULE_INIT(MyObject::Init) {
   v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
-  tpl->SetClassName(Nan::New("MyObject").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
-
+  tpl->SetClassName(Nan::New("MyObject").ToLocalChecked());
+  
   Nan::SetPrototypeMethod(tpl, "plusOne", PlusOne);
   Nan::SetPrototypeMethod(tpl, "minusOne", MinusOne);
+  Nan::SetPrototypeMethod(tpl, "getName", GetName);
 
   constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
   Nan::Set(target, Nan::New("MyObject").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }
 
-MyObject::MyObject(double value) : value_(value) {
+MyObject::MyObject(double value, std::string name) : value_(value), name_(name) {
 }
 
 MyObject::~MyObject() {
 }
 
 NAN_METHOD(MyObject::New) {
-    
-  if (info.IsConstructCall()) {
+    if (!info[1]->IsString()) {
+        // This clause would catch IsNull and IsUndefined too...
+        return ;
+    }
     double value = info[0]->IsUndefined() ? 0 : Nan::To<double>(info[0]).FromJust();
-    MyObject *obj = new MyObject(value);
+    v8::String::Utf8Value name(info[1]);
+    MyObject *obj = new MyObject(value, std::string(*name));
     obj->Wrap(info.This());
     info.GetReturnValue().Set(info.This());
-  } else {
-    const int argc = 1; 
-    v8::Local<v8::Value> argv[argc] = {info[0]};
-    v8::Local<v8::Function> cons = Nan::New(constructor);
-    info.GetReturnValue().Set(cons->NewInstance(argc, argv));
-  }
 }
 
 NAN_METHOD(MyObject::PlusOne) {
@@ -106,4 +105,10 @@ NAN_METHOD(MyObject::MinusOne) {
   MyObject* obj = Nan::ObjectWrap::Unwrap<MyObject>(info.This());
   obj->value_ -= 1;
   info.GetReturnValue().Set(obj->value_);
+}
+
+NAN_METHOD(MyObject::GetName) {
+    MyObject* obj = Nan::ObjectWrap::Unwrap<MyObject>(info.This());
+    v8::Local<v8::String> retval = v8::String::NewFromUtf8(info.GetIsolate(), obj->name_.c_str());
+    info.GetReturnValue().Set(retval);
 }

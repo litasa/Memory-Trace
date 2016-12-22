@@ -2,6 +2,7 @@
 #define NATIVE_EXTENSION_GRAB_H
 
 #include <nan.h>
+#include <string>
 
 // Example top-level functions. These functions demonstrate how to return various js types.
 // Implementations are in functions.cc
@@ -23,14 +24,16 @@ class MyObject : public Nan::ObjectWrap {
     static NAN_MODULE_INIT(Init);
 
   private:
-    explicit MyObject(double value = 0);
+    explicit MyObject(double value = 0, std::string = "(null)");
     ~MyObject();
 
     static NAN_METHOD(New);
     static NAN_METHOD(PlusOne);
     static NAN_METHOD(MinusOne);
+    static NAN_METHOD(GetName);
     static Nan::Persistent<v8::Function> constructor;
     double value_;
+    std::string name_;
 };
 
 #endif

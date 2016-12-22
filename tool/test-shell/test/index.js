@@ -38,9 +38,17 @@ decodeBuffer = function decodeBuffer(buffer) {
     ret.swap64();
     return ret;
 }
+    var obj = new nativeExtension.MyObject(0, "name is john");
+    assert.equal(obj.plusOne(), 1);
+    assert.equal(obj.plusOne(), 2);
+    assert.equal(obj.plusOne(), 3);
+    assert.equal(obj.minusOne(), 2);
+    assert.equal(obj.minusOne(), 1);
+    assert.equal(obj.minusOne(), 0);
+    assert.equal(obj.getName(), "name is john");
 
-console.log("native: " + testFunc(nativeExtension.decode, enc_magic, 10000000));
-console.log("Decode: " + testFunc(decodeBuffer, enc_magic, 10000000));
+console.log("native: " + testFunc(nativeExtension.decode, enc_magic, 1000));
+console.log("Decode: " + testFunc(decodeBuffer, enc_magic, 1000));
 
 //assert.deepEqual(nativeExtension.decode(enc_magic), magic);
 //assert.deepEqual(decodeBuffer(enc_magic), magic);
