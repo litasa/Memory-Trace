@@ -1,26 +1,33 @@
 #ifndef HELPER_FUNCTIONS_H
 #define HELPER_FUNCTIONS_H
+
+#include <string>
 namespace helper {
-    uint64_t decode(char* buffer) {
+    uint64_t decode(char* buffer, size_t& pos) {
         uint64_t mul = 1;
         uint64_t val = 0;
-        int pos = 0;
+        int i = pos;
         uint8_t b = 0;
         do {
-            b = (uint8_t)buffer[pos];
+            b = (uint8_t)buffer[i];
             
             val = val | (b*mul);
             mul = mul << 7;
-            pos++;
+            i++;
         } while(b < 0x80);
         val &= ~mul;
+        pos = i;
         return val;
     }
 
-    char* encode(uint64_t val, size_t& retsize) {
+    std::string decodeString(char* buffer, size_t& pos) {
+        return std::string("");
+    }
+
+    char* encode(uint64_t val, size_t& pos, size_t& retsize) {
         char* out  = new char(10);
         uint8_t byte = 0;
-        size_t i = 0;
+        size_t i = pos;
 
         do
         {
@@ -29,7 +36,8 @@ namespace helper {
             val = val >> 7;
         } while (val);
         out[i-1] = byte | 0x80;
-        retsize = i;
+        retsize = i - pos;
+        pos = i;
         return out;
     }
 } //namespace helper
