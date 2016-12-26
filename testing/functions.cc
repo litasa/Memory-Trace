@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-NAN_METHOD(unpackBuffer) {
+NAN_METHOD(decodeValue) {
     char* buffer = (char*) node::Buffer::Data(info[0]->ToObject());
     size_t size = node::Buffer::Length(info[0]);
 	

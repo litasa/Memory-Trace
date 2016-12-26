@@ -6,7 +6,7 @@
 // Example top-level functions. These functions demonstrate how to return various js types.
 // Implementations are in functions.cc
 
-NAN_METHOD(unpackBuffer);
+NAN_METHOD(decodeValue);
 NAN_METHOD(encodeValue);
 
 
