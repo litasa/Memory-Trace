@@ -7,10 +7,25 @@ using v8::FunctionTemplate;
 
 NAN_MODULE_INIT(InitAll) {
   Nan::Set(target, Nan::New("decodeValue").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(decodeValue)).ToLocalChecked());
+    Nan::GetFunction(Nan::New<FunctionTemplate>(DecodeValue)).ToLocalChecked());
+
+    Nan::Set(target, Nan::New("decodeString").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(DecodeString)).ToLocalChecked());
+
+    Nan::Set(target, Nan::New("encodeString").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(EncodeString)).ToLocalChecked());
 
     Nan::Set(target, Nan::New("encodeValue").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(encodeValue)).ToLocalChecked());
+    Nan::GetFunction(Nan::New<FunctionTemplate>(EncodeValue)).ToLocalChecked());
+
+    //for testing purposes
+    Nan::Set(target, Nan::New("encodeNumber").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(EncodeNumber)).ToLocalChecked());
+
+    Nan::Set(target, Nan::New("decodeStream").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(DecodeStream)).ToLocalChecked());
+
+    RingBuffer::Init(target);
 }
 
 NODE_MODULE(NativeExtension, InitAll)

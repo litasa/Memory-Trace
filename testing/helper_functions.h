@@ -2,7 +2,12 @@
 #define HELPER_FUNCTIONS_H
 
 #include <string>
+#include <iostream>
+
 namespace helper {
+
+
+
     uint64_t decode(char* buffer, size_t& pos) {
         uint64_t mul = 1;
         uint64_t val = 0;
@@ -21,10 +26,13 @@ namespace helper {
     }
 
     std::string decodeString(char* buffer, size_t& pos) {
-        return std::string("");
+        uint64_t length = decode(buffer,pos);
+        std::string str((buffer + pos), length);
+        pos += length;
+        return str;
     }
 
-    char* encode(uint64_t val, size_t& pos, size_t& retsize) {
+    char* encode(uint64_t val, size_t& pos, size_t& encode_size) {
         char* out  = new char(10);
         uint8_t byte = 0;
         size_t i = pos;
@@ -36,7 +44,7 @@ namespace helper {
             val = val >> 7;
         } while (val);
         out[i-1] = byte | 0x80;
-        retsize = i - pos;
+        encode_size = i - pos;
         pos = i;
         return out;
     }
