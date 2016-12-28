@@ -2,16 +2,13 @@
 #define HELPER_FUNCTIONS_H
 
 #include <string>
-#include <iostream>
 
 namespace helper {
-
-
 
     uint64_t decode(char* buffer, size_t& pos) {
         uint64_t mul = 1;
         uint64_t val = 0;
-        int i = pos;
+        size_t i = pos;
         uint8_t b = 0;
         do {
             b = (uint8_t)buffer[i];

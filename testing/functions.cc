@@ -18,7 +18,7 @@ NAN_METHOD(DecodeValue) {
 		val = val >> 8;
 	}
    
-    info.GetReturnValue().Set(Nan::NewBuffer(retval, size).ToLocalChecked());
+    info.GetReturnValue().Set(Nan::NewBuffer(retval, (uint32_t)size).ToLocalChecked());
 }
 
 NAN_METHOD(DecodeString) {
@@ -43,7 +43,7 @@ NAN_METHOD(EncodeString) {
     memcpy(retval, enc_length, val_length); //string length
     memcpy(retval + val_length, *val, len); //string content
 
-    info.GetReturnValue().Set(Nan::NewBuffer(retval, val_length + len).ToLocalChecked());
+    info.GetReturnValue().Set(Nan::NewBuffer(retval, (uint32_t)(val_length + len)).ToLocalChecked());
 }
 
 NAN_METHOD(EncodeValue) {
@@ -60,7 +60,7 @@ NAN_METHOD(EncodeValue) {
     size_t retsize = 0;
     size_t readPos = 0;
     char* retval = helper::encode(value, readPos, retsize);
-    info.GetReturnValue().Set(Nan::NewBuffer(retval, retsize).ToLocalChecked());
+    info.GetReturnValue().Set(Nan::NewBuffer(retval, (uint32_t)(retsize)).ToLocalChecked());
 }
 
 //for testing purposes
@@ -85,7 +85,7 @@ NAN_METHOD(DecodeStream) {
     char* buffer = (char*) node::Buffer::Data(info[0]->ToObject());
     size_t size = node::Buffer::Length(info[0]);
     size_t readPos = 0;
-    info.GetReturnValue().Set((int)size);
+    info.GetReturnValue().Set((uint32_t)size);
 }
 
 
@@ -119,63 +119,6 @@ NAN_MODULE_INIT(RingBuffer::Init) {
   Nan::Set(target, Nan::New("RingBuffer").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }
 
-RingBuffer::RingBuffer(int value) : size_(value) {
-    if(value % 2 != 0) {
-        std::cout << "need to be divisible by 2 to work properly" << std::endl;
-    }
-    buffer_ = new char[size_];
-    //for dev should be removed
-    memset(buffer_,0,size_);
-
-    ring_mask_ = size_ - 1; //128 * 1024 - 1, 0x1ffff
-    rollback_ = 0;
-    read_position_ = 0;
-    unread_ = 0;
-}
-
-RingBuffer::~RingBuffer() {
-    free(buffer_);
-    buffer_ = nullptr;
-}
-
-uint8_t RingBuffer::getByte() {
-    read_position_ = ring_mask_ & read_position_;
-    uint8_t ret = (uint8_t)buffer_[read_position_];
-    read_position_++;
-    unread_--;
-    return ret;
-}
-
-size_t RingBuffer::getWritePos() {
-    return (read_position_ + unread_) & ring_mask_;
-}
-
-size_t RingBuffer::populate(char* buffer, size_t size) {
-  size_t space_left = size_ - unread_;
-  size_t write_pos = getWritePos();
-  //determine number of items to copy
-  size_t num_to_copy = min(size, space_left);
-  if(num_to_copy > 0) {
-    memcpy(buffer_ + write_pos, buffer, num_to_copy);
-    unread_ += num_to_copy;
-  }
-  return size - num_to_copy;
-}
-
-void RingBuffer::setRollback() {
-    rollback_ = read_position_;
-}
-
-void RingBuffer::doRollback() {
-    if(rollback_ > read_position_) {
-      //if read_position_ wrapped around
-      read_position_ += size_;
-  }
-  size_t items_undone = read_position_ - rollback_;
-  unread_ += items_undone;
-  read_position_ = rollback_;
-}
-
 NAN_METHOD(RingBuffer::New) {
   if (info.IsConstructCall()) {
     int value = info[0]->IsUndefined() ? 0 : Nan::To<int>(info[0]).FromJust();
@@ -197,7 +140,7 @@ NAN_METHOD(RingBuffer::Populate) {
   char* buff = (char*) node::Buffer::Data(info[0]->ToObject());
   size_t size = node::Buffer::Length(info[0]);
 
-  info.GetReturnValue().Set((int)(obj->populate(buff,size)));
+  info.GetReturnValue().Set((uint32_t)(obj->populate(buff,size)));
 }
 
 /**
@@ -206,7 +149,7 @@ NAN_METHOD(RingBuffer::Populate) {
 NAN_METHOD(RingBuffer::ReadByte) {
   RingBuffer* obj = Nan::ObjectWrap::Unwrap<RingBuffer>(info.This());
   if(obj->unread_ > 0) {
-    info.GetReturnValue().Set((int)obj->getByte());
+    info.GetReturnValue().Set((uint32_t)obj->getByte());
   }
   else {
       info.GetReturnValue().Set(Nan::Null());
@@ -237,7 +180,7 @@ NAN_METHOD(RingBuffer::GetBuffer) {
 **/
 NAN_METHOD(RingBuffer::GetReadPosition) {
   RingBuffer* obj = Nan::ObjectWrap::Unwrap<RingBuffer>(info.This());
-  info.GetReturnValue().Set((int)obj->read_position_);
+  info.GetReturnValue().Set((uint32_t)obj->read_position_);
 }
 
 /**
@@ -245,7 +188,7 @@ NAN_METHOD(RingBuffer::GetReadPosition) {
 **/
 NAN_METHOD(RingBuffer::GetWritePosition) {
   RingBuffer* obj = Nan::ObjectWrap::Unwrap<RingBuffer>(info.This());
-  info.GetReturnValue().Set((int)obj->getWritePos());
+  info.GetReturnValue().Set((uint32_t)obj->getWritePos());
 }
 
 /**
@@ -253,12 +196,12 @@ NAN_METHOD(RingBuffer::GetWritePosition) {
 **/
 NAN_METHOD(RingBuffer::GetUnread) {
   RingBuffer* obj = Nan::ObjectWrap::Unwrap<RingBuffer>(info.This());
-  info.GetReturnValue().Set((int)obj->unread_);
+  info.GetReturnValue().Set((uint32_t)obj->unread_);
 }
 /**
 * Returns the rollback position
 **/
 NAN_METHOD(RingBuffer::GetRollbackPosition) {
   RingBuffer* obj = Nan::ObjectWrap::Unwrap<RingBuffer>(info.This());
-  info.GetReturnValue().Set((int)obj->rollback_);
+  info.GetReturnValue().Set((uint32_t)obj->rollback_);
 }
