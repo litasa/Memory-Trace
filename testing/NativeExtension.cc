@@ -26,6 +26,7 @@ NAN_MODULE_INIT(InitAll) {
     Nan::GetFunction(Nan::New<FunctionTemplate>(DecodeStream)).ToLocalChecked());
 
     RingBuffer::Init(target);
+    Decoder::Init(target);
 }
 
 NODE_MODULE(NativeExtension, InitAll)

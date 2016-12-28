@@ -3,6 +3,7 @@
 
 #include <nan.h>
 #include "ringbuffer.h"
+#include "decoder.h"
 
 // Example top-level functions. These functions demonstrate how to return various js types.
 // Implementations are in functions.cc
