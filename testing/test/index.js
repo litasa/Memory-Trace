@@ -174,16 +174,27 @@ describe('Decoder test', function() {
       });
     });
 
-    // it('Decoding long test', function(done) {
-    //  var obj = nativeExtension.Decoder();
-    //   fs.readFile("./long_test.bin", function (err, data) {
-    //     if(err){
-    //       throw "An error ocurred reading the file :" + err.message;
-    //     }
-    //     obj.unpackStream(data);
-    //     done();
-    //   });
-    // });
+    it('Decoding long test', function(done) {
+     var obj = nativeExtension.Decoder();
+      fs.readFile("./long_test.bin", function (err, data) {
+        if(err){
+          throw "An error ocurred reading the file :" + err.message;
+        }
+        obj.unpackStream(data);
+        done();
+      });
+    });
+
+    it('Decoding very long test', function(done) {
+     var obj = nativeExtension.Decoder();
+      fs.readFile("./very_long_test.bin", function (err, data) {
+        if(err){
+          throw "An error ocurred reading the file :" + err.message;
+        }
+        //obj.unpackStream(data);
+        done();
+      });
+    });
 
 }); //describe decoder test
 
