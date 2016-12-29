@@ -22,11 +22,27 @@ RingBuffer::~RingBuffer() {
     buffer_ = nullptr;
 }
 
-uint8_t RingBuffer::getByte() {
+uint8_t RingBuffer::readNext() {
     read_position_ = ring_mask_ & read_position_;
     uint8_t ret = (uint8_t)buffer_[read_position_];
     read_position_++;
     unread_--;
+    return ret;
+}
+
+size_t RingBuffer::getNumUnread() {
+    return unread_;
+}
+
+std::string RingBuffer::extractString(size_t length) {
+    size_t space_left = size_ - read_position_;
+    size_t num_to_copy = min(length, space_left);
+    std::string ret(buffer_ + read_position_, num_to_copy);
+    read_position_ += num_to_copy;
+    if(num_to_copy - length > 0) {
+        ret.append(buffer_, num_to_copy - length);
+        read_position_ = num_to_copy - length; //this might give errors (setting read_position to one behind then what it is supposed to be)
+    }
     return ret;
 }
 

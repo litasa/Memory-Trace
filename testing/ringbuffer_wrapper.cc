@@ -8,7 +8,7 @@ NAN_MODULE_INIT(RingBuffer::Init) {
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   Nan::SetPrototypeMethod(tpl, "populate", Populate);
-  Nan::SetPrototypeMethod(tpl, "readByte", ReadByte);
+  Nan::SetPrototypeMethod(tpl, "readNext", ReadNext);
   Nan::SetPrototypeMethod(tpl, "setRollback", SetRollback);
   Nan::SetPrototypeMethod(tpl, "doRollback", DoRollback);
 
@@ -51,10 +51,10 @@ NAN_METHOD(RingBuffer::Populate) {
 /**
 * Returns the next read value null if no more aviable values to read
 **/
-NAN_METHOD(RingBuffer::ReadByte) {
+NAN_METHOD(RingBuffer::ReadNext) {
   RingBuffer* obj = Nan::ObjectWrap::Unwrap<RingBuffer>(info.This());
   if(obj->unread_ > 0) {
-    info.GetReturnValue().Set((uint32_t)obj->getByte());
+    info.GetReturnValue().Set((uint32_t)obj->readNext());
   }
   else {
       info.GetReturnValue().Set(Nan::Null());

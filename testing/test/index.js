@@ -104,13 +104,13 @@ describe('Ringbuffer test', function() {
     for(var i = 0; i < buff_res.length; ++i) {
       assert.equal(obj.getUnread(), buff_res.length - i);
       assert.equal(obj.getReadPos(), i);
-      assert.equal(obj.readByte(), buff_res[i]);
+      assert.equal(obj.readNext(), buff_res[i]);
       assert.equal(obj.getWritePos(), 0);
     }
     //trying to read past number of unread
     assert.equal(obj.getUnread(), 0);
     assert.equal(obj.getReadPos(), 8);
-    assert.deepEqual(obj.readByte(), null);
+    assert.deepEqual(obj.readNext(), null);
     assert.equal(obj.getReadPos(), 8);
     assert.equal(obj.getUnread(), 0);
 
@@ -123,7 +123,7 @@ describe('Ringbuffer test', function() {
     obj.populate(Buffer.from("45678913")); //45678913
 
     for(var i = 0; i < 4; ++i) {
-      obj.readByte();
+      obj.readNext();
     }
     assert.equal(obj.getReadPos(), 4);
     assert.equal(obj.getUnread(), 4);
@@ -141,10 +141,10 @@ describe('Ringbuffer test', function() {
     var buff_res = Buffer.alloc(8);
     Buffer.from("456789").copy(buff_res);
     obj.populate(Buffer.from("456789")); //456789
-    obj.readByte();
+    obj.readNext();
     obj.setRollback();
     for(var i = 0; i < 4; ++i) {
-      obj.readByte();
+      obj.readNext();
     }
     assert.equal(obj.getReadPos(), 5);
     assert.equal(obj.getUnread(), 1);
@@ -157,6 +157,35 @@ describe('Ringbuffer test', function() {
   });
 
 }); //describe Ringbuffer test
+
+describe('Decoder test', function() {
+  it('creating decoder', function() {
+    var obj = nativeExtension.Decoder();
+  });
+
+   it('Decoding short test', function(done) {
+     var obj = nativeExtension.Decoder();
+      fs.readFile("./test.bin", function (err, data) {
+        if(err){
+          throw "An error ocurred reading the file :" + err.message;
+        }
+        obj.unpackStream(data);
+        done();
+      });
+    });
+
+    // it('Decoding long test', function(done) {
+    //  var obj = nativeExtension.Decoder();
+    //   fs.readFile("./long_test.bin", function (err, data) {
+    //     if(err){
+    //       throw "An error ocurred reading the file :" + err.message;
+    //     }
+    //     obj.unpackStream(data);
+    //     done();
+    //   });
+    // });
+
+}); //describe decoder test
 
 // describe('Full run test', function() {
 

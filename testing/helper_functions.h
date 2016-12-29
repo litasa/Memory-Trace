@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include <nan.h>
+
 namespace helper {
 
     uint64_t decode(char* buffer, size_t& pos) {
@@ -12,7 +14,6 @@ namespace helper {
         uint8_t b = 0;
         do {
             b = (uint8_t)buffer[i];
-            
             val = val | (b*mul);
             mul = mul << 7;
             i++;
@@ -34,8 +35,7 @@ namespace helper {
         uint8_t byte = 0;
         size_t i = pos;
 
-        do
-        {
+        do {
             byte = (uint8_t) (val & 0x7f);
             out[i++] = byte;
             val = val >> 7;
