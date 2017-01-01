@@ -95,7 +95,7 @@ NAN_METHOD(RingBuffer::GetReadPosition) {
 **/
 NAN_METHOD(RingBuffer::GetWritePosition) {
   RingBuffer* obj = Nan::ObjectWrap::Unwrap<RingBuffer>(info.This());
-  info.GetReturnValue().Set((uint32_t)obj->getWritePos());
+  info.GetReturnValue().Set((uint32_t)obj->write_position_);
 }
 
 /**

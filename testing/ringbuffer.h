@@ -5,26 +5,22 @@
 class RingBuffer : public Nan::ObjectWrap {
   public:
     static NAN_MODULE_INIT(Init);
-    explicit RingBuffer(int size_ = 131072); //128 * 1024, 0x20000
+    explicit RingBuffer(int size_ = 128); //128 * 1024, 0x20000
     ~RingBuffer();
     size_t getNumUnread();
+    unsigned int getReadPosition(); 
     uint8_t readNext();
-    size_t populate(char* buffer, size_t size);
+    size_t populate(char* buff, size_t size, size_t exclude_from_front = 0);
     void setRollback();
     void doRollback();
 
     std::string extractString(size_t length);
   private:
-    
-
-    
-    size_t getWritePos();
-    
-    
 
     char* buffer_;
     const int size_;
     unsigned int read_position_;
+    unsigned int write_position_;
     unsigned int rollback_;
     size_t unread_;
     size_t ring_mask_;

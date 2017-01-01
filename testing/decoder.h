@@ -11,6 +11,8 @@ class Decoder : public Nan::ObjectWrap {
     RingBuffer* getRingbuffer();
     bool decodeValue(uint64_t& ret);
     bool decodeString(std::string& ret);
+
+    void oneStep();
   private:
     explicit Decoder(); //128 * 1024, 0x20000
     ~Decoder();

@@ -128,12 +128,12 @@ describe('Ringbuffer test', function() {
     assert.equal(obj.getReadPos(), 4);
     assert.equal(obj.getUnread(), 4);
 
-    Buffer.from("123").copy(buff_res);
-    assert.equal(obj.populate(Buffer.from("123")), 0); //123789123
-    assert.deepEqual(obj.getBuffer(), buff_res);
-    assert.equal(obj.getReadPos(), 4);
-    assert.equal(obj.getUnread(), 7);
-    assert.equal(obj.getWritePos(),3);
+    // Buffer.from("123").copy(buff_res);
+    // assert.equal(obj.populate(Buffer.from("123")), 0); //123789123
+    // assert.deepEqual(obj.getBuffer(), buff_res);
+    // assert.equal(obj.getReadPos(), 4);
+    // assert.equal(obj.getUnread(), 7);
+    // assert.equal(obj.getWritePos(),3);
   });
 
   it('testing rollback', function() {
@@ -155,69 +155,4 @@ describe('Ringbuffer test', function() {
     assert.equal(obj.getUnread(), 5);
     assert.equal(obj.getWritePos(), 6);
   });
-
 }); //describe Ringbuffer test
-
-describe('Decoder test', function() {
-  it('creating decoder', function() {
-    var obj = nativeExtension.Decoder();
-  });
-
-   it('Decoding short test', function(done) {
-     var obj = nativeExtension.Decoder();
-      fs.readFile("./test.bin", function (err, data) {
-        if(err){
-          throw "An error ocurred reading the file :" + err.message;
-        }
-        obj.unpackStream(data);
-        done();
-      });
-    });
-
-    it('Decoding long test', function(done) {
-     var obj = nativeExtension.Decoder();
-      fs.readFile("./long_test.bin", function (err, data) {
-        if(err){
-          throw "An error ocurred reading the file :" + err.message;
-        }
-        obj.unpackStream(data);
-        done();
-      });
-    });
-
-    it('Decoding very long test', function(done) {
-     var obj = nativeExtension.Decoder();
-      fs.readFile("./very_long_test.bin", function (err, data) {
-        if(err){
-          throw "An error ocurred reading the file :" + err.message;
-        }
-        //obj.unpackStream(data);
-        done();
-      });
-    });
-
-}); //describe decoder test
-
-// describe('Full run test', function() {
-
-//   it('loading and printing file', function(done) {
-//       fs.readFile("./test.bin", function (err, data) {
-//         if(err){
-//           throw "An error ocurred reading the file :" + err.message;
-//         }
-//         done();
-//       });
-//     });
-
-//   it('sending full buffer to native extension', function(done) {
-//     fs.readFile("./test.bin", function (err, data) {
-//         if(err){
-//           throw "An error ocurred reading the file :" + err.message;
-//         }
-//         var size = nativeExtension.decodeStream(data);
-//         assert.equal(size,data.length);
-//         done();
-//       });
-//   })
-
-// }); //describe Full run test
