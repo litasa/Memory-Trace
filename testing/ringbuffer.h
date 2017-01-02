@@ -10,6 +10,7 @@ class RingBuffer : public Nan::ObjectWrap {
     size_t getNumUnread();
     unsigned int getReadPosition(); 
     unsigned int getWritePosition();
+    unsigned long long getNumProcessed();
     uint8_t readNext();
     size_t populate(char* buff, size_t size, size_t exclude_from_front = 0);
     void setRollback();
@@ -23,6 +24,7 @@ class RingBuffer : public Nan::ObjectWrap {
     unsigned int read_position_;
     unsigned int write_position_;
     unsigned int rollback_;
+    unsigned long long data_processed_;
     size_t unread_;
     size_t ring_mask_;
 

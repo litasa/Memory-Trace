@@ -16,6 +16,7 @@ RingBuffer::RingBuffer(int value) : size_(value) {
     read_position_ = 0;
     write_position_ = 0;
     unread_ = 0;
+    data_processed_ = 0;
 }
 
 RingBuffer::~RingBuffer() {
@@ -27,6 +28,7 @@ uint8_t RingBuffer::readNext() {
     read_position_ = ring_mask_ & read_position_;
     uint8_t ret = (uint8_t)buffer_[read_position_];
     read_position_++;
+    data_processed_++;
     unread_--;
     return ret;
 }
@@ -41,6 +43,10 @@ unsigned int RingBuffer::getReadPosition() {
 
 unsigned int RingBuffer::getWritePosition() {
     return write_position_;
+}
+
+unsigned long long RingBuffer::getNumProcessed() {
+    return data_processed_;
 }
 
 std::string RingBuffer::extractString(size_t length) {
@@ -62,7 +68,7 @@ std::string RingBuffer::extractString(size_t length) {
 
 size_t RingBuffer::populate(char* buff, size_t size, size_t num_already_copied) {
     size_t num_to_copy;
-    std::cout << "\t\t\t\t\tPopulating buffer from read: " << getReadPosition() << " and write: " << getWritePosition() << " num unread: " << getNumUnread();
+
     if(read_position_ <= write_position_) {
         size_t space_to_end = size_ - write_position_;
         num_to_copy = min(space_to_end, size);
@@ -74,7 +80,6 @@ size_t RingBuffer::populate(char* buff, size_t size, size_t num_already_copied) 
 
 
         if(size == num_already_copied) {
-            std::cout << " with: " << num_to_copy << " items 1\n";
             return num_already_copied;
         }
         //so we still want to add stuff from buff. Do we have space left in the RingBuffer?
@@ -87,7 +92,7 @@ size_t RingBuffer::populate(char* buff, size_t size, size_t num_already_copied) 
             write_position_ = (write_position_ + num_to_copy) & ring_mask_;
             unread_ += num_to_copy;
         }
-        std::cout << " with: " << num_to_copy << " items 2\n";
+
         return num_already_copied;
     }
     num_to_copy = read_position_ - write_position_ - 1;
@@ -96,7 +101,6 @@ size_t RingBuffer::populate(char* buff, size_t size, size_t num_already_copied) 
     num_already_copied += num_to_copy;
     write_position_ = (write_position_ + num_to_copy) & ring_mask_;
     unread_ += num_to_copy;
-    std::cout << " with: " << num_to_copy << " items 3\n";
     return num_already_copied;
 }
 

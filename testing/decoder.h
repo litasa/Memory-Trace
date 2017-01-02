@@ -3,6 +3,9 @@
 #include <nan.h>
 
 #include "ringbuffer.h"
+#include "memory_state.h"
+#include <iostream>
+#include <fstream>
 
 class Decoder : public Nan::ObjectWrap {
   public:
@@ -13,6 +16,7 @@ class Decoder : public Nan::ObjectWrap {
     bool decodeString(std::string& ret);
 
     void oneStep();
+
   private:
     explicit Decoder(); //128 * 1024, 0x20000
     ~Decoder();
@@ -21,6 +25,7 @@ class Decoder : public Nan::ObjectWrap {
     
 
     RingBuffer* ring_;
+    MemoryState* memory_state_;
     unsigned long long registerd_events;
 
     /* Wrapper functions - start */
@@ -29,7 +34,7 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(New);
     static NAN_METHOD(UnpackStream);
 
-        enum EventCode
+    enum EventCode
     {
       BeginStream     = 1,
       EndStream,
