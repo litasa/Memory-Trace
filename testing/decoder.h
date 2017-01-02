@@ -21,12 +21,28 @@ class Decoder : public Nan::ObjectWrap {
     
 
     RingBuffer* ring_;
+    unsigned long long registerd_events;
 
     /* Wrapper functions - start */
     static Nan::Persistent<v8::Function> constructor;
 
     static NAN_METHOD(New);
     static NAN_METHOD(UnpackStream);
+
+        enum EventCode
+    {
+      BeginStream     = 1,
+      EndStream,
+
+      HeapCreate = 18,
+      HeapDestroy,
+
+      HeapAddCore,
+      HeapRemoveCore,
+
+      HeapAllocate,
+      HeapFree,
+    };
 
         /* Debugging methods - start*/
         /* Debugging methods - end*/

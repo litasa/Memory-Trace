@@ -9,6 +9,7 @@ class RingBuffer : public Nan::ObjectWrap {
     ~RingBuffer();
     size_t getNumUnread();
     unsigned int getReadPosition(); 
+    unsigned int getWritePosition();
     uint8_t readNext();
     size_t populate(char* buff, size_t size, size_t exclude_from_front = 0);
     void setRollback();

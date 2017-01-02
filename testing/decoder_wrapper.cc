@@ -38,13 +38,13 @@ NAN_METHOD(Decoder::UnpackStream) {
     RingBuffer* ring = obj->getRingbuffer();
 
     std::cout << "incomming size: " << size << "\n";
+    std::cout << std::showbase;
     //v8::Local<v8::Array> arr = Nan::New<v8::Array>((int)(size/2)); //maybe even divided by 4 could be fine
     size_t num_already_populated = 0;
     do {
         ring->doRollback();
         num_already_populated = ring->populate(buff, size, num_already_populated);
         obj->oneStep();
-        std::cout << "Num already populated "<< num_already_populated << "Num left: " << size- num_already_populated << "\n\n";
     }while(num_already_populated < size);
 
     std::cout << std::endl;
