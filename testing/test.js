@@ -11,4 +11,6 @@ var obj = nativeExtension.Decoder();
         console.log("inputting " + data.length + " amount of data")
         
         obj.unpackStream(data, file_name);
+
+        console.log("Alll done!! :D");
 });

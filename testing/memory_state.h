@@ -5,33 +5,49 @@
 #include <unordered_map>
 #include <map>
 #include <iostream>
+#include "ringbuffer.h"
 
 class Allocation {
     public:
     int allocator_id;
     size_t pointer;
     size_t size;
-    size_t time_stamp;
+    size_t birth;
+    size_t death;
 };
 
 class Core {
     public:
     int allocator_id;
     size_t pointer;
-    size_t size;
-    size_t time_stamp;
-    std::unordered_map<size_t,Allocation> allocations_;//pointer, allocation
+    size_t birth;
+    size_t death;
+    size_t managed_memory;
+    size_t used_memory;
+    std::unordered_map<size_t,Allocation> allocations_;//pointer to allocation start, allocation
+    std::vector<Allocation> recently_dead_allocations_;
     void print() const;
+    bool pointerInside(size_t pointer);
+    bool allocationInside(size_t pointer, size_t size);
+    void removeAllocation(Allocation* allocation);
+    Allocation* getAllocation(size_t pointer);
 };
 
-class Allocator {
+class Heap {
     public:
     int allocator_id;
     std::string name;
-    size_t time_stamp;
-    std::map<size_t,Core> cores_;//pointer, core
+    size_t birth;
+    size_t death;
+    size_t managed_memory;
+    size_t used_memory;
+    std::map<size_t,Core> cores_;//pointer to core start, core
     std::unordered_map<size_t,size_t> alloc_to_core; // allocation pointer -> core pointer
+    std::vector<Core> recently_dead_cores_;
     void print() const;
+    Core* getCore(size_t pointer);
+    Core* getCoreForAllocation(size_t pointer);
+    void removeCore(Core* core);
 };
 
 
@@ -48,11 +64,13 @@ public:
     void removeCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
     void removeAllocation(const int id, const size_t pointer, size_t timestamp);
 
-    void print(size_t timestamp) const;
+    void print(size_t timestamp, int id = -1) const;
 
-    int times_called;
+    Heap* getHeap(const int id);
 private:
-    std::unordered_map<int,Allocator> allocators_;
+
+    std::unordered_map<int, Heap> heaps_;
+    std::vector<Heap> recently_dead_heaps_;
 };
 
 #endif

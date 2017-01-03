@@ -52,8 +52,7 @@ bool Decoder::decodeString(std::string& ret) {
 
 void Decoder::oneStep() {
     do {
-     
-        ring_->setRollback();
+      ring_->setRollback();
           size_t current_code;
 
           if(!decodeValue(current_code)) {
@@ -113,9 +112,6 @@ void Decoder::oneStep() {
               }
               registerd_events++;
               memory_state_->addHeap(id,name, time_stamp);
-              if(id == 246) {
-                std::cout << "ringbuffer read pos: " << ring_->getReadPosition() << std::endl;
-              }
               //ss << "(" << registerd_events << ")HeapCreate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n\tName: " << name << "\n";
               break;
             }
@@ -211,6 +207,7 @@ void Decoder::oneStep() {
               return;
             break;
           } //switch(current code)
+          ring_->setRollback();
     }while(ring_->getNumUnread());
     ring_->doRollback();
 }
