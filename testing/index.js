@@ -1,2 +1,2 @@
-var NativeExtension = require('bindings')('NativeExtension');
-module.exports = NativeExtension;
+var Encryption = require('./build/Release/Encryption');
+module.exports = Encryption;
