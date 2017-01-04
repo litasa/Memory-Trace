@@ -37,15 +37,15 @@ size_t RingBuffer::getNumUnread() {
     return unread_;
 }
 
-unsigned int RingBuffer::getReadPosition() {
+size_t RingBuffer::getReadPosition() {
     return read_position_;
 }
 
-unsigned int RingBuffer::getWritePosition() {
+size_t RingBuffer::getWritePosition() {
     return write_position_;
 }
 
-unsigned long long RingBuffer::getNumProcessed() {
+size_t RingBuffer::getNumProcessed() {
     return data_processed_;
 }
 
