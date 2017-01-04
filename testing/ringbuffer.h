@@ -2,9 +2,8 @@
 #define RINGBUFFER_H
 #include <nan.h>
 #include <string>
-class RingBuffer : public Nan::ObjectWrap {
+class RingBuffer {
   public:
-    static NAN_MODULE_INIT(Init);
     explicit RingBuffer(int size_ = 128); //128 * 1024, 0x20000
     ~RingBuffer();
     size_t getNumUnread();
@@ -27,24 +26,6 @@ class RingBuffer : public Nan::ObjectWrap {
     unsigned long long data_processed_;
     size_t unread_;
     size_t ring_mask_;
-
-    /* Wrapper functions - start */
-    static Nan::Persistent<v8::Function> constructor;
-
-    static NAN_METHOD(New);
-    static NAN_METHOD(Populate);
-    static NAN_METHOD(ReadNext);
-    static NAN_METHOD(SetRollback);
-    static NAN_METHOD(DoRollback);
-
-        /* Debugging methods - start*/
-        static NAN_METHOD(GetBuffer);
-        static NAN_METHOD(GetReadPosition);
-        static NAN_METHOD(GetUnread);
-        static NAN_METHOD(GetWritePosition);
-        static NAN_METHOD(GetRollbackPosition);
-        /* Debugging methods - end*/
-    /* Wrapper functions - end */
 };
 
 #endif

@@ -1,8 +1,8 @@
-var nativeExtension = require('./');
+var Encryption = require('./');
 const fs = require('fs');
 
 console.log("testing")
-var obj = nativeExtension.Decoder();
+var obj = Encryption.Decoder();
     var file_name = "./30_sec_run.bin";
       fs.readFile(file_name, function (err, data) {
         if(err){

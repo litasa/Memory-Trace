@@ -1,8 +1,6 @@
 #include "decoder.h"
 
 #include <iostream>
-#include <iomanip>
-#include <fstream>
 
 #include <ctime>
 
@@ -38,24 +36,17 @@ NAN_METHOD(Decoder::UnpackStream) {
     Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
     char* buff = (char*) node::Buffer::Data(info[0]->ToObject());
     size_t size = node::Buffer::Length(info[0]);
-    v8::String::Utf8Value val(info[1]->ToString());
-    std::string file_name(*val);
-    file_name.append(".log");
-    RingBuffer* ring = obj->getRingbuffer();
-    //std::ofstream outFile;
-    //outFile.open(file_name);
 
-    //outFile << std::showbase;
-    //v8::Local<v8::Array> arr = Nan::New<v8::Array>((int)(size/2)); //maybe even divided by 4 could be fine
     size_t num_already_populated = 0;
-    size_t count = 0;
+    RingBuffer* ring = obj->getRingbuffer();
+
     std::clock_t start = std::clock();
     do {
-      count++;
         ring->doRollback();
         num_already_populated = ring->populate(buff, size, num_already_populated);
         obj->oneStep();
     }while(num_already_populated < size);
     std::clock_t end = std::clock();
     std::cout << "took: " << double(end-start)/CLOCKS_PER_SEC << " seconds" << std::endl;
+    obj->printMemoryState();
 }

@@ -1,5 +1,8 @@
 #include "decoder.h"
+
 #include <iostream>
+#include <iomanip>
+
 Decoder::Decoder() {
     ring_ = new RingBuffer();
     memory_state_ = new MemoryState();
@@ -35,6 +38,13 @@ bool Decoder::decodeValue(uint64_t& ret) {
     return true;
 }
 
+bool Decoder::decodeValue(int& ret) {
+  uint64_t val;
+  bool decode = decodeValue(val);
+  ret = (int)val;
+  return decode;
+}
+
 bool Decoder::decodeString(std::string& ret) {
 
         uint64_t length;
@@ -53,7 +63,7 @@ bool Decoder::decodeString(std::string& ret) {
 void Decoder::oneStep() {
     do {
       ring_->setRollback();
-          size_t current_code;
+          int current_code;
 
           if(!decodeValue(current_code)) {
             //std::cout << "\treading current_code failed" << std::endl;
@@ -103,7 +113,7 @@ void Decoder::oneStep() {
             case HeapCreate :
             { 
               std::string name;
-              size_t id;
+              int id;
               if(!decodeValue(id)) {
                 return;
               }
@@ -118,7 +128,7 @@ void Decoder::oneStep() {
 
             case HeapDestroy :
             {
-              size_t id;
+              int id;
               if(!decodeValue(id)) {
                 return ;
               }
@@ -130,7 +140,7 @@ void Decoder::oneStep() {
 
             case HeapAddCore :
             {
-              size_t id;
+              int id;
               size_t pointer;
               size_t size_bytes;
               if(!decodeValue(id)) {
@@ -150,7 +160,7 @@ void Decoder::oneStep() {
 
             case HeapRemoveCore :
             {  
-              size_t id;
+              int id;
               size_t pointer;
               size_t size_bytes;
               if(!decodeValue(id)) {
@@ -169,7 +179,7 @@ void Decoder::oneStep() {
             }
             case HeapAllocate:
             {
-              size_t id;
+              int id;
               size_t pointer;
               size_t size_bytes;
               if(!decodeValue(id)) {
@@ -189,7 +199,7 @@ void Decoder::oneStep() {
 
             case HeapFree:
             { 
-              size_t id;
+              int id;
               size_t pointer;
               if(!decodeValue(id)) {
                 return ;
@@ -210,4 +220,8 @@ void Decoder::oneStep() {
           ring_->setRollback();
     }while(ring_->getNumUnread());
     ring_->doRollback();
+}
+
+void Decoder::printMemoryState() {
+  memory_state_->printAll();
 }

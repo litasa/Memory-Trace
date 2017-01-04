@@ -25,8 +25,8 @@ class Core {
     size_t managed_memory;
     size_t used_memory;
     std::unordered_map<size_t,Allocation> allocations_;//pointer to allocation start, allocation
-    std::vector<Allocation> recently_dead_allocations_;
     void print() const;
+    void printAll() const;
     bool pointerInside(size_t pointer);
     bool allocationInside(size_t pointer, size_t size);
     void removeAllocation(Allocation* allocation);
@@ -45,6 +45,7 @@ class Heap {
     std::unordered_map<size_t,size_t> alloc_to_core; // allocation pointer -> core pointer
     std::vector<Core> recently_dead_cores_;
     void print() const;
+    void printAll() const;
     Core* getCore(size_t pointer);
     Core* getCoreForAllocation(size_t pointer);
     void removeCore(Core* core);
@@ -65,6 +66,7 @@ public:
     void removeAllocation(const int id, const size_t pointer, size_t timestamp);
 
     void print(size_t timestamp, int id = -1) const;
+    void printAll() const;
 
     Heap* getHeap(const int id);
 private:
