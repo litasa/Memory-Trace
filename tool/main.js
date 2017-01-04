@@ -1,4 +1,5 @@
 const electron = require('electron')
+//const test = require('./build/Release/Encryption')
 
 const ipc = electron.ipcMain
 // Module to control application life.

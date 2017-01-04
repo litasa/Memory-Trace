@@ -2,8 +2,11 @@
 bower_components
 node_modules
 dist
+build
 
 #files
 *.tgz
 *.log
 *.db
+*.bin
+*.txt
