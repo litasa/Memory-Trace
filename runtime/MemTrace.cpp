@@ -42,6 +42,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma comment(lib, "ws2_32")
 #endif
 
+static int count = 0;
+
 // We can't use Printf/printf() in general because they're not initialized yet.
 // Vsnprintf() is OK because it doesn't allocate.
 static void MemTracePrint(const char* fmt, ...)
@@ -233,9 +235,16 @@ namespace MemTrace
     void BeginEvent(EventCode code)
 	{
       EmitUnsigned(code);
+	  EmitUnsigned(count);
       uint64_t delta = EmitTimeStamp();
-	  MemTracePrint("event: %i, time: %d\n",code, delta);
+	  MemTracePrint("event: %i, time: %d, num: %i\n",code, delta, count);
     }
+	void EndEvent(EventCode code)
+	{
+		EmitUnsigned(code);
+		EmitUnsigned(count);
+		count++;
+	}
 
   };
 
@@ -491,6 +500,7 @@ void MemTrace::Shutdown()
   State.m_Lock.Enter();
 
   State.m_Encoder.BeginEvent(kEndStream);
+  State.m_Encoder.EndEvent(kEndStream);
 
   MemTracePrint("MemTrace: Shutting down..\n");
 
@@ -520,6 +530,7 @@ void MemTrace::BeginStream() {
 	State.m_Encoder.EmitUnsigned(kStreamMagic);
 	State.m_Encoder.EmitString(kPlatformName);
 	State.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
+	State.m_Encoder.EndEvent(kBeginStream);
 }
 
 MemTrace::HeapId MemTrace::HeapCreate(const char* name)
@@ -534,7 +545,7 @@ MemTrace::HeapId MemTrace::HeapCreate(const char* name)
   State.m_Encoder.BeginEvent(kHeapCreate);
   State.m_Encoder.EmitUnsigned(id);
   State.m_Encoder.EmitString(name);
-
+  State.m_Encoder.EndEvent(kHeapCreate);
   return id;
 }
 
@@ -547,6 +558,7 @@ void MemTrace::HeapDestroy(HeapId heap_id)
 
   State.m_Encoder.BeginEvent(kHeapDestroy);
   State.m_Encoder.EmitUnsigned(heap_id);
+  State.m_Encoder.EndEvent(kHeapDestroy);
 }
 
 void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
@@ -560,6 +572,7 @@ void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
   State.m_Encoder.EmitUnsigned(heap_id);
   State.m_Encoder.EmitPointer(base);
   State.m_Encoder.EmitUnsigned(size_bytes);
+  State.m_Encoder.EndEvent(kHeapAddCore);
 }
 
 void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes)
@@ -573,6 +586,7 @@ void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_byte
   State.m_Encoder.EmitUnsigned(heap_id);
   State.m_Encoder.EmitPointer(base);
   State.m_Encoder.EmitUnsigned(size_bytes);
+  State.m_Encoder.EndEvent(kHeapRemoveCore);
 }
 
 void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
@@ -586,6 +600,7 @@ void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
   State.m_Encoder.EmitUnsigned(id);
   State.m_Encoder.EmitPointer(ptr);
   State.m_Encoder.EmitUnsigned(size_bytes);
+  State.m_Encoder.EndEvent(kHeapAllocate);
 }
 
 void MemTrace::HeapFree(HeapId id, const void* ptr)
@@ -598,6 +613,7 @@ void MemTrace::HeapFree(HeapId id, const void* ptr)
   State.m_Encoder.BeginEvent(kHeapFree);
   State.m_Encoder.EmitUnsigned(id);
   State.m_Encoder.EmitPointer(ptr);
+  State.m_Encoder.EndEvent(kHeapFree);
 }
 
 #endif // MEMTRACE_ENABLE

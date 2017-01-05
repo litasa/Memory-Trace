@@ -106,15 +106,29 @@ public:
 
 static void TestCustomAllocator()
 {
-	BlockAllocator a(16, 256, "Allocator A");
-	BlockAllocator b(32, 256, "Allocator B");
+	int size = 256;
+	int times = 150;
+	BlockAllocator a(16, size, "Allocator A");
+	BlockAllocator b(32, size, "Allocator B");
 
-	for(int j = 0; j < 10000; ++j)
-	{
-		auto ap = a.Alloc();
-		auto bp = b.Alloc();
-		a.Free(ap);
-		b.Free(bp);
+	
+	for(int i = 0; i < times; ++i) {
+		std::vector<void*> pointer_a;
+		std::vector<void*> pointer_b;
+		for(int j = 0; j < size - 1 ; ++j)
+		{
+			void* ap = a.Alloc();
+			void* bp = b.Alloc();
+			pointer_a.push_back(ap);
+			pointer_b.push_back(bp);
+		}
+		for(int j = 0; j < size - 1; ++j)
+		{
+			a.Free(pointer_a[j]);
+		}
+		for(int j = 0; j < size - 1; ++j) {
+			b.Free(pointer_b[j]);
+		}
 	}
 }
 

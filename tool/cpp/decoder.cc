@@ -62,14 +62,16 @@ bool Decoder::decodeString(std::string& ret) {
 
 void Decoder::oneStep() {
     do {
-      ring_->setRollback();
           int current_code;
+          size_t count;
 
           if(!decodeValue(current_code)) {
             //std::cout << "\treading current_code failed" << std::endl;
               return;
           }
-
+          if(!decodeValue(count)) {
+            return;
+          }
 
           size_t time_stamp;
 
@@ -98,14 +100,12 @@ void Decoder::oneStep() {
                 //std::cout << "\tDecode system_frequency failed" << std::endl;
                 return;
               }
-              registerd_events++;
               //ss << "(" << registerd_events << ")BeginStream\n\ttime_stamp: " << time_stamp << "\n\tplatform: " << platform << "\n\tsystem frequency: " << system_frequency << "\n";
               break;
             }
 
             case EndStream :
               {
-                registerd_events++;
                 //ss << "(" << registerd_events << ")Endstream\n\ttime_stamp: " << time_stamp << "\n\tDo nothing\n";
               }
             break;
@@ -120,7 +120,6 @@ void Decoder::oneStep() {
               if(!decodeString(name)) {
                 return;
               }
-              registerd_events++;
               memory_state_->addHeap(id,name, time_stamp);
               //ss << "(" << registerd_events << ")HeapCreate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n\tName: " << name << "\n";
               break;
@@ -133,7 +132,6 @@ void Decoder::oneStep() {
                 return ;
               }
               memory_state_->removeHeap(id, time_stamp);
-              registerd_events++;
               //ss << "(" << registerd_events << ")HeapDestroy\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n";
               break;
             }
@@ -152,7 +150,6 @@ void Decoder::oneStep() {
               if(!decodeValue(size_bytes)) {
                 return;
               }
-              registerd_events++;
               memory_state_->addCore(id,pointer,size_bytes,time_stamp);
               //ss << "(" << registerd_events << ")HeapAddCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
               break;
@@ -173,7 +170,6 @@ void Decoder::oneStep() {
                 return ;
               }
               memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
-              registerd_events++;
               //ss << "(" << registerd_events << ")HeapRemoveCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
               break;
             }
@@ -191,7 +187,6 @@ void Decoder::oneStep() {
               if(!decodeValue(size_bytes)) {
                 return ;
               }
-              registerd_events++;
               memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
               //ss << "(" << registerd_events << ")HeapAllocate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
               break;
@@ -207,7 +202,6 @@ void Decoder::oneStep() {
               if(!decodeValue(pointer)) {
                 return ;
               }
-              registerd_events++;
               memory_state_->removeAllocation(id,pointer, time_stamp);
               //ss << "(" << registerd_events << ")HeapFree\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n"; 
               break;
@@ -217,6 +211,28 @@ void Decoder::oneStep() {
               return;
             break;
           } //switch(current code)
+          int controll_code;
+          if(!decodeValue(controll_code)) {
+            //std::cout << "\treading current_code failed" << std::endl;
+              return;
+          }
+          if(controll_code != current_code) {
+            std::cout << "controll_code != current_event: " << controll_code << " != " << current_code << "\n";
+            ring_->printStats();
+          }
+
+          size_t controll_count;
+          if(!decodeValue(controll_count)) {
+            return;
+          }
+
+          if(controll_count != registerd_events) {
+            std::cout << "controll_count != registerd_events: " << controll_count << " != " << registerd_events << "\n";
+            ring_->printStats();
+          }
+
+
+          registerd_events++;
           ring_->setRollback();
     }while(ring_->getNumUnread());
     ring_->doRollback();
