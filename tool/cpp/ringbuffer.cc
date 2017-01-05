@@ -58,7 +58,7 @@ size_t RingBuffer::extractString(std::string& str, size_t length) {
     if(bytes_to_read <= capacity_ - read_pos_) {
         str.assign(data_ + read_pos_, bytes_to_read);
         read_pos_ += bytes_to_read;
-        num_read_ += bytes_to_read;
+        
         if(read_pos_ == capacity_) {
             read_pos_ = 0;
         }
@@ -66,13 +66,12 @@ size_t RingBuffer::extractString(std::string& str, size_t length) {
     else {
         size_t size_1 = capacity_ - read_pos_;
         str.assign(data_ + read_pos_, size_1);
-        num_read_ += size_1;
         size_t size_2 = bytes_to_read - size_1;
         str.append(data_, size_2);
-        num_read_ += size_2;
         read_pos_ = size_2;
     }
     unread_ -= bytes_to_read;
+    num_read_ += bytes_to_read;
     return bytes_to_read;
 }
 
@@ -111,6 +110,7 @@ void RingBuffer::doRollback() {
   }
   size_t items_undone = read - rollback_;
   unread_ += items_undone;
+  num_read_ -= items_undone;
   read_pos_ = rollback_;
 }
 

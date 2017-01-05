@@ -277,6 +277,7 @@ void MemoryState::removeHeap(const int id, size_t timestamp) {
     if(!heap->cores_.empty() || !heap->recently_dead_cores_.empty()) {
         recently_dead_heaps_.push_back(heaps_.at(id));
     }
+    num_heaps_removed++;
     auto num_erased = heaps_.erase(id);
 }
 
