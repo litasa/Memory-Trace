@@ -149,13 +149,11 @@ void MemoryState::addHeap(const int id, const std::string& name, size_t timestam
 }
 
 void MemoryState::addCore(const int id, const size_t pointer, const size_t size, size_t timestamp) {
-    //std::cout << "Adding core\n";
-    auto got = heaps_.find(id);
-    if(got == heaps_.end()) {
+    Heap* heap = getHeap(id);
+    if(heap == nullptr) {
         std::cout << id << " not found for core: " << std::hex << pointer << std::dec << "\n";
     }
     else {
-        bool insert = false;
         Core c;
         c.allocator_id = id;
         c.pointer = pointer;
@@ -163,7 +161,7 @@ void MemoryState::addCore(const int id, const size_t pointer, const size_t size,
         c.death = -1;
         c.managed_memory = size;
         c.used_memory = 0;
-        auto emp = got->second.cores_.insert(std::make_pair(pointer, c));
+        auto emp = heap->cores_.insert(std::make_pair(pointer, c));
         if(!emp.second) {
             std::cout << "Adding Core failed: " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " timestamp: " << timestamp  << "\n";
             return;

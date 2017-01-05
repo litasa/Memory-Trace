@@ -1,6 +1,8 @@
 const net = require('net');
+var enc = require('..\\build\\Release\\Encryption');
 const RingBuffer = require("../util/ringbuffer.js");
 
+var decoder = enc.Decoder();
 var ringBuffersize = 128*1024;
 var ringBuffer =  new RingBuffer(ringBuffersize);
 var event_count = 0;
@@ -14,6 +16,9 @@ var server = net.createServer(function(socket) {
   sendToServer('connection-established');
 
   socket.on('data', function(data) {
+    console.log("start");
+    decoder.unpackStream(data);
+    /*
     var num_data_left = data.length;
     //console.log('data recieved internal_server: ' + data.length )
     do{
@@ -35,6 +40,8 @@ var server = net.createServer(function(socket) {
     } while(num_data_left);
 
    console.log('Registerd events: ' + event_count)
+    */
+   console.log("done");
   })
 
   socket.on('error', function(err) {

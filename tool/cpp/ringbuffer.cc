@@ -72,6 +72,7 @@ size_t RingBuffer::populate(char* buff, size_t size, size_t num_already_copied) 
     if(read_position_ <= write_position_) {
         size_t space_to_end = size_ - write_position_;
         num_to_copy = min(space_to_end, size);
+        num_to_copy = min(size - num_already_copied, num_to_copy);
         memcpy(buffer_ + write_position_, buff + num_already_copied, num_to_copy);
         num_already_copied += num_to_copy;
 
@@ -95,8 +96,8 @@ size_t RingBuffer::populate(char* buff, size_t size, size_t num_already_copied) 
 
         return num_already_copied;
     }
-    num_to_copy = read_position_ - write_position_ - 1;
 
+    num_to_copy = read_position_ - write_position_;
     memcpy(buffer_ + write_position_, buff + num_already_copied, num_to_copy);
     num_already_copied += num_to_copy;
     write_position_ = (write_position_ + num_to_copy) & ring_mask_;
