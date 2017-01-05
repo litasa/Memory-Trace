@@ -69,10 +69,20 @@ public:
     void printAll() const;
 
     Heap* getHeap(const int id);
-private:
 
+    void printStats();
+private:
     std::unordered_map<int, Heap> heaps_;
     std::vector<Heap> recently_dead_heaps_;
+
+    int num_heaps_added = 0;
+    int num_heaps_removed = 0;
+
+    int num_cores_added = 0;
+    int num_cores_removed = 0;
+
+    int num_allocations_added = 0;
+    int num_allocations_removed = 0;
 };
 
 #endif

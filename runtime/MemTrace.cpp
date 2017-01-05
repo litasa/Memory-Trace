@@ -241,8 +241,9 @@ namespace MemTrace
     }
 	void EndEvent(EventCode code)
 	{
-		EmitUnsigned(code);
-		EmitUnsigned(count);
+		//EmitUnsigned(code);
+		
+		//EmitUnsigned(count);
 		count++;
 	}
 

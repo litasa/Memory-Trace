@@ -31,6 +31,10 @@ Allocation* Core::getAllocation(size_t pointer) {
 }
 
 void Core::removeAllocation(Allocation* allocation) {
+    auto found = allocations_.find(allocation->pointer);
+    if(found == allocations_.end()) {
+        std::cout << "could not find allocation for removal\n";
+    }
     allocations_.erase(allocation->pointer);
 }
 
@@ -64,6 +68,7 @@ Core* Heap::getCore(size_t pointer) {
     if(found == cores_.end()) {
         for(auto it = recently_dead_cores_.begin(); it != recently_dead_cores_.end(); ++it) {
             if(it->pointer == pointer) {
+                std::cout << "getting dead core for pointer: " << std::hex << pointer << std::dec << "\n";
                 return &(*it);
             }
         }
@@ -77,6 +82,7 @@ Core* Heap::getCoreForAllocation(size_t pointer) {
     if(found == alloc_to_core.end()) {
         for(auto it = recently_dead_cores_.begin(); it != recently_dead_cores_.end(); ++it) {
             if(it->pointer == pointer) {
+                std::cout << "getting dead core for pointer: " << std::hex << pointer << std::dec << "\n";
                 return &(*it);
             }
         }
@@ -132,6 +138,18 @@ void MemoryState::printAll() const {
     // }
 }
 
+void MemoryState::printStats() {
+    std::cout << "Printing MemoryState stats:";
+    std::cout << "\n\tHeaps added: " << num_heaps_added;
+    std::cout << "\n\tHeaps removed: " << num_heaps_removed;
+
+    std::cout << "\n\tCores added: " << num_cores_added;
+    std::cout << "\n\tCores removed: " << num_cores_removed;
+
+    std::cout << "\n\tAllocations added: " << num_allocations_added;
+    std::cout << "\n\tAllocations removed: " << num_allocations_removed;
+}
+
 void MemoryState::addHeap(const int id, const std::string& name, size_t timestamp) {
     //std::cout << "Adding Heap\n";
     Heap a;
@@ -146,6 +164,7 @@ void MemoryState::addHeap(const int id, const std::string& name, size_t timestam
         std::cout << "Adding Heap failed: " << "Id: " << id << ", name: " << name << "\n";
         return;
     }
+    num_heaps_added++;
 }
 
 void MemoryState::addCore(const int id, const size_t pointer, const size_t size, size_t timestamp) {
@@ -167,6 +186,7 @@ void MemoryState::addCore(const int id, const size_t pointer, const size_t size,
             return;
         }
         heaps_.at(id).managed_memory += size;
+        num_cores_added++;
     }
 }
 
@@ -187,12 +207,14 @@ void MemoryState::addAllocation(const int id, const size_t pointer, const size_t
                 a.birth = timestamp;
                 auto emp = it->second.allocations_.insert(std::make_pair(pointer,a));
                 if(!emp.second) {
-                    std::cout << "Adding Allocation failed (already exists): " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << "\n";
+                    std::cout << "Adding Allocation failed (already exists): " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " created: " << timestamp << "\n";
+                    std::cout << "had values: " << emp.first->second.allocator_id << " pointer: " << std::hex << emp.first->second.pointer << std::dec << " size: " << emp.first->second.size << " created: " << emp.first->second.birth << "\n";
                     return;
                 }
                 heap->alloc_to_core.emplace(pointer,it->second.pointer);
                 heap->used_memory += size;
                 it->second.used_memory += size;
+                num_allocations_added++;
                 return;
             }
         }
@@ -215,6 +237,7 @@ void MemoryState::removeAllocation(const int id, const size_t pointer, size_t ti
                 heap->used_memory -= allocation->size;
                 core->removeAllocation(allocation);
                 heap->alloc_to_core.erase(pointer);
+                num_allocations_removed++;
             }
         }
     }
@@ -232,6 +255,7 @@ void MemoryState::removeCore(const int id, const size_t pointer, const size_t si
             heap->managed_memory -= core->managed_memory;
             core->death = timestamp;
             heap->removeCore(core);
+            num_cores_removed++;
         }
     }
 }
@@ -261,6 +285,7 @@ Heap* MemoryState::getHeap(const int id) {
     if(found == heaps_.end()) {
         for(auto it = recently_dead_heaps_.begin(); it != recently_dead_heaps_.end(); ++it) {
             if(it->allocator_id == id) {
+                std::cout << "getting dead heap: " << id << "\n";
                 return &(*it);
             }
         }

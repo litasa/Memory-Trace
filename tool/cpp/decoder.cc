@@ -24,11 +24,10 @@ bool Decoder::decodeValue(uint64_t& ret) {
     ret = 0;
     uint8_t b = 0;
     do {
-        if(ring_->getNumUnread() == 0) {
+        if(!ring_->readNext(b)) {
             ret = -1;
             return false;
         }
-        b = ring_->readNext();
         //std::cout << "\t\t\t\tRead value: " << (int)(uint8_t)(b) << ", readPos was: " << ring_->getReadPosition() - 1 << ", write_position: " << ring_->getWritePosition() << ", num unread was: " << ring_->getNumUnread() + 1 << "\n";
         ret = ret | (b*mul);
         mul = mul << 7;
@@ -51,17 +50,16 @@ bool Decoder::decodeString(std::string& ret) {
         if(!decodeValue(length)) {
             return false;
         }
-        if(length > ring_->getNumUnread()) {
-
+        if(!ring_->extractString(ret, length)) {
             return false;
         }
-        ret = ring_->extractString(length);
-
         return true;
 }
 
 void Decoder::oneStep() {
+
     do {
+      ring_->setRollback();
           int current_code;
           size_t count;
 
@@ -83,7 +81,6 @@ void Decoder::oneStep() {
           switch(current_code) {
             case BeginStream :
             {
-
               std::string platform;
               size_t system_frequency;
               size_t stream_magic;
@@ -211,27 +208,7 @@ void Decoder::oneStep() {
               return;
             break;
           } //switch(current code)
-          int controll_code;
-          if(!decodeValue(controll_code)) {
-            //std::cout << "\treading current_code failed" << std::endl;
-              return;
-          }
-          if(controll_code != current_code) {
-            std::cout << "controll_code != current_event: " << controll_code << " != " << current_code << "\n";
-            ring_->printStats();
-          }
-
-          size_t controll_count;
-          if(!decodeValue(controll_count)) {
-            return;
-          }
-
-          if(controll_count != registerd_events) {
-            std::cout << "controll_count != registerd_events: " << controll_count << " != " << registerd_events << "\n";
-            ring_->printStats();
-          }
-
-
+         
           registerd_events++;
           ring_->setRollback();
     }while(ring_->getNumUnread());
@@ -239,5 +216,5 @@ void Decoder::oneStep() {
 }
 
 void Decoder::printMemoryState() {
-  memory_state_->printAll();
+  memory_state_->printStats();
 }
