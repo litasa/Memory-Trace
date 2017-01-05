@@ -8,3 +8,10 @@ obj
 pingme.txt
 runtime/vs2012/longRun.bin
 runtime/vs2012/skit.bin
+*.bin
+*.opendb
+runtime/vs2012/MemTrace.VC.db
+*.log
+runtime/vs2012/text.txt
+*.zip
+tool/data/1 min run.7z

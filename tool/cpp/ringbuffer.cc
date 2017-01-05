@@ -3,34 +3,35 @@
 #include <iostream>
 
 
-RingBuffer::RingBuffer(int value) : size_(value) {
-    if(value % 2 != 0) {
-        std::cout << "need to be divisible by 2 to work properly" << std::endl;
-    }
-    buffer_ = new char[size_];
+RingBuffer::RingBuffer(int value) : capacity_(value) {
+    data_ = new char[capacity_];
     //for dev should be removed
-    memset(buffer_,0,size_);
+    memset(data_,0,capacity_);
 
-    ring_mask_ = size_ - 1; //128 * 1024 - 1, 0x1ffff
     rollback_ = 0;
-    read_position_ = 0;
-    write_position_ = 0;
+    read_pos_ = 0;
+    write_pos_ = 0;
     unread_ = 0;
-    data_processed_ = 0;
+    num_read_ = 0;
 }
 
 RingBuffer::~RingBuffer() {
-    free(buffer_);
-    buffer_ = nullptr;
+    free(data_);
+    data_ = nullptr;
 }
 
-uint8_t RingBuffer::readNext() {
-    read_position_ = ring_mask_ & read_position_;
-    uint8_t ret = (uint8_t)buffer_[read_position_];
-    read_position_++;
-    data_processed_++;
+size_t RingBuffer::readNext(uint8_t& ret) {
+    if(unread_ == 0) {
+        return 0;
+    }
+    ret = (uint8_t)data_[read_pos_];
+    read_pos_++;
+    num_read_++;
     unread_--;
-    return ret;
+    if(read_pos_ == capacity_) {
+        read_pos_ = 0;
+    }
+    return 1;
 }
 
 size_t RingBuffer::getNumUnread() {
@@ -38,83 +39,87 @@ size_t RingBuffer::getNumUnread() {
 }
 
 size_t RingBuffer::getReadPosition() {
-    return read_position_;
+    return read_pos_;
 }
 
 size_t RingBuffer::getWritePosition() {
-    return write_position_;
+    return write_pos_;
 }
 
 size_t RingBuffer::getNumProcessed() {
-    return data_processed_;
+    return num_read_;
 }
 
-std::string RingBuffer::extractString(size_t length) {
-    
-    size_t space_left = size_ - read_position_;
-    size_t num_to_copy = min(length, space_left);
-    std::string ret(buffer_ + read_position_, num_to_copy);
-    
-    read_position_ += num_to_copy;
-    unread_ -= num_to_copy;
-    size_t left_to_copy  = length - num_to_copy;
-    if(left_to_copy > 0) {
-        ret.append(buffer_, left_to_copy);
-        read_position_ = left_to_copy; //this might give errors (setting read_position to one behind then what it is supposed to be)
-        unread_ -= left_to_copy;
+size_t RingBuffer::extractString(std::string& str, size_t length) {
+    if(length == 0) {
+        return 0;
     }
-    return ret;
+    size_t bytes_to_read = min(length, unread_);
+    if(bytes_to_read <= capacity_ - read_pos_) {
+        str.assign(data_ + read_pos_, bytes_to_read);
+        read_pos_ += bytes_to_read;
+        num_read_ += bytes_to_read;
+        if(read_pos_ == capacity_) {
+            read_pos_ = 0;
+        }
+    }
+    else {
+        size_t size_1 = capacity_ - read_pos_;
+        str.assign(data_ + read_pos_, size_1);
+        num_read_ += size_1;
+        size_t size_2 = bytes_to_read - size_1;
+        str.append(data_, size_2);
+        num_read_ += size_2;
+        read_pos_ = size_2;
+    }
+    unread_ -= bytes_to_read;
+    return bytes_to_read;
 }
 
-size_t RingBuffer::populate(char* buff, size_t size, size_t num_already_copied) {
-    size_t num_to_copy;
-
-    if(read_position_ <= write_position_) {
-        size_t space_to_end = size_ - write_position_;
-        num_to_copy = min(space_to_end, size);
-        num_to_copy = min(size - num_already_copied, num_to_copy);
-        memcpy(buffer_ + write_position_, buff + num_already_copied, num_to_copy);
-        num_already_copied += num_to_copy;
-
-        unread_ += num_to_copy;
-        write_position_ = (write_position_ + num_to_copy) & ring_mask_;
-
-
-        if(size == num_already_copied) {
-            return num_already_copied;
-        }
-        //so we still want to add stuff from buff. Do we have space left in the RingBuffer?
-        size_t space_left = size_ - unread_;
-        if(space_left) {
-            num_to_copy = min(read_position_ - 1, size - num_already_copied);
-            memcpy(buffer_, buff + num_already_copied, num_to_copy);
-            num_already_copied += num_to_copy;
-
-            write_position_ = (write_position_ + num_to_copy) & ring_mask_;
-            unread_ += num_to_copy;
-        }
-
-        return num_already_copied;
+size_t RingBuffer::populate(char* buff, size_t size) {
+    if( size == 0) {
+        return 0;
     }
-
-    num_to_copy = read_position_ - write_position_;
-    memcpy(buffer_ + write_position_, buff + num_already_copied, num_to_copy);
-    num_already_copied += num_to_copy;
-    write_position_ = (write_position_ + num_to_copy) & ring_mask_;
-    unread_ += num_to_copy;
-    return num_already_copied;
+    size_t bytes_to_write = min(size, capacity_ - unread_);
+    if(bytes_to_write <= capacity_ - write_pos_) {
+        memcpy(data_ + write_pos_, buff, bytes_to_write);
+        write_pos_ += bytes_to_write;
+        if(write_pos_ == capacity_) {
+            write_pos_ = 0;
+        }
+    }
+    else {
+        size_t size_1 = capacity_ - write_pos_;
+        memcpy(data_ + write_pos_, buff, size_1);
+        size_t size_2 = bytes_to_write - size_1;
+        memcpy(data_, buff + size_1, size_2);
+        write_pos_ = size_2;
+    }
+    unread_ += bytes_to_write;
+    return bytes_to_write;
 }
 
 void RingBuffer::setRollback() {
-    rollback_ = read_position_;
+    rollback_ = read_pos_;
 }
 
 void RingBuffer::doRollback() {
-    if(rollback_ > read_position_) {
-      //if read_position_ wrapped around
-      read_position_ += size_;
+    size_t read = read_pos_;
+    if(rollback_ > read) {
+      //if read_pos_ wrapped around
+      read += capacity_;
   }
-  size_t items_undone = read_position_ - rollback_;
+  size_t items_undone = read - rollback_;
   unread_ += items_undone;
-  read_position_ = rollback_;
+  read_pos_ = rollback_;
+}
+
+void RingBuffer::printStats() {
+    std::cout << "Printing Ringbuffer stats: ";
+    std::cout << "\n\tRead pos: " << read_pos_;
+    std::cout << "\n\tWrite pos: " << write_pos_;
+    std::cout << "\n\tNum read: " << num_read_;
+    std::cout << "\n\tRollback: " << rollback_;
+    std::cout << "\n\tUnread: " << unread_;
+    std::cout << "\n";
 }

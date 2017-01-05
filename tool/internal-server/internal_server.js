@@ -59,5 +59,8 @@ ipcRenderer.on('stream-end', function(event, data) {
 })
 
 window.onload = function() {
-  sendToServer('please-connect', {addr: list});
+  setTimeout(function() {
+    sendToServer('please-connect', {addr: list});
+  },3000);
+  
 }
