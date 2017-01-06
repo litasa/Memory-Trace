@@ -8,15 +8,18 @@ var ringBuffer =  new RingBuffer(ringBuffersize);
 var event_count = 0;
 
 var last_time;
+var total_data = 0;
 
 var list = '\\\\.\\pipe\\internal_server'
 
 var server = net.createServer(function(socket) {
+  
   console.log('internal_server connection recieved');
   sendToServer('connection-established');
 
   socket.on('data', function(data) {
-    console.log("start");
+    total_data += data.length;
+    console.log("start: " + total_data);
     decoder.unpackStream(data);
     var arr = decoder.getMemoryAsArray();
     console.log("printing heaps")
@@ -60,12 +63,12 @@ server.on('listening', function(data) {
 })
 
 ipcRenderer.on('stream-end', function(event, data) {
-  console.log('finished recieving data: ')
+  console.log('finished recieving data: ' + total_data);
 })
 
 window.onload = function() {
   setTimeout(function() {
     sendToServer('please-connect', {addr: list});
-  },3000);
+  },2000);
   
 }

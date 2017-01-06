@@ -54,7 +54,7 @@ var external_server = net.createServer(function (external_socket) {
 
     external_socket.on('end', function(data) {
       var diff = performance.now() - start_time;
-      console.log("connection ended in: " + diff);
+      console.log("connection ended in: " + diff + ", with sent data: " + total_data_recieved);
       var data = {};
       data.channel = 'stream-end';
       ipcRenderer.send('to-internal-server', data)

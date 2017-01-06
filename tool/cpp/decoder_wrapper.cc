@@ -68,6 +68,9 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
   v8::Local<v8::Array> result_list = Nan::New<v8::Array>((int)ret.size());
   for(unsigned int i = 0; i < ret.size(); ++i) {
     v8::Local<v8::Object> obj = Nan::New<v8::Object>();
+    if(ret[i] == nullptr) {
+      std::cout << "hmm error null ptr" << std::endl;
+    }
     Nan::Set(obj, Nan::New("name").ToLocalChecked(), Nan::New(ret[i]->name.c_str()).ToLocalChecked());
     Nan::Set(obj, Nan::New("used_memory").ToLocalChecked(), Nan::New((int)ret[i]->used_memory));
     Nan::Set(result_list, i, obj);
