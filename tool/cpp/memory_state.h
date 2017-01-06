@@ -44,4 +44,4 @@ private:
     int num_allocations_removed = 0;
 };
 
-#endif
+#endif //MEMORY_STATE_H

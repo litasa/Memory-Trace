@@ -3,6 +3,7 @@
 #include "allocation.h"
 
 #include <unordered_map>
+#include <stdlib.h> //size_t
 
 class Core {
     public:

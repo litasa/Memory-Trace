@@ -1,7 +1,9 @@
 #include "ringbuffer.h"
 
 #include <iostream>
-
+#include <algorithm>
+#include <vector>
+#include <stdlib.h>
 
 RingBuffer::RingBuffer(int value) : capacity_(value) {
     data_ = new char[capacity_];
@@ -54,7 +56,7 @@ size_t RingBuffer::extractString(std::string& str, size_t length) {
     if(length == 0) {
         return 0;
     }
-    size_t bytes_to_read = min(length, unread_);
+    size_t bytes_to_read = std::min(length, unread_);
     if(bytes_to_read <= capacity_ - read_pos_) {
         str.assign(data_ + read_pos_, bytes_to_read);
         read_pos_ += bytes_to_read;
@@ -79,7 +81,7 @@ size_t RingBuffer::populate(char* buff, size_t size) {
     if( size == 0) {
         return 0;
     }
-    size_t bytes_to_write = min(size, capacity_ - unread_);
+    size_t bytes_to_write = std::min(size, capacity_ - unread_);
     if(bytes_to_write <= capacity_ - write_pos_) {
         memcpy(data_ + write_pos_, buff, bytes_to_write);
         write_pos_ += bytes_to_write;

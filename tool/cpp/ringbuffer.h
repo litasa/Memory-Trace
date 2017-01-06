@@ -31,4 +31,4 @@ class RingBuffer {
     size_t unread_;
 };
 
-#endif
+#endif //Ringbuffer_h

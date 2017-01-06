@@ -1,5 +1,6 @@
 #ifndef ALLOCATION_H
 #define ALLOCATION_H
+#include <stdlib.h> //size_t
 class Allocation {
     public:
     int allocator_id;
@@ -8,4 +9,4 @@ class Allocation {
     size_t birth;
     size_t death;
 };
-#endif ALLOCATION_H
+#endif //ALLOCATION_H

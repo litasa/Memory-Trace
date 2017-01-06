@@ -180,7 +180,7 @@ void MemoryState::removeHeap(const int id, size_t timestamp) {
         recently_dead_heaps_.push_back(heaps_.at(id));
     }
     num_heaps_removed++;
-    auto num_erased = heaps_.erase(id);
+    //auto num_erased = heaps_.erase(id);
 }
 
 Heap* MemoryState::getHeap(const int id) {

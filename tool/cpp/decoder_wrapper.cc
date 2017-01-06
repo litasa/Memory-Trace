@@ -59,7 +59,7 @@ NAN_METHOD(Decoder::UnpackStream) {
 }
 
 NAN_METHOD(Decoder::Printas) {
-  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  //Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
 }
 
 NAN_METHOD(Decoder::GetMemoryAsArray) {

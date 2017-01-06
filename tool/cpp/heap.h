@@ -3,7 +3,9 @@
 
 #include <unordered_map>
 #include <map>
+#include <vector>
 #include "core.h"
+#include <stdlib.h> //size_t
 
 class Heap {
     public:
