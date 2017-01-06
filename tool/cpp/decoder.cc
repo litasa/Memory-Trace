@@ -19,7 +19,6 @@ Decoder::~Decoder() {
 }
 
 bool Decoder::decodeValue(uint64_t& ret) {
- //std::cout << "\t\t\tDecodeValue: \n";
     uint64_t mul = 1;
     ret = 0;
     uint8_t b = 0;
@@ -28,7 +27,6 @@ bool Decoder::decodeValue(uint64_t& ret) {
             ret = -1;
             return false;
         }
-        //std::cout << "\t\t\t\tRead value: " << (int)(uint8_t)(b) << ", readPos was: " << ring_->getReadPosition() - 1 << ", write_position: " << ring_->getWritePosition() << ", num unread was: " << ring_->getNumUnread() + 1 << "\n";
         ret = ret | (b*mul);
         mul = mul << 7;
     } while(b < 0x80);
@@ -215,6 +213,6 @@ void Decoder::oneStep() {
     ring_->doRollback();
 }
 
-void Decoder::printMemoryState() {
-  memory_state_->printStats();
+std::vector<Heap*> Decoder::getMemoryState() {
+  return memory_state_->getHeaps();
 }

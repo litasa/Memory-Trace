@@ -18,6 +18,11 @@ var server = net.createServer(function(socket) {
   socket.on('data', function(data) {
     console.log("start");
     decoder.unpackStream(data);
+    var arr = decoder.getMemoryAsArray();
+    console.log("printing heaps")
+    for(var i = 0; i < arr.length; ++i) {
+      console.log(arr[i].name + " : " + arr[i].used_memory);
+    }
     /*
     var num_data_left = data.length;
     //console.log('data recieved internal_server: ' + data.length )

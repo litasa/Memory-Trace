@@ -18,7 +18,7 @@ class Decoder : public Nan::ObjectWrap {
 
     void oneStep();
 
-    void printMemoryState();
+    std::vector<Heap*> getMemoryState();
   private:
     explicit Decoder(); //128 * 1024, 0x20000
     ~Decoder();
@@ -36,6 +36,7 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(New);
     static NAN_METHOD(UnpackStream);
     static NAN_METHOD(Printas);
+    static NAN_METHOD(GetMemoryAsArray);
 
     enum EventCode
     {
@@ -52,8 +53,6 @@ class Decoder : public Nan::ObjectWrap {
       HeapFree,
     };
 
-        /* Debugging methods - start*/
-        /* Debugging methods - end*/
     /* Wrapper functions - end */
 };
 

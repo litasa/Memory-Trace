@@ -13,6 +13,7 @@ NAN_MODULE_INIT(Decoder::Init) {
 
   Nan::SetPrototypeMethod(tpl, "unpackStream", UnpackStream);
   Nan::SetPrototypeMethod(tpl, "printas", Printas);
+  Nan::SetPrototypeMethod(tpl, "getMemoryAsArray", GetMemoryAsArray);
   /*Debug - start*/
   /*Debug - end*/
 
@@ -55,10 +56,21 @@ NAN_METHOD(Decoder::UnpackStream) {
     }while(num_populated < size);
     std::clock_t end = std::clock();
     std::cout << "took: " << double(end-start)/CLOCKS_PER_SEC << " seconds" << std::endl;
-    //obj->printMemoryState();
 }
 
 NAN_METHOD(Decoder::Printas) {
   Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
-  obj->printMemoryState();
+}
+
+NAN_METHOD(Decoder::GetMemoryAsArray) {
+  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  auto ret = obj->getMemoryState();
+  v8::Local<v8::Array> result_list = Nan::New<v8::Array>((int)ret.size());
+  for(unsigned int i = 0; i < ret.size(); ++i) {
+    v8::Local<v8::Object> obj = Nan::New<v8::Object>();
+    Nan::Set(obj, Nan::New("name").ToLocalChecked(), Nan::New(ret[i]->name.c_str()).ToLocalChecked());
+    Nan::Set(obj, Nan::New("used_memory").ToLocalChecked(), Nan::New((int)ret[i]->used_memory));
+    Nan::Set(result_list, i, obj);
+  }
+  info.GetReturnValue().Set(result_list);
 }
