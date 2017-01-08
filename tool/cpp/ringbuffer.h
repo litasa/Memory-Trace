@@ -12,7 +12,7 @@ class RingBuffer {
     size_t getReadPosition(); 
     size_t getWritePosition();
     size_t getNumProcessed();
-    size_t readNext(uint8_t& byte);
+    bool readNext(uint8_t& byte);
     size_t populate(char* buff, size_t size);
     void setRollback();
     void doRollback();
@@ -26,7 +26,8 @@ class RingBuffer {
     const size_t capacity_;
     size_t read_pos_;
     size_t write_pos_;
-    size_t rollback_;
+    size_t read_rollback_;
+    size_t write_rollback_;
     size_t num_read_;
     size_t unread_;
 };

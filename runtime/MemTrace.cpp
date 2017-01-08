@@ -44,6 +44,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static size_t total_sent = 0;
 static size_t count = 0;
+static size_t last_time = 0;
+static size_t last_registred_time = 0;
 
 // We can't use Printf/printf() in general because they're not initialized yet.
 // Vsnprintf() is OK because it doesn't allocate.
@@ -112,14 +114,19 @@ namespace MemTrace
 
     int                           m_CurBuffer;                      // Index of current encoding buffer
     uint8_t                       m_Buffers[2][kBufferSize];        // Raw encoding buffers
+	uint64_t					  m_last_send;
 
   private:
     //-----------------------------------------------------------------------------
     // Flush current buffer and flip buffers.
     void TransmitCurrentBuffer()
     {
+	  MemTracePrint("last event time: %d\n", last_time);
+	  if (last_time < last_registred_time) {
+		  MemTracePrint("TIME ERRORS\n");
+	  }
+	  last_registred_time = last_time;
       (*m_TransmitFn)(m_Buffers[m_CurBuffer], m_WriteOffset);
-
       // Flip buffers.
       m_WriteOffset = 0;
       m_CurBuffer  ^= 1;
@@ -167,6 +174,7 @@ namespace MemTrace
       m_WriteOffset  = 0;
       m_TransmitFn   = transmit_fn;
       m_StartTime    = TimerGetSystemCounter();
+	  m_last_send = m_StartTime;
     }
 
     //-----------------------------------------------------------------------------
@@ -235,16 +243,14 @@ namespace MemTrace
     // Emit common data that goes with every event.  
     void BeginEvent(EventCode code)
 	{
-      EmitUnsigned(code);
 	  EmitUnsigned(count);
+      EmitUnsigned(code);
       uint64_t delta = EmitTimeStamp();
+	  last_time = delta;
 	  //MemTracePrint("event: %i, time: %d, num: %i\n",code, delta, count);
     }
 	void EndEvent(EventCode code)
 	{
-		//EmitUnsigned(code);
-		
-		//EmitUnsigned(count);
 		count++;
 	}
 
@@ -399,50 +405,6 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     InitCommon(write_block_fn);
     State.m_Socket = sock;
   }
-//  else
-//  {
-//    State.m_Socket = sock;
-//    MemTracePrint("MemTrace: Switching to socket transport\n");
-//    State.m_Encoder.Flush();
-//
-//    FileHandle fh = State.m_BootFile;
-//
-//    if (int64_t sz = FileSize(fh))
-//    {
-//      FileSeekTo(fh, 0);
-//
-//      char buf[1024];
-//      size_t remain = (size_t) sz;
-//      while (remain)
-//      {
-//        size_t copy_size = remain;
-//        if (copy_size > ARRAY_SIZE(buf))
-//          copy_size = ARRAY_SIZE(buf);
-//
-//        FileRead(fh, buf, copy_size);
-//        if (copy_size != send(sock, buf, (int) copy_size, 0))
-//        {
-//          MemTracePrint("send() failed while uploading trace file, shutting down.\n");
-//          error = true;
-//        }
-//
-//        remain -= copy_size;
-//      }
-//    }
-//
-//    FileClose(fh);
-//    State.m_BootFile = kInvalidFileHandle;
-//
-//    // Clean up the temporary file.
-//#if defined(MEMTRACE_WINDOWS)
-//    DeleteFileA(State.m_BootFileName);
-//#else
-//    remove(State.m_BootFileName);
-//#endif
-//
-//    // Switch to socket transmit method
-//    State.m_Encoder.SetTransmitFn(write_block_fn);
-//  }
 
   if (was_active)
   {

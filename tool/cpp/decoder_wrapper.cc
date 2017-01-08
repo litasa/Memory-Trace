@@ -42,21 +42,24 @@ NAN_METHOD(Decoder::UnpackStream) {
     size_t count = 0;
     size_t num_populated = 0;
     RingBuffer* ring = obj->getRingbuffer();
-
-    std::clock_t start = std::clock();
+    std::cout << "Recieved one batch of data, is at event: " << obj->event_counter_ <<  std::endl;
+    size_t num_populate = ring->populate(buff,size);
+    ring->setRollback();
+    if(!obj->tryGettingEvents(3)) {
+      std::cout << "this chunk is bad, save this one for another time" << std::endl;
+      throw;
+    }
     do {
         ring->doRollback();
+        obj->decodeEvents();
         num_populated = ring->populate(buff + num_populated, size - num_populated);
-        obj->oneStep();
         if(count > size) {
-          std::cout << "we have problems "  << num_populated << " " << size<< std::endl;
+          std::cout << "we have problems Reading too much in ringbuffer" << std::endl;
           ring->printStats();
           throw;
         }
         count++;
     }while(num_populated < size);
-    std::clock_t end = std::clock();
-    std::cout << "took: " << double(end-start)/CLOCKS_PER_SEC << " seconds" << std::endl;
 }
 
 NAN_METHOD(Decoder::Printas) {

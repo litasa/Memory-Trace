@@ -14,13 +14,13 @@ public:
     MemoryState();
     ~MemoryState();
 
-    bool addHeap(const int id, const std::string& name, size_t timestamp, size_t base = 0);
-    bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
-    bool addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp);
+    bool addHeap(const int id, const std::string& name, size_t timestamp, size_t event_num);
+    bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp, size_t event_num);
+    bool addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp, size_t event_num);
 
-    bool removeHeap(const int id, size_t timestamp);
-    bool removeCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
-    bool removeAllocation(const int id, const size_t pointer, size_t timestamp);
+    bool removeHeap(const int id, size_t timestamp, size_t event_num);
+    bool removeCore(const int id, const size_t pointer, const size_t size, size_t timestamp, size_t event_num);
+    bool removeAllocation(const int id, const size_t pointer, size_t timestamp, size_t event_num);
 
     void print(size_t timestamp, int id = -1) const;
     void printAll() const;
