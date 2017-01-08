@@ -24,8 +24,7 @@ class Decoder : public Nan::ObjectWrap {
     ~Decoder();
 
     
-    
-
+    size_t last_timestamp = 0;
     RingBuffer* ring_;
     MemoryState* memory_state_;
     unsigned long long registerd_events;
@@ -37,6 +36,7 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(UnpackStream);
     static NAN_METHOD(Printas);
     static NAN_METHOD(GetMemoryAsArray);
+    static NAN_METHOD(GetNewEvents);
 
     enum EventCode
     {
@@ -56,4 +56,4 @@ class Decoder : public Nan::ObjectWrap {
     /* Wrapper functions - end */
 };
 
-#endif
+#endif //DECODER_H

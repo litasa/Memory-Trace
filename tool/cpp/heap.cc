@@ -4,36 +4,13 @@
 
 Heap::Heap(int id,
     std::string name,
-    size_t birth)
+    size_t base,
+    size_t timestamp)
     : 
+    MemoryObject(base, timestamp, 0, 0), 
     id_(id),
-    name_(name),
-    birth_(birth),
-    death_(-1),
-    last_update_(birth),
-    managed_memory_(0),
-    used_memory_(0)
-    {
-
-    }
-
-void Heap::print() const {
-    for ( auto it = cores_.cbegin(); it != cores_.cend(); ++it ) {
-        //std::cout << "\t\t" << std::showbase << std::hex << it->first << std::dec << " : " << it->second.used_memory <<  " // "  << it->second.managed_memory << "\n";  // cannot modify *it
-         it->second.print();
-     }
-}
-
-void Heap::printAll() const {
-    if(!cores_.empty())
-    {
-        std::cout << "\tAlive Content: \n";
-        print();
-    }
-    if(!alloc_to_core.empty()) {
-        std::cout << "\tSome mappings still exist\n";
-    }
-}
+    name_(name)
+    { }
 
 Core* Heap::getCore(size_t pointer) {
     auto found = cores_.find(pointer);
@@ -83,6 +60,7 @@ size_t Heap::addAllocation(size_t pointer, size_t size, size_t timestamp) {
             return size;
         }
     }
+    std::cout << "Did not find core for: " << std::hex << pointer << std::dec << " in heap: " << id_;
     return 0;
 }
 

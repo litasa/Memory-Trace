@@ -68,6 +68,29 @@ Visualization = new function() {
 		}
 	}
 
+	this.chartDataUpdate = function (array) {
+		if(array.length > 0) {
+			for(var i = 0; i < lineData.datasets.length; ++i) {
+				lineData.datasets[i].data.push({x: array[i].last_update, y: array[i].used_memory});
+
+				if(lineData.datasets[i].data.length > Visualization.MaxHorizontal){
+					lineData.datasets[i].data.splice(0,1);
+				}
+			}
+			if(lineData.datasets.length < array.length) {
+				for(var i = lineData.datasets.length; i < array.length; ++i) {
+					var dataset = {
+						lineTension: 0,
+						fill: false,
+						data: []
+					}
+					dataset.data.push({x: array[i].last_update, y: array[i].used_memory})
+					lineData.datasets.push(dataset);
+				}
+			}
+		}
+	}
+
 	this.chartNewDataset = function(id, time) {
 		var dataset = {
 			lineTension: 0,
@@ -87,6 +110,10 @@ ipcRenderer.on('heap-created', function(event, data) {
   Visualization.chartNewDataset(data.id,data.timestamp);
 })
 
+ipcRenderer.on('memory', function(event, data) {
+  Visualization.chartDataUpdate(data.array);
+})
+
 setInterval(function() {
 	Visualization.update()
-},200);
+},800);

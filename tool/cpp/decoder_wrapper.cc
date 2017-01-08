@@ -51,6 +51,7 @@ NAN_METHOD(Decoder::UnpackStream) {
         if(count > size) {
           std::cout << "we have problems "  << num_populated << " " << size<< std::endl;
           ring->printStats();
+          throw;
         }
         count++;
     }while(num_populated < size);
@@ -77,4 +78,21 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
     Nan::Set(result_list, i, obj);
   }
   info.GetReturnValue().Set(result_list);
+}
+
+NAN_METHOD(Decoder::GetNewEvents) {
+  // Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  // //auto ret = obj->getNewEvents();
+  // v8::Local<v8::Array> result_list = Nan::New<v8::Array>((int)ret.size());
+  // for(unsigned int i = 0; i < ret.size(); ++i) {
+  //   v8::Local<v8::Object> obj = Nan::New<v8::Object>();
+  //   if(ret[i] == nullptr) {
+  //     std::cout << "hmm error null ptr" << std::endl;
+  //   }
+  //   Nan::Set(obj, Nan::New("name").ToLocalChecked(), Nan::New(ret[i]->getName().c_str()).ToLocalChecked());
+  //   Nan::Set(obj, Nan::New("used_memory").ToLocalChecked(), Nan::New((int)ret[i]->getUsedMemory()));
+  //   Nan::Set(obj, Nan::New("last_update").ToLocalChecked(), Nan::New((int)ret[i]->getLastUpdate()));
+  //   Nan::Set(result_list, i, obj);
+  // }
+  // info.GetReturnValue().Set(result_list);
 }

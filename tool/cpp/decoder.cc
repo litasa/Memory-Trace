@@ -207,6 +207,10 @@ void Decoder::oneStep() {
             break;
           } //switch(current code)
          
+         if( last_timestamp > time_stamp) {
+           std::cout << "recieved wrong timestamp" << std::endl;
+         }
+         last_timestamp = time_stamp;
           registerd_events++;
           ring_->setRollback();
     }while(ring_->getNumUnread());

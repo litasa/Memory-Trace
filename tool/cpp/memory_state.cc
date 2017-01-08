@@ -6,18 +6,25 @@ MemoryState::MemoryState() {
 MemoryState::~MemoryState() {
 };
 
-bool MemoryState::addHeap(const int id, const std::string& name, size_t timestamp) {
-    Heap h(id, name, timestamp);
+bool MemoryState::addHeap(const int id, const std::string& name, size_t base, size_t timestamp) {
+    if(last_update_ > timestamp) {
+        std::cout << "We have an error: " << last_update_ <<  " > " << timestamp << std::endl;
+    }
+    Heap h(id, name, base, timestamp);
     auto emp = heaps_.emplace(id, h);
     if(!emp.second) {
         std::cout << "Adding Heap failed: " << "Id: " << id << ", name: " << name << "\n";
         return false;
     }
     num_heaps_added++;
+    last_update_ = timestamp;
     return true;
 }
 
 bool MemoryState::addCore(const int id, const size_t pointer, const size_t size, size_t timestamp) {
+    if(last_update_ > timestamp) {
+        std::cout << "We have an error: " << last_update_ <<  " > " << timestamp << std::endl;
+    }
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << id << " not found for core: " << std::hex << pointer << std::dec << "\n";
@@ -26,12 +33,16 @@ bool MemoryState::addCore(const int id, const size_t pointer, const size_t size,
     if(heap->addCore(pointer, size, timestamp)) {
         num_cores_added++;
         heap->setLastUpdate(timestamp);
+        last_update_ = timestamp;
         return true;
     }
     return false;
 }
 
 bool MemoryState::addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp) {
+    if(last_update_ > timestamp) {
+        std::cout << "We have an error: " << last_update_ <<  " > " << timestamp << std::endl;
+    }
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << id << " not found for core: " << std::hex << pointer << std::dec << "\n";
@@ -40,6 +51,7 @@ bool MemoryState::addAllocation(const int id, const size_t pointer, const size_t
 
     if(heap->addAllocation(pointer, size, timestamp)) {
         heap->setLastUpdate(timestamp);
+        last_update_ = timestamp;
         return true;
     }
     std::cout << "Adding Allocation failed(unknown reason): " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " time: " << timestamp  <<"\n";
@@ -47,6 +59,9 @@ bool MemoryState::addAllocation(const int id, const size_t pointer, const size_t
 }
 
 bool MemoryState::removeAllocation(const int id, const size_t pointer, size_t timestamp) {
+    if(last_update_ > timestamp) {
+        std::cout << "We have an error: " << last_update_ <<  " > " << timestamp << std::endl;
+    }
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << id << " not found for core: " << std::hex << pointer << std::dec << " at time: " << timestamp << "\n";
@@ -54,12 +69,16 @@ bool MemoryState::removeAllocation(const int id, const size_t pointer, size_t ti
     }
     if(heap->removeAllocation(pointer, timestamp)) {
         heap->setLastUpdate(timestamp);
+        last_update_ = timestamp;
         return true;
     }
     return false;
 }
 
 bool MemoryState::removeCore(const int id, const size_t pointer, const size_t size, size_t timestamp) {
+    if(last_update_ > timestamp) {
+        std::cout << "We have an error: " << last_update_ <<  " > " << timestamp << std::endl;
+    }
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << id << " not found for core: " << std::hex << pointer << std::dec << " at time: " << timestamp<< "\n";
@@ -67,12 +86,16 @@ bool MemoryState::removeCore(const int id, const size_t pointer, const size_t si
     if(heap->removeCore(pointer, timestamp)) {
         heap->setLastUpdate(timestamp);
         num_cores_removed++;
+        last_update_ = timestamp;
         return true;
     }
     return false;
 }
 
 bool MemoryState::removeHeap(const int id, size_t timestamp) {
+    if(last_update_ > timestamp) {
+        std::cout << "We have an error: " << last_update_ <<  " > " << timestamp << std::endl;
+    }
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << "Removing non existing heap: " << id << ", at time: " << timestamp << "\n";
@@ -82,6 +105,7 @@ bool MemoryState::removeHeap(const int id, size_t timestamp) {
     if(items_removed == 1) {
         heap->setLastUpdate(timestamp);
         num_heaps_removed++;
+        last_update_ = timestamp;
         return true;
     }
     return false;
@@ -90,7 +114,7 @@ bool MemoryState::removeHeap(const int id, size_t timestamp) {
 Heap* MemoryState::getHeap(const int id) {
     auto found = heaps_.find(id);
     if(found == heaps_.end()) {
-        std::cout << "No heap Found" << std::endl;
+        std::cout << "No heap Found, " << id << std::endl;
         return nullptr;
     }
     return &(found->second);
