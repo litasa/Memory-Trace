@@ -71,8 +71,9 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
     if(ret[i] == nullptr) {
       std::cout << "hmm error null ptr" << std::endl;
     }
-    Nan::Set(obj, Nan::New("name").ToLocalChecked(), Nan::New(ret[i]->name.c_str()).ToLocalChecked());
-    Nan::Set(obj, Nan::New("used_memory").ToLocalChecked(), Nan::New((int)ret[i]->used_memory));
+    Nan::Set(obj, Nan::New("name").ToLocalChecked(), Nan::New(ret[i]->getName().c_str()).ToLocalChecked());
+    Nan::Set(obj, Nan::New("used_memory").ToLocalChecked(), Nan::New((int)ret[i]->getUsedMemory()));
+    Nan::Set(obj, Nan::New("last_update").ToLocalChecked(), Nan::New((int)ret[i]->getLastUpdate()));
     Nan::Set(result_list, i, obj);
   }
   info.GetReturnValue().Set(result_list);

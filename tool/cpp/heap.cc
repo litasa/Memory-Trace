@@ -2,9 +2,24 @@
 
 #include <iostream>
 
+Heap::Heap(int id,
+    std::string name,
+    size_t birth)
+    : 
+    id_(id),
+    name_(name),
+    birth_(birth),
+    death_(-1),
+    last_update_(birth),
+    managed_memory_(0),
+    used_memory_(0)
+    {
+
+    }
+
 void Heap::print() const {
     for ( auto it = cores_.cbegin(); it != cores_.cend(); ++it ) {
-        std::cout << "\t\t" << std::showbase << std::hex << it->first << std::dec << " : " << it->second.used_memory <<  " // "  << it->second.managed_memory << "\n";  // cannot modify *it
+        //std::cout << "\t\t" << std::showbase << std::hex << it->first << std::dec << " : " << it->second.used_memory <<  " // "  << it->second.managed_memory << "\n";  // cannot modify *it
          it->second.print();
      }
 }
@@ -15,13 +30,6 @@ void Heap::printAll() const {
         std::cout << "\tAlive Content: \n";
         print();
     }
-    if(!recently_dead_cores_.empty()) {
-        std::cout << "\tDead Content: \n";
-        for ( auto it = recently_dead_cores_.cbegin(); it != recently_dead_cores_.cend(); ++it ) {
-            std::cout << "\t\t" << std::showbase << std::hex << it->pointer  << std::dec << " : " << it->managed_memory << " | B: " << it->birth << ", D: " << it->death <<  "\n";  // cannot modify *it
-            it->printAll();
-        }
-    }
     if(!alloc_to_core.empty()) {
         std::cout << "\tSome mappings still exist\n";
     }
@@ -30,12 +38,7 @@ void Heap::printAll() const {
 Core* Heap::getCore(size_t pointer) {
     auto found = cores_.find(pointer);
     if(found == cores_.end()) {
-        for(auto it = recently_dead_cores_.begin(); it != recently_dead_cores_.end(); ++it) {
-            if(it->pointer == pointer) {
-                std::cout << "getting dead core for pointer: " << std::hex << pointer << std::dec << "\n";
-                return &(*it);
-            }
-        }
+        std::cout << "No core found" << std::endl;
         return nullptr;
     }
     return &(found->second);
@@ -44,20 +47,51 @@ Core* Heap::getCore(size_t pointer) {
 Core* Heap::getCoreForAllocation(size_t pointer) {
     auto found = alloc_to_core.find(pointer);
     if(found == alloc_to_core.end()) {
-        for(auto it = recently_dead_cores_.begin(); it != recently_dead_cores_.end(); ++it) {
-            if(it->pointer == pointer) {
-                std::cout << "getting dead core for pointer: " << std::hex << pointer << std::dec << "\n";
-                return &(*it);
-            }
-        }
+        std::cout << "No core mapper Found" << std::endl;
         return nullptr;
     }
     return getCore(found->second);
 }
 
-void Heap::removeCore(Core* core) {
-    if(!core->allocations_.empty()) {
-        recently_dead_cores_.push_back(*core);
+size_t Heap::removeCore(size_t pointer, size_t timestamp) {
+    Core core = cores_.at(pointer);
+    size_t managed = core.getManagedSize();
+    size_t items_removed = cores_.erase(core.getPointer());
+    if(items_removed == 1) {
+        managed_memory_ -= managed;
+        return managed;
     }
-    cores_.erase(core->pointer);
+    return 0;
+}
+
+size_t Heap::addCore(size_t pointer, size_t timestamp, size_t managed_size) {
+    Core c(pointer,timestamp,managed_size);
+    auto emp = cores_.insert(std::make_pair(pointer, c));
+    if(!emp.second) {
+        //std::cout << "Adding Core failed: " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " timestamp: " << timestamp  << "\n";
+        return 0;
+    }
+    managed_memory_ += managed_size;
+    return managed_size;
+}
+
+size_t Heap::addAllocation(size_t pointer, size_t size, size_t timestamp) {
+    for(auto it = cores_.begin(); it != cores_.end(); ++it) {
+        if(it->second.addAllocation(pointer, size, timestamp)) {
+            alloc_to_core.emplace(pointer,it->second.getPointer());
+            used_memory_ += size;
+            return size;
+        }
+    }
+    return 0;
+}
+
+size_t Heap::removeAllocation(size_t pointer, size_t timestamp) {
+    Core* core = getCoreForAllocation(pointer);
+    if(core == nullptr) {
+        return 0;
+    }
+    size_t removed_memory = core->removeAllocation(pointer,timestamp);
+    used_memory_ -= removed_memory;
+    return removed_memory;
 }

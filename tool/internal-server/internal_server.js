@@ -19,12 +19,12 @@ var server = net.createServer(function(socket) {
 
   socket.on('data', function(data) {
     total_data += data.length;
-    console.log("start: " + total_data);
+    console.log("start: \n" + "Total data recieved: " + total_data);
     decoder.unpackStream(data);
     var arr = decoder.getMemoryAsArray();
     console.log("printing heaps")
     for(var i = 0; i < arr.length; ++i) {
-      console.log(arr[i].name + " : " + arr[i].used_memory);
+      console.log(arr[i].name + " : " + arr[i].used_memory + " last update: " + arr[i].last_update);
     }
     /*
     var num_data_left = data.length;

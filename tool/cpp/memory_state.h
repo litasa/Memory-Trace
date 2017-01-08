@@ -14,13 +14,13 @@ public:
     MemoryState();
     ~MemoryState();
 
-    void addHeap(const int id, const std::string& name, size_t timestamp);
-    void addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
-    void addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp);
+    bool addHeap(const int id, const std::string& name, size_t timestamp);
+    bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
+    bool addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp);
 
-    void removeHeap(const int id, size_t timestamp);
-    void removeCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
-    void removeAllocation(const int id, const size_t pointer, size_t timestamp);
+    bool removeHeap(const int id, size_t timestamp);
+    bool removeCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
+    bool removeAllocation(const int id, const size_t pointer, size_t timestamp);
 
     void print(size_t timestamp, int id = -1) const;
     void printAll() const;
@@ -32,7 +32,8 @@ public:
     std::vector<Heap*> getHeaps();
 private:
     std::unordered_map<int, Heap> heaps_;
-    std::vector<Heap> recently_dead_heaps_;
+    size_t last_update_ = 0;
+    //std::vector<Heap> recently_dead_heaps_;
 
     int num_heaps_added = 0;
     int num_heaps_removed = 0;
