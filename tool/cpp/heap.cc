@@ -1,18 +1,16 @@
 #include "heap.h"
 
 #include <iostream>
-#include <string>
 
 Heap::Heap(int id,
     std::string name,
+    size_t base,
     size_t timestamp)
     : 
-    MemoryObject(0, timestamp, 0, 0), 
+    MemoryObject(base, timestamp, 0, 0), 
     id_(id),
     name_(name)
-    { 
-        std::cout << "Heap Created: " << id << ", " << name << " at: " << timestamp << std::endl;
-    }
+    { }
 
 Core* Heap::getCore(size_t pointer) {
     auto found = cores_.find(pointer);
@@ -26,7 +24,7 @@ Core* Heap::getCore(size_t pointer) {
 Core* Heap::getCoreForAllocation(size_t pointer) {
     auto found = alloc_to_core.find(pointer);
     if(found == alloc_to_core.end()) {
-        std::cout << "No core mapper found " << std::endl;
+        std::cout << "No core mapper Found" << std::endl;
         return nullptr;
     }
     return getCore(found->second);

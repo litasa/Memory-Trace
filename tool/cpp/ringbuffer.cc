@@ -8,8 +8,7 @@ RingBuffer::RingBuffer(int value) : capacity_(value) {
     //for dev should be removed
     memset(data_,0,capacity_);
 
-    write_rollback_ = 0;
-    read_rollback_ = 0;
+    rollback_ = 0;
     read_pos_ = 0;
     write_pos_ = 0;
     unread_ = 0;
@@ -21,10 +20,9 @@ RingBuffer::~RingBuffer() {
     data_ = nullptr;
 }
 
-bool RingBuffer::readNext(uint8_t& ret) {
+size_t RingBuffer::readNext(uint8_t& ret) {
     if(unread_ == 0) {
-        std::cout << "Ringbuffer can't read anymore" << std::endl;
-        return false;
+        return 0;
     }
     ret = (uint8_t)data_[read_pos_];
     read_pos_++;
@@ -33,7 +31,7 @@ bool RingBuffer::readNext(uint8_t& ret) {
     if(read_pos_ == capacity_) {
         read_pos_ = 0;
     }
-    return true;
+    return 1;
 }
 
 size_t RingBuffer::getNumUnread() {
@@ -78,7 +76,6 @@ size_t RingBuffer::extractString(std::string& str, size_t length) {
 }
 
 size_t RingBuffer::populate(char* buff, size_t size) {
-    std::cout << "populating ringbuffer" << std::endl;
     if( size == 0) {
         return 0;
     }
@@ -102,21 +99,19 @@ size_t RingBuffer::populate(char* buff, size_t size) {
 }
 
 void RingBuffer::setRollback() {
-    read_rollback_ = read_pos_;
-    write_rollback_ = write_pos_;
+    rollback_ = read_pos_;
 }
 
 void RingBuffer::doRollback() {
     size_t read = read_pos_;
-    if(read_rollback_ > read) {
+    if(rollback_ > read) {
       //if read_pos_ wrapped around
       read += capacity_;
   }
-  size_t items_undone = read - read_rollback_;
+  size_t items_undone = read - rollback_;
   unread_ += items_undone;
   num_read_ -= items_undone;
-  read_pos_ = read_rollback_;
-  write_pos_ = write_rollback_;
+  read_pos_ = rollback_;
 }
 
 void RingBuffer::printStats() {
@@ -124,8 +119,7 @@ void RingBuffer::printStats() {
     std::cout << "\n\tRead pos: " << read_pos_;
     std::cout << "\n\tWrite pos: " << write_pos_;
     std::cout << "\n\tNum read: " << num_read_;
-    std::cout << "\n\tRead rollback: " << read_rollback_;
-    std::cout << "\n\tWrite rollback: " << write_rollback_;
+    std::cout << "\n\tRollback: " << rollback_;
     std::cout << "\n\tUnread: " << unread_;
     std::cout << "\n";
 }

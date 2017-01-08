@@ -8,7 +8,7 @@
 
 class Heap : public MemoryObject {
 public:
-    Heap(int id, std::string name, size_t birth);
+    Heap(int id, std::string name, size_t base, size_t birth);
 
     std::map<size_t,Core> cores_;//pointer to core start, core
     std::unordered_map<size_t,size_t> alloc_to_core; // allocation pointer -> core pointer
