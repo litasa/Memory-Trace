@@ -61,13 +61,14 @@ void Decoder::oneStep() {
           int current_code;
           size_t count;
 
+          if(!decodeValue(count)) {
+            return;
+          }
           if(!decodeValue(current_code)) {
             //std::cout << "\treading current_code failed" << std::endl;
               return;
           }
-          if(!decodeValue(count)) {
-            return;
-          }
+          
 
           size_t time_stamp;
 
