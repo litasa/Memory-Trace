@@ -4,8 +4,6 @@ Memory Trace
 A tool to trace memory allocations in a program. Based on Andreas Fredrikssons MemTrace, but with live graphing capabilities and (hopefully) a cleaner backend.
 
 ## Author ##
-
-MemTrace was written by Andreas Fredriksson (@deplinenoise on Twitter).
 Memory Trace was written by Jakob Törmä Ruhl
 
 ## License ##
