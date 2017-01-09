@@ -54,16 +54,16 @@ bool Decoder::decodeString(std::string& ret) {
         return true;
 }
 
-void Decoder::oneStep() {
+bool Decoder::oneStep() {
   int current_code;
   size_t count;
 
   if(!decodeValue(count)) {
-    return;
+    return false;
   }
   if(!decodeValue(current_code)) {
     //std::cout << "\treading current_code failed" << std::endl;
-      return;
+      return false;
   }
   
 
@@ -71,7 +71,7 @@ void Decoder::oneStep() {
 
   if(!decodeValue(time_stamp)) {
     //std::cout << "\treading time_stamp failed" << std::endl;
-      return;
+      return false;
   }
 
   switch(current_code) {
@@ -83,15 +83,15 @@ void Decoder::oneStep() {
 
       if(!decodeValue(stream_magic)) {
         //std::cout << "\t\tDecode stream_magic failed" << std::endl;
-        return;
+        return false;
       }
       if(!decodeString(platform)) {
         //std::cout << "\tDecode platform failed" << std::endl;
-        return;
+        return false;
       }
       if(!decodeValue(system_frequency)) {
         //std::cout << "\tDecode system_frequency failed" << std::endl;
-        return;
+        return false;
       }
       //ss << "(" << registerd_events << ")BeginStream\n\ttime_stamp: " << time_stamp << "\n\tplatform: " << platform << "\n\tsystem frequency: " << system_frequency << "\n";
       break;
@@ -108,10 +108,10 @@ void Decoder::oneStep() {
       std::string name;
       int id;
       if(!decodeValue(id)) {
-        return;
+        return false;
       }
       if(!decodeString(name)) {
-        return;
+        return false;
       }
       memory_state_->addHeap(id,name, time_stamp);
       //ss << "(" << registerd_events << ")HeapCreate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n\tName: " << name << "\n";
@@ -122,7 +122,7 @@ void Decoder::oneStep() {
     {
       int id;
       if(!decodeValue(id)) {
-        return ;
+        return false;
       }
       memory_state_->removeHeap(id, time_stamp);
       //ss << "(" << registerd_events << ")HeapDestroy\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n";
@@ -135,13 +135,13 @@ void Decoder::oneStep() {
       size_t pointer;
       size_t size_bytes;
       if(!decodeValue(id)) {
-        return ;
+        return false;
       }
       if(!decodeValue(pointer)) {
-        return ;
+        return false;
       }
       if(!decodeValue(size_bytes)) {
-        return;
+        return false;
       }
       memory_state_->addCore(id,pointer,size_bytes,time_stamp);
       //ss << "(" << registerd_events << ")HeapAddCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
@@ -154,13 +154,13 @@ void Decoder::oneStep() {
       size_t pointer;
       size_t size_bytes;
       if(!decodeValue(id)) {
-        return ;
+        return false;
       }
       if(!decodeValue(pointer)) {
-        return ;
+        return false;
       }
       if(!decodeValue(size_bytes)) {
-        return ;
+        return false;
       }
       memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
       //ss << "(" << registerd_events << ")HeapRemoveCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
@@ -172,13 +172,13 @@ void Decoder::oneStep() {
       size_t pointer;
       size_t size_bytes;
       if(!decodeValue(id)) {
-        return ;
+        return false;
       }
       if(!decodeValue(pointer)) {
-        return ;
+        return false;
       }
       if(!decodeValue(size_bytes)) {
-        return ;
+        return false;
       }
       memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
       //ss << "(" << registerd_events << ")HeapAllocate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
@@ -190,10 +190,10 @@ void Decoder::oneStep() {
       int id;
       size_t pointer;
       if(!decodeValue(id)) {
-        return ;
+        return false;
       }
       if(!decodeValue(pointer)) {
-        return ;
+        return false;
       }
       memory_state_->removeAllocation(id,pointer, time_stamp);
       //ss << "(" << registerd_events << ")HeapFree\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n"; 
@@ -201,7 +201,7 @@ void Decoder::oneStep() {
     }
     default:
       //ss << "Unhandled Event " << current_code << ", time_stamp: " << time_stamp << " num unread: " << ring_->getNumUnread() << "\n";
-      return;
+      return false;
     break;
   } //switch(current code)
 
@@ -210,6 +210,7 @@ void Decoder::oneStep() {
   }
   last_timestamp = time_stamp;
   registerd_events++;
+  return true;
 }
 
 std::vector<Heap*> Decoder::getMemoryState() {

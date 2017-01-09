@@ -16,7 +16,7 @@ class Decoder : public Nan::ObjectWrap {
     bool decodeValue(int& ret);
     bool decodeString(std::string& ret);
 
-    void oneStep();
+    bool oneStep();
 
     std::vector<Heap*> getMemoryState();
   private:

@@ -49,7 +49,9 @@ NAN_METHOD(Decoder::UnpackStream) {
         num_populated = ring->populate(buff + num_populated, size - num_populated);
         do {
           ring->setRollback();
-          obj->oneStep();
+          if(!obj->oneStep()) {
+            break;
+          }
           ring->setRollback();
         }while(ring->getNumUnread());
         ring->doRollback();
