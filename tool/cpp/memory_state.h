@@ -14,7 +14,7 @@ public:
     MemoryState();
     ~MemoryState();
 
-    bool addHeap(const int id, const std::string& name, size_t timestamp, size_t base = 0);
+    bool addHeap(const int id, const std::string& name, size_t timestamp);
     bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
     bool addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp);
 

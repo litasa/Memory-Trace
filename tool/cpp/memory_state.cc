@@ -6,11 +6,11 @@ MemoryState::MemoryState() {
 MemoryState::~MemoryState() {
 };
 
-bool MemoryState::addHeap(const int id, const std::string& name, size_t base, size_t timestamp) {
+bool MemoryState::addHeap(const int id, const std::string& name, size_t timestamp) {
     if(last_update_ > timestamp) {
         std::cout << "We have an error: " << last_update_ <<  " > " << timestamp << std::endl;
     }
-    Heap h(id, name, base, timestamp);
+    Heap h(id, name, timestamp);
     auto emp = heaps_.emplace(id, h);
     if(!emp.second) {
         std::cout << "Adding Heap failed: " << "Id: " << id << ", name: " << name << "\n";

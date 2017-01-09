@@ -4,10 +4,9 @@
 
 Heap::Heap(int id,
     std::string name,
-    size_t base,
     size_t timestamp)
     : 
-    MemoryObject(base, timestamp, 0, 0), 
+    MemoryObject(0, timestamp, 0, 0), 
     id_(id),
     name_(name)
     { }

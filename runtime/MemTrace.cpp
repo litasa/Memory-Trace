@@ -238,7 +238,7 @@ namespace MemTrace
 		EmitUnsigned(count);
       EmitUnsigned(code);
       uint64_t delta = EmitTimeStamp();
-	  //MemTracePrint("event: %i, time: %d, num: %i\n",code, delta, count);
+	  MemTracePrint("event: %i, time: %d, num: %i\n",code, delta, count);
     }
 	void EndEvent(EventCode code)
 	{
