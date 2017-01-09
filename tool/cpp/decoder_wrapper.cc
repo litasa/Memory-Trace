@@ -47,7 +47,11 @@ NAN_METHOD(Decoder::UnpackStream) {
     do {
         ring->doRollback();
         num_populated = ring->populate(buff + num_populated, size - num_populated);
-        obj->oneStep();
+        do {
+          ring_->setRollback();
+          obj->oneStep();
+        }while(ring_->getNumUnread());
+        ring_->doRollback();
         if(count > size) {
           std::cout << "we have problems "  << num_populated << " " << size<< std::endl;
           ring->printStats();
