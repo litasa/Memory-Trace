@@ -55,6 +55,9 @@ bool Decoder::decodeString(std::string& ret) {
 }
 
 void Decoder::oneStep() {
+
+    do {
+      ring_->setRollback();
           int current_code;
           size_t count;
 
@@ -210,6 +213,8 @@ void Decoder::oneStep() {
          last_timestamp = time_stamp;
           registerd_events++;
           ring_->setRollback();
+    }while(ring_->getNumUnread());
+    ring_->doRollback();
 }
 
 std::vector<Heap*> Decoder::getMemoryState() {
