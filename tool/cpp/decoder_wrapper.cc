@@ -39,17 +39,26 @@ NAN_METHOD(Decoder::UnpackStream) {
     char* buff = (char*) node::Buffer::Data(info[0]->ToObject());
     size_t size = node::Buffer::Length(info[0]);
 
+    std::cout << "Starting new UnpackStream \n"; 
+
     size_t count = 0;
     size_t num_populated = 0;
+    size_t total_populated = 0;
     RingBuffer* ring = obj->getRingbuffer();
 
-    std::clock_t start = std::clock();
+    ring->doRollback();
+    num_populated = ring->populate(buff + num_populated, size - num_populated);
+    total_populated += num_populated;
+    ring->setRollback();
+    if(obj->trySteps(3)) {
+      std::cout << "Good chunk" << std::endl;
+    }
+    ring->doRollback();
+
     do {
         ring->doRollback();
-        num_populated = ring->populate(buff + num_populated, size - num_populated);
-        if(num_populated == 0) {
-          std::cout << "populated with 0. something smells fishy" << std::endl;
-        }
+        num_populated = ring->populate(buff + total_populated, size - total_populated);
+        total_populated += num_populated;
         do {
           ring->setRollback();
           if(!obj->oneStep()) {
@@ -64,9 +73,10 @@ NAN_METHOD(Decoder::UnpackStream) {
           throw;
         }
         count++;
-    }while(num_populated < size);
-    std::clock_t end = std::clock();
-    std::cout << "took: " << double(end-start)/CLOCKS_PER_SEC << " seconds" << std::endl;
+        std::cout << "num_populated < size: " << num_populated << " < " << size << std::endl;
+        std::cout << "total_populated: " << total_populated << std::endl;
+    }while(total_populated < size);
+    std::cout << "Ending UnpackStream \n";
 }
 
 NAN_METHOD(Decoder::Printas) {
