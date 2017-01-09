@@ -55,166 +55,161 @@ bool Decoder::decodeString(std::string& ret) {
 }
 
 void Decoder::oneStep() {
+  int current_code;
+  size_t count;
 
-    do {
-      ring_->setRollback();
-          int current_code;
-          size_t count;
+  if(!decodeValue(count)) {
+    return;
+  }
+  if(!decodeValue(current_code)) {
+    //std::cout << "\treading current_code failed" << std::endl;
+      return;
+  }
+  
 
-          if(!decodeValue(current_code)) {
-            //std::cout << "\treading current_code failed" << std::endl;
-              return;
-          }
-          if(!decodeValue(count)) {
-            return;
-          }
+  size_t time_stamp;
 
-          size_t time_stamp;
+  if(!decodeValue(time_stamp)) {
+    //std::cout << "\treading time_stamp failed" << std::endl;
+      return;
+  }
 
-          if(!decodeValue(time_stamp)) {
-            //std::cout << "\treading time_stamp failed" << std::endl;
-              return;
-          }
+  switch(current_code) {
+    case BeginStream :
+    {
+      std::string platform;
+      size_t system_frequency;
+      size_t stream_magic;
 
-          switch(current_code) {
-            case BeginStream :
-            {
-              std::string platform;
-              size_t system_frequency;
-              size_t stream_magic;
+      if(!decodeValue(stream_magic)) {
+        //std::cout << "\t\tDecode stream_magic failed" << std::endl;
+        return;
+      }
+      if(!decodeString(platform)) {
+        //std::cout << "\tDecode platform failed" << std::endl;
+        return;
+      }
+      if(!decodeValue(system_frequency)) {
+        //std::cout << "\tDecode system_frequency failed" << std::endl;
+        return;
+      }
+      //ss << "(" << registerd_events << ")BeginStream\n\ttime_stamp: " << time_stamp << "\n\tplatform: " << platform << "\n\tsystem frequency: " << system_frequency << "\n";
+      break;
+    }
 
-              if(!decodeValue(stream_magic)) {
-                //std::cout << "\t\tDecode stream_magic failed" << std::endl;
-                return;
-              }
-              if(!decodeString(platform)) {
-                //std::cout << "\tDecode platform failed" << std::endl;
-                return;
-              }
-              if(!decodeValue(system_frequency)) {
-                //std::cout << "\tDecode system_frequency failed" << std::endl;
-                return;
-              }
-              //ss << "(" << registerd_events << ")BeginStream\n\ttime_stamp: " << time_stamp << "\n\tplatform: " << platform << "\n\tsystem frequency: " << system_frequency << "\n";
-              break;
-            }
+    case EndStream :
+      {
+        //ss << "(" << registerd_events << ")Endstream\n\ttime_stamp: " << time_stamp << "\n\tDo nothing\n";
+      }
+    break;
 
-            case EndStream :
-              {
-                //ss << "(" << registerd_events << ")Endstream\n\ttime_stamp: " << time_stamp << "\n\tDo nothing\n";
-              }
-            break;
+    case HeapCreate :
+    { 
+      std::string name;
+      int id;
+      if(!decodeValue(id)) {
+        return;
+      }
+      if(!decodeString(name)) {
+        return;
+      }
+      memory_state_->addHeap(id,name, time_stamp);
+      //ss << "(" << registerd_events << ")HeapCreate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n\tName: " << name << "\n";
+      break;
+    }
 
-            case HeapCreate :
-            { 
-              std::string name;
-              int id;
-              if(!decodeValue(id)) {
-                return;
-              }
-              if(!decodeString(name)) {
-                return;
-              }
-              memory_state_->addHeap(id,name, time_stamp);
-              //ss << "(" << registerd_events << ")HeapCreate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n\tName: " << name << "\n";
-              break;
-            }
+    case HeapDestroy :
+    {
+      int id;
+      if(!decodeValue(id)) {
+        return ;
+      }
+      memory_state_->removeHeap(id, time_stamp);
+      //ss << "(" << registerd_events << ")HeapDestroy\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n";
+      break;
+    }
 
-            case HeapDestroy :
-            {
-              int id;
-              if(!decodeValue(id)) {
-                return ;
-              }
-              memory_state_->removeHeap(id, time_stamp);
-              //ss << "(" << registerd_events << ")HeapDestroy\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n";
-              break;
-            }
+    case HeapAddCore :
+    {
+      int id;
+      size_t pointer;
+      size_t size_bytes;
+      if(!decodeValue(id)) {
+        return ;
+      }
+      if(!decodeValue(pointer)) {
+        return ;
+      }
+      if(!decodeValue(size_bytes)) {
+        return;
+      }
+      memory_state_->addCore(id,pointer,size_bytes,time_stamp);
+      //ss << "(" << registerd_events << ")HeapAddCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
+      break;
+    }
 
-            case HeapAddCore :
-            {
-              int id;
-              size_t pointer;
-              size_t size_bytes;
-              if(!decodeValue(id)) {
-                return ;
-              }
-              if(!decodeValue(pointer)) {
-                return ;
-              }
-              if(!decodeValue(size_bytes)) {
-                return;
-              }
-              memory_state_->addCore(id,pointer,size_bytes,time_stamp);
-              //ss << "(" << registerd_events << ")HeapAddCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
-              break;
-            }
+    case HeapRemoveCore :
+    {  
+      int id;
+      size_t pointer;
+      size_t size_bytes;
+      if(!decodeValue(id)) {
+        return ;
+      }
+      if(!decodeValue(pointer)) {
+        return ;
+      }
+      if(!decodeValue(size_bytes)) {
+        return ;
+      }
+      memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
+      //ss << "(" << registerd_events << ")HeapRemoveCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
+      break;
+    }
+    case HeapAllocate:
+    {
+      int id;
+      size_t pointer;
+      size_t size_bytes;
+      if(!decodeValue(id)) {
+        return ;
+      }
+      if(!decodeValue(pointer)) {
+        return ;
+      }
+      if(!decodeValue(size_bytes)) {
+        return ;
+      }
+      memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
+      //ss << "(" << registerd_events << ")HeapAllocate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
+      break;
+    }
 
-            case HeapRemoveCore :
-            {  
-              int id;
-              size_t pointer;
-              size_t size_bytes;
-              if(!decodeValue(id)) {
-                return ;
-              }
-              if(!decodeValue(pointer)) {
-                return ;
-              }
-              if(!decodeValue(size_bytes)) {
-                return ;
-              }
-              memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
-              //ss << "(" << registerd_events << ")HeapRemoveCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
-              break;
-            }
-            case HeapAllocate:
-            {
-              int id;
-              size_t pointer;
-              size_t size_bytes;
-              if(!decodeValue(id)) {
-                return ;
-              }
-              if(!decodeValue(pointer)) {
-                return ;
-              }
-              if(!decodeValue(size_bytes)) {
-                return ;
-              }
-              memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
-              //ss << "(" << registerd_events << ")HeapAllocate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; 
-              break;
-            }
+    case HeapFree:
+    { 
+      int id;
+      size_t pointer;
+      if(!decodeValue(id)) {
+        return ;
+      }
+      if(!decodeValue(pointer)) {
+        return ;
+      }
+      memory_state_->removeAllocation(id,pointer, time_stamp);
+      //ss << "(" << registerd_events << ")HeapFree\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n"; 
+      break;
+    }
+    default:
+      //ss << "Unhandled Event " << current_code << ", time_stamp: " << time_stamp << " num unread: " << ring_->getNumUnread() << "\n";
+      return;
+    break;
+  } //switch(current code)
 
-            case HeapFree:
-            { 
-              int id;
-              size_t pointer;
-              if(!decodeValue(id)) {
-                return ;
-              }
-              if(!decodeValue(pointer)) {
-                return ;
-              }
-              memory_state_->removeAllocation(id,pointer, time_stamp);
-              //ss << "(" << registerd_events << ")HeapFree\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n"; 
-              break;
-            }
-            default:
-              //ss << "Unhandled Event " << current_code << ", time_stamp: " << time_stamp << " num unread: " << ring_->getNumUnread() << "\n";
-              return;
-            break;
-          } //switch(current code)
-         
-         if( last_timestamp > time_stamp) {
-           std::cout << "recieved wrong timestamp" << std::endl;
-         }
-         last_timestamp = time_stamp;
-          registerd_events++;
-          ring_->setRollback();
-    }while(ring_->getNumUnread());
-    ring_->doRollback();
+  if( last_timestamp > time_stamp) {
+    std::cout << "recieved wrong timestamp" << std::endl;
+  }
+  last_timestamp = time_stamp;
+  registerd_events++;
 }
 
 std::vector<Heap*> Decoder::getMemoryState() {
