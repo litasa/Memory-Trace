@@ -78,7 +78,8 @@ public:
 
   ~BlockAllocator()
   {
-    MemTrace::HeapRemoveCore(m_HeapId, m_MemRange, m_ElemSize * m_ElemCount);
+	  int rem = m_ElemSize * m_ElemCount;
+    MemTrace::HeapRemoveCore(m_HeapId, m_MemRange, rem);
     MemTrace::HeapDestroy(m_HeapId);
     free(m_MemRange);
   }
@@ -105,23 +106,66 @@ public:
 
 static void TestCustomAllocator()
 {
-  MemTrace::UserMark("Custom Allocator Test Starting");
+	int size = 256;
+	int times = 150;
+	BlockAllocator a(16, size, "Allocator A");
+	BlockAllocator b(32, size, "Allocator B");
 
-  BlockAllocator a(16, 256, "Allocator A");
-  BlockAllocator b(32, 256, "Allocator B");
-
-  for (int i = 0; i < 200; ++i)
-  {
-    if (i & 2) a.Alloc();
-    if (i & 3) b.Alloc();
-  }
-
-  MemTrace::UserMark("Custom Allocator Test Ending");
+	
+	for(int i = 0; i < times; ++i) {
+		std::vector<void*> pointer_a;
+		std::vector<void*> pointer_b;
+		for(int j = 0; j < size - 1 ; ++j)
+		{
+			void* ap = a.Alloc();
+			void* bp = b.Alloc();
+			pointer_a.push_back(ap);
+			pointer_b.push_back(bp);
+		}
+		for(int j = 0; j < size - 1; ++j)
+		{
+			a.Free(pointer_a[j]);
+		}
+		for(int j = 0; j < size - 1; ++j) {
+			b.Free(pointer_b[j]);
+		}
+	}
 }
+
+#define PRINT 0
 
 int main(int argc, char* argv[])
 {
-  TestCustomAllocator();
+	MemTrace::InitSocket("10.150.44.212",8181);
+	//MemTrace::InitFile("nasdnas.bin");
+	TestCustomAllocator();
+	/*MemTrace::HeapId id = MemTrace::HeapCreate("test");
+	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");
+	
+	int *buf  = new int[5*sizeof(int)];
+	int *buf2  = new int[5*sizeof(int)];
+	MemTrace::HeapAddCore(id,buf,5*sizeof(int));
+	MemTrace::HeapAddCore(id2,buf2,40);
+		int *p = new (buf) int(3);
+		int *q = new (buf2) int(1);
 
+		for (int i = 0; i < 200; i++)
+		{
+			if(i % 2)
+			{
+				MemTrace::HeapAllocate(id,p,4);
+			}
+			if(i % 3)
+			{
+				MemTrace::HeapAllocate(id2,q,40);
+			}
+			MemTrace::HeapFree(id,p);
+			MemTrace::HeapFree(id2,q); 
+		}
+		
+		MemTrace::HeapDestroy(id);
+		MemTrace::HeapDestroy(id2);*/
+	MemTrace::Flush();
+	MemTrace::Shutdown();
   return 0;
 }
