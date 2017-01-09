@@ -21,6 +21,11 @@ var server = net.createServer(function(socket) {
     total_data += data.length;
     console.log("start: \n" + "Total data recieved: " + total_data);
     decoder.unpackStream(data);
+
+    var arr = decoder.getMemoryAsArray();
+    for(var i = 0; i < arr.length; ++i) {
+      console.log(arr[i].name + " " + arr[i].used_memory);
+    }
     // var arr = decoder.getMemoryAsArray();
     // //var barr = decoder.getNewEvents();
     // sendToChart("memory", {array: arr});

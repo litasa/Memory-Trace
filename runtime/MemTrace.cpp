@@ -235,7 +235,7 @@ namespace MemTrace
     // Emit common data that goes with every event.  
     void BeginEvent(EventCode code)
 	{
-		EmitUnsigned(count);
+	  EmitUnsigned(count);
       EmitUnsigned(code);
       uint64_t delta = EmitTimeStamp();
 	  //MemTracePrint("event: %i, time: %d, num: %i\n",code, delta, count);

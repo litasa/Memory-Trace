@@ -39,7 +39,7 @@ NAN_METHOD(Decoder::UnpackStream) {
     char* buff = (char*) node::Buffer::Data(info[0]->ToObject());
     size_t size = node::Buffer::Length(info[0]);
 
-    std::cout << "Starting new UnpackStream \n"; 
+    //std::cout << "Starting new UnpackStream \n"; 
 
     size_t count = 0;
     size_t num_populated = 0;
@@ -84,7 +84,7 @@ NAN_METHOD(Decoder::UnpackStream) {
         }
         count++;
     }while(total_populated < size);
-    std::cout << "Ending UnpackStream \n";
+    //std::cout << "Ending UnpackStream \n";
 }
 
 NAN_METHOD(Decoder::Printas) {
