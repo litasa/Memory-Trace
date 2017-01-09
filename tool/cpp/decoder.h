@@ -31,6 +31,8 @@ class Decoder : public Nan::ObjectWrap {
     MemoryState* memory_state_;
     unsigned long long registerd_events;
 
+    std::vector<std::pair<char*,size_t>> saved_buffs;
+
     /* Wrapper functions - start */
     static Nan::Persistent<v8::Function> constructor;
 

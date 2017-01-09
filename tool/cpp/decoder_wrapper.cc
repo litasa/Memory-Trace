@@ -47,11 +47,21 @@ NAN_METHOD(Decoder::UnpackStream) {
     RingBuffer* ring = obj->getRingbuffer();
 
     ring->doRollback();
-    num_populated = ring->populate(buff + num_populated, size - num_populated);
+    num_populated = ring->populate(buff, size);
     total_populated += num_populated;
     ring->setRollback();
-    if(obj->trySteps(3)) {
-      std::cout << "Good chunk" << std::endl;
+    if(!obj->trySteps(3)) {
+      std::cout << "Bad chunk" << std::endl;
+      std::cout << "do we have any other buffers available?" << std::endl;
+      ring->doRollback();
+      obj->saved_buffs.push_back(std::make_pair(buff,size));
+      for(auto it = obj->saved_buffs.begin(); it < obj->saved_buffs.end(); ++it) {
+        ring->populate(it->first, it->second);
+        if(obj->trySteps(3)) {
+          obj->saved_buffs.erase(it);
+          break;
+        }
+      }
     }
     ring->doRollback();
 
@@ -73,8 +83,6 @@ NAN_METHOD(Decoder::UnpackStream) {
           throw;
         }
         count++;
-        std::cout << "num_populated < size: " << num_populated << " < " << size << std::endl;
-        std::cout << "total_populated: " << total_populated << std::endl;
     }while(total_populated < size);
     std::cout << "Ending UnpackStream \n";
 }
