@@ -20,6 +20,8 @@ class Decoder : public Nan::ObjectWrap {
 
     bool trySteps(unsigned int number);
 
+    MemoryState* memory_state_;
+    
     std::vector<Heap*> getMemoryState();
   private:
     explicit Decoder(); //128 * 1024, 0x20000
@@ -28,7 +30,7 @@ class Decoder : public Nan::ObjectWrap {
     bool recording_ = true;
     size_t last_timestamp = 0;
     RingBuffer* ring_;
-    MemoryState* memory_state_;
+    
     unsigned long long registerd_events;
 
     std::vector<std::pair<char*,size_t>> saved_buffs;

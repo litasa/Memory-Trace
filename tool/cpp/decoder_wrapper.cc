@@ -2,7 +2,8 @@
 
 #include <iostream>
 
-#include <ctime>
+#include <stdlib.h>
+#include <math.h> //signbit
 
 Nan::Persistent<v8::Function> Decoder::constructor;
 
@@ -50,20 +51,20 @@ NAN_METHOD(Decoder::UnpackStream) {
     num_populated = ring->populate(buff, size);
     total_populated += num_populated;
     ring->setRollback();
-    if(!obj->trySteps(3)) {
-      std::cout << "Bad chunk" << std::endl;
-      std::cout << "do we have any other buffers available?" << std::endl;
-      ring->doRollback();
-      obj->saved_buffs.push_back(std::make_pair(buff,size));
-      for(auto it = obj->saved_buffs.begin(); it < obj->saved_buffs.end(); ++it) {
-        ring->populate(it->first, it->second);
-        if(obj->trySteps(3)) {
-          obj->saved_buffs.erase(it);
-          break;
-        }
-      }
-    }
-    ring->doRollback();
+    // if(!obj->trySteps(2)) {
+    //   std::cout << "Bad chunk" << std::endl;
+    //   std::cout << "do we have any other buffers available?" << std::endl;
+    //   ring->doRollback();
+    //   obj->saved_buffs.push_back(std::make_pair(buff,size));
+    //   for(auto it = obj->saved_buffs.begin(); it < obj->saved_buffs.end(); ++it) {
+    //     ring->populate(it->first, it->second);
+    //     if(obj->trySteps(2)) {
+    //       obj->saved_buffs.erase(it);
+    //       break;
+    //     }
+    //   }
+    // }
+    // ring->doRollback();
 
     do {
         ring->doRollback();
@@ -93,19 +94,39 @@ NAN_METHOD(Decoder::Printas) {
 
 NAN_METHOD(Decoder::GetMemoryAsArray) {
   Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
-  auto ret = obj->getMemoryState();
-  v8::Local<v8::Array> result_list = Nan::New<v8::Array>((int)ret.size());
-  for(unsigned int i = 0; i < ret.size(); ++i) {
-    v8::Local<v8::Object> obj = Nan::New<v8::Object>();
-    if(ret[i] == nullptr) {
-      std::cout << "hmm error null ptr" << std::endl;
+  unsigned int exclude_time = info[0]->Uint32Value();
+
+  std::vector<Heap*> heaps = obj->getMemoryState();
+ 
+  v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
+
+  double last_trend = 0;
+  size_t previous_size = 0;
+  for(int j = 0; j < heaps.size(); ++j) {
+    std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
+    v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>((int)allocs->size());
+    for(int i = 0; i < allocs->size(); ++i) {
+      
+      double time = (double)(*allocs)[i].first * obj->memory_state_->frequency_; // s
+      double used_size = (double)((*allocs)[i].second);
+
+      double trend = used_size - previous_size;
+      if(i % 7 == 0) {
+          v8::Local<v8::Object> object = Nan::New<v8::Object>();
+          Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
+          Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
+          Nan::Set(allocation_list, i, object);
+      }
+      last_trend = trend;
+      previous_size = used_size;
     }
-    Nan::Set(obj, Nan::New("name").ToLocalChecked(), Nan::New(ret[i]->getName().c_str()).ToLocalChecked());
-    Nan::Set(obj, Nan::New("used_memory").ToLocalChecked(), Nan::New((int)ret[i]->getUsedMemory()));
-    Nan::Set(obj, Nan::New("last_update").ToLocalChecked(), Nan::New((int)ret[i]->getLastUpdate()));
-    Nan::Set(result_list, i, obj);
+    allocs->clear();
+    v8::Local<v8::Object> heap_obj = Nan::New<v8::Object>();
+    Nan::Set(heap_obj, Nan::New<v8::String>("label").ToLocalChecked(), Nan::New<v8::String>(heaps[j]->getName().c_str()).ToLocalChecked());
+    Nan::Set(heap_obj, Nan::New<v8::String>("data").ToLocalChecked(), allocation_list);
+    Nan::Set(list_of_heaps, j, heap_obj);
   }
-  info.GetReturnValue().Set(result_list);
+  info.GetReturnValue().Set(list_of_heaps);
 }
 
 NAN_METHOD(Decoder::GetNewEvents) {

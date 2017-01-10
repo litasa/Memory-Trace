@@ -6,6 +6,13 @@ MemoryState::MemoryState() {
 MemoryState::~MemoryState() {
 };
 
+void MemoryState::setInits(size_t stream_magic, std::string platform, size_t frequency) {
+    stream_magic_ = stream_magic;
+    platform_ = platform;
+    frequency_ = 1/(double)frequency;
+    std::cout << "frequencies" << frequency_ << " " << frequency << std::endl;
+}
+
 bool MemoryState::addHeap(const int id, const std::string& name, size_t timestamp) {
     if(last_update_ > timestamp) {
         std::cout << "We have an error: " << last_update_ <<  " > " << timestamp << std::endl;

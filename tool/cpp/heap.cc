@@ -56,6 +56,7 @@ size_t Heap::addAllocation(size_t pointer, size_t size, size_t timestamp) {
         if(it->second.addAllocation(pointer, size, timestamp)) {
             alloc_to_core.emplace(pointer,it->second.getPointer());
             used_memory_ += size;
+            simple_allocation_events_.push_back(std::make_pair(timestamp, used_memory_));
             return size;
         }
     }
@@ -70,5 +71,6 @@ size_t Heap::removeAllocation(size_t pointer, size_t timestamp) {
     }
     size_t removed_memory = core->removeAllocation(pointer,timestamp);
     used_memory_ -= removed_memory;
+    simple_allocation_events_.push_back(std::make_pair(timestamp,used_memory_));
     return removed_memory;
 }

@@ -1,11 +1,12 @@
 connected = false;
 server = null;
-var enc = require('..\\build\\Release\\Encryption');
 
 window.onload = function() {
   initChart();
-  console.log(enc.Decoder().printas());
-  }
+    setTimeout(function() {
+    sendToServer('please-connect', {addr: list});
+  },2000);
+}
 
 ipcRenderer.once('server-init', function(event, serverData) {
   server = {};
@@ -20,5 +21,7 @@ ipcRenderer.once('connection-established', function() {
 })
 
 ipcRenderer.on('event-done', function(event, data) {
-  console.log('data recieved: ')
+  //console.log('data recieved: ')
+  //var arr = enc.Decoder.getMemoryAsArray();
+  //console.log("got array of size: " + arr.length);
 })

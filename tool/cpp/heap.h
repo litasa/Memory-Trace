@@ -12,6 +12,7 @@ public:
 
     std::map<size_t,Core> cores_;//pointer to core start, core
     std::unordered_map<size_t,size_t> alloc_to_core; // allocation pointer -> core pointer
+    std::vector<std::pair<size_t, size_t>> simple_allocation_events_; //timestamp, used_size;
     Core* getCore(size_t pointer);
     Core* getCoreForAllocation(size_t pointer);
     size_t removeCore(size_t pointer, size_t timestamp);

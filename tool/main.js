@@ -10,7 +10,7 @@ const BrowserWindow = electron.BrowserWindow
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 
-var testing = true;
+var testing = false;
 
 let chartWindow
 let serverWindow
@@ -19,12 +19,13 @@ let testWindow
 
 function createWindow () {
   // Create the browser window.
-  internalServerWindow = new BrowserWindow({width: 800, height: 600, title: "InternalServer"})
+  //internalServerWindow = new BrowserWindow({width: 800, height: 600, title: "InternalServer"})
   chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
   serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server"})
+  serverWindow.hide();
   //
   // and load the index.html of the app.
-  internalServerWindow.loadURL(`file://${__dirname}/internal-server/internal-server.html`)
+  //internalServerWindow.loadURL(`file://${__dirname}/internal-server/internal-server.html`)
   chartWindow.loadURL(`file://${__dirname}/visualization/visualization.html`)
   serverWindow.loadURL(`file://${__dirname}/server/server.html`)
   //
@@ -32,8 +33,8 @@ function createWindow () {
 
   // Open the DevTools.
   chartWindow.webContents.openDevTools()
-  serverWindow.webContents.openDevTools()
-  internalServerWindow.webContents.openDevTools()
+  //serverWindow.webContents.openDevTools()
+  //internalServerWindow.webContents.openDevTools()
 
   if(testing){
     testWindow = new BrowserWindow({width: 800, height: 600, title: "Test"})
@@ -48,7 +49,7 @@ function createWindow () {
     // when you should delete the corresponding element.
     chartWindow = null
     serverWindow = null
-    internalServerWindow = null
+    //internalServerWindow = null
   })
 }
 
@@ -82,9 +83,9 @@ ipc.on('to-server', function(event, data) {
   serverWindow.webContents.send(data.channel, data);
 })
 
-ipc.on('to-internal-server', function(event, data) {
-  internalServerWindow.webContents.send(data.channel, data);
-})
+// ipc.on('to-internal-server', function(event, data) {
+//   internalServerWindow.webContents.send(data.channel, data);
+// })
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

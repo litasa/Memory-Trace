@@ -130,6 +130,7 @@ bool Decoder::oneStep() {
         //std::cout << "\tDecode system_frequency failed" << std::endl;
         return false;
       }
+      memory_state_->setInits(stream_magic, platform, system_frequency);
       //std::cout << "(" << registerd_events << ")BeginStream\n\ttime_stamp: " << time_stamp << "\n\tplatform: " << platform << "\n\tsystem frequency: " << system_frequency << "\n";
       break;
     }

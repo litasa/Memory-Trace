@@ -14,6 +14,8 @@ public:
     MemoryState();
     ~MemoryState();
 
+    void setInits(size_t stream_magic, std::string platform, size_t frequency);
+
     bool addHeap(const int id, const std::string& name, size_t timestamp);
     bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
     bool addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp);
@@ -29,9 +31,12 @@ public:
 
     void printStats();
 
+    double frequency_;
     std::vector<Heap*> getHeaps();
 private:
     std::unordered_map<int, Heap> heaps_;
+    std::string platform_;
+    size_t stream_magic_;
     size_t last_update_ = 0;
     //std::vector<Heap> recently_dead_heaps_;
 

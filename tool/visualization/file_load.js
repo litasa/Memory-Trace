@@ -1,7 +1,6 @@
 var rem = require('electron').remote;
 var dialog = rem.dialog;
 var fs = require('fs');
-var net = require('net');
 
 function readFile(filepath){
     var client = new net.Socket();

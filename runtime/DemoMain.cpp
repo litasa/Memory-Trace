@@ -107,27 +107,33 @@ public:
 static void TestCustomAllocator()
 {
 	int size = 256;
-	int times = 150;
+	int times = 500;
 	BlockAllocator a(16, size, "Allocator A");
 	BlockAllocator b(32, size, "Allocator B");
 
 	
-	for(int i = 0; i < times; ++i) {
+	while(true) {
 		std::vector<void*> pointer_a;
 		std::vector<void*> pointer_b;
 		for(int j = 0; j < size - 1 ; ++j)
 		{
 			void* ap = a.Alloc();
+			Sleep(1);
 			void* bp = b.Alloc();
+			
 			pointer_a.push_back(ap);
 			pointer_b.push_back(bp);
 		}
+		Sleep(1);
 		for(int j = 0; j < size - 1; ++j)
 		{
 			a.Free(pointer_a[j]);
 		}
 		for(int j = 0; j < size - 1; ++j) {
 			b.Free(pointer_b[j]);
+			if (j % 5 == 0) {
+				Sleep(1);
+			}
 		}
 	}
 }
@@ -136,35 +142,9 @@ static void TestCustomAllocator()
 
 int main(int argc, char* argv[])
 {
-	MemTrace::InitSocket("10.150.44.212",8181);
+	MemTrace::InitSocket("192.168.1.123",8181);
 	//MemTrace::InitFile("nasdnas.bin");
 	TestCustomAllocator();
-	/*MemTrace::HeapId id = MemTrace::HeapCreate("test");
-	MemTrace::HeapId id2 = MemTrace::HeapCreate("buu");
-	
-	int *buf  = new int[5*sizeof(int)];
-	int *buf2  = new int[5*sizeof(int)];
-	MemTrace::HeapAddCore(id,buf,5*sizeof(int));
-	MemTrace::HeapAddCore(id2,buf2,40);
-		int *p = new (buf) int(3);
-		int *q = new (buf2) int(1);
-
-		for (int i = 0; i < 200; i++)
-		{
-			if(i % 2)
-			{
-				MemTrace::HeapAllocate(id,p,4);
-			}
-			if(i % 3)
-			{
-				MemTrace::HeapAllocate(id2,q,40);
-			}
-			MemTrace::HeapFree(id,p);
-			MemTrace::HeapFree(id2,q); 
-		}
-		
-		MemTrace::HeapDestroy(id);
-		MemTrace::HeapDestroy(id2);*/
 	MemTrace::Flush();
 	MemTrace::Shutdown();
   return 0;

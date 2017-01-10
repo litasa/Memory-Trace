@@ -242,9 +242,6 @@ namespace MemTrace
     }
 	void EndEvent(EventCode code)
 	{
-		//EmitUnsigned(code);
-		
-		//EmitUnsigned(count);
 		count++;
 	}
 
@@ -376,7 +373,7 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     MemTracePrint("MemTrace: Warning: Couldn't set send buffer size to %d bytes\n", sndbufsize);
   }
 
-  //creating the write block function inside InitSocket
+  //creating the network send block function inside InitSocket
 			  auto write_block_fn = [](const void* block, size_t size) -> void
 			  {
 				// If we don't have a socket, we drop everything on the floor.
@@ -399,50 +396,6 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
     InitCommon(write_block_fn);
     State.m_Socket = sock;
   }
-//  else
-//  {
-//    State.m_Socket = sock;
-//    MemTracePrint("MemTrace: Switching to socket transport\n");
-//    State.m_Encoder.Flush();
-//
-//    FileHandle fh = State.m_BootFile;
-//
-//    if (int64_t sz = FileSize(fh))
-//    {
-//      FileSeekTo(fh, 0);
-//
-//      char buf[1024];
-//      size_t remain = (size_t) sz;
-//      while (remain)
-//      {
-//        size_t copy_size = remain;
-//        if (copy_size > ARRAY_SIZE(buf))
-//          copy_size = ARRAY_SIZE(buf);
-//
-//        FileRead(fh, buf, copy_size);
-//        if (copy_size != send(sock, buf, (int) copy_size, 0))
-//        {
-//          MemTracePrint("send() failed while uploading trace file, shutting down.\n");
-//          error = true;
-//        }
-//
-//        remain -= copy_size;
-//      }
-//    }
-//
-//    FileClose(fh);
-//    State.m_BootFile = kInvalidFileHandle;
-//
-//    // Clean up the temporary file.
-//#if defined(MEMTRACE_WINDOWS)
-//    DeleteFileA(State.m_BootFileName);
-//#else
-//    remove(State.m_BootFileName);
-//#endif
-//
-//    // Switch to socket transmit method
-//    State.m_Encoder.SetTransmitFn(write_block_fn);
-//  }
 
   if (was_active)
   {
