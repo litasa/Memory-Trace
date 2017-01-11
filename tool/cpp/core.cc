@@ -5,6 +5,7 @@ Core::Core(size_t pointer, size_t size, size_t timestamp)
         : MemoryObject(pointer, timestamp, 0, size)
 {
     end_ = pointer + managed_memory_;
+    end_ = pointer + size;
 }
 
 bool Core::pointerInside(size_t pointer) {
