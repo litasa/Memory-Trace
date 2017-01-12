@@ -157,10 +157,7 @@ void RingBuffer::removeRollback() {
 }
 
 void RingBuffer::clearRollback() {
-    size_t count = 0;
     while(!rollbacks_.empty()) {
         rollbacks_.pop();
-        count++;
     }
-    std::cout << "cleared: " << count << " rollbacks\n";
 }

@@ -15,10 +15,10 @@ initChart = function () {
 					}]
         		},
 				legend: {
-            		display: true,
+            		display: false,
         		},
 				tooltips: {
-					enabled: true,
+					enabled: false,
 				},
 				animation: {
 					duration: 0

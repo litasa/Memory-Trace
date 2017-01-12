@@ -55,7 +55,7 @@ bool Decoder::decodeString(std::string& ret) {
 }
 
 void Decoder::trySteps() {
-  std::cout << "starting try steps\n";
+  //std::cout << "starting try steps\n";
   ring_->saveRollback();
   size_t current_count = registerd_events;
   size_t current_time = last_timestamp;
@@ -76,9 +76,13 @@ void Decoder::trySteps() {
       break;
     }
   }while(ring_->getNumUnread() > 0);
-  std::cout << "num throwaway: " << num_throwaway;
-  std::cout << " previous eventnumber was: " << current_count << " found event_number is: " << registerd_events << "\n";
-  std::cout << " previous timestamp was: " << current_time << " found timestamp is: " << last_timestamp << "\n";
+
+  if(current_count + 1 != registerd_events && last_timestamp < current_time) {
+    throw;
+  }
+  //std::cout << "num throwaway: " << num_throwaway;
+  //std::cout << " previous eventnumber was: " << current_count << " found event_number is: " << registerd_events << "\n";
+  //std::cout << " previous timestamp was: " << current_time << " found timestamp is: " << last_timestamp << "\n";
 
   ring_->loadRollback(); //go back to right before successful event
   ring_->saveRollback(); //and save it

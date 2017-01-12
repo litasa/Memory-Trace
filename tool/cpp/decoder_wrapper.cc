@@ -44,7 +44,6 @@ NAN_METHOD(Decoder::UnpackStream) {
 
     size_t count = 0;
     size_t num_populated = 0;
-    std::cout << "\n\nincomming size: " << size << "\n";
     size_t total_populated = 0;
     RingBuffer* ring = obj->getRingbuffer();
     
@@ -54,7 +53,7 @@ NAN_METHOD(Decoder::UnpackStream) {
     obj->trySteps();
     
     do {
-      std::cout << "=============================\nstarting main loop " << total_populated << " of " << size << " populated" <<" \n";
+      //std::cout << "=============================\nstarting main loop " << total_populated << " of " << size << " populated" <<" \n";
         do {
           ring->saveRollback();
           if(!obj->oneStep()) {
@@ -63,21 +62,21 @@ NAN_METHOD(Decoder::UnpackStream) {
           }
           ring->saveOverRollback();
           if(count > ring->getCapacity()) {
-            std::cout << "something is wrong in read: " << std::endl;
+            //std::cout << "something is wrong in read: " << std::endl;
           }
           count++;
         }while(ring->getNumUnread());
         ring->loadRollback();
-        std::cout << "number of oneSteps before break: " << count << std::endl;
+        //std::cout << "number of oneSteps before break: " << count << std::endl;
         num_populated = ring->populate(buff + total_populated, size - total_populated);
         total_populated += num_populated;
         //std::cout << "ending main loop\n=============================\n";
     }while(total_populated < size);
 
-    std::cout << "Ending UnpackStream\n";
-    std::cout << "last registerd eventnumber was: " << obj->registerd_events << "\n";
+    //std::cout << "Ending UnpackStream\n";
+    //std::cout << "last registerd eventnumber was: " << obj->registerd_events << "\n";
     ring->clearRollback();
-    ring->printStats();
+    //ring->printStats();
 }
 
 NAN_METHOD(Decoder::Printas) {
