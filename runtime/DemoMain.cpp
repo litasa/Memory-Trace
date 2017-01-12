@@ -118,22 +118,17 @@ static void TestCustomAllocator()
 		for(int j = 0; j < size - 1 ; ++j)
 		{
 			void* ap = a.Alloc();
-			Sleep(1);
 			void* bp = b.Alloc();
 			
 			pointer_a.push_back(ap);
 			pointer_b.push_back(bp);
 		}
-		Sleep(1);
 		for(int j = 0; j < size - 1; ++j)
 		{
 			a.Free(pointer_a[j]);
 		}
 		for(int j = 0; j < size - 1; ++j) {
 			b.Free(pointer_b[j]);
-			if (j % 5 == 0) {
-				Sleep(1);
-			}
 		}
 	}
 }
@@ -142,7 +137,8 @@ static void TestCustomAllocator()
 
 int main(int argc, char* argv[])
 {
-	MemTrace::InitSocket("192.168.1.123",8181);
+	//MemTrace::InitSocket("192.168.1.123",8181);
+	MemTrace::InitSocket("10.150.44.213",8181);
 	//MemTrace::InitFile("nasdnas.bin");
 	TestCustomAllocator();
 	MemTrace::Flush();

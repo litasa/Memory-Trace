@@ -31,7 +31,6 @@ initChart = function () {
 		});
 		count = 0;
 		Visualization.chart.update();
-		console.log("Chart initialized")
 }
 
 Visualization = new function() {

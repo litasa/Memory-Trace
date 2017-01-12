@@ -18,7 +18,7 @@ class Decoder : public Nan::ObjectWrap {
 
     bool oneStep();
 
-    bool trySteps(unsigned int number);
+    void trySteps();
 
     MemoryState* memory_state_;
     
@@ -28,6 +28,8 @@ class Decoder : public Nan::ObjectWrap {
     ~Decoder();
 
     bool recording_ = true;
+    bool print_error = false;
+    bool print_ok = false;
     size_t last_timestamp = 0;
     RingBuffer* ring_;
     

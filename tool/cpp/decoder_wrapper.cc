@@ -44,48 +44,40 @@ NAN_METHOD(Decoder::UnpackStream) {
 
     size_t count = 0;
     size_t num_populated = 0;
+    std::cout << "\n\nincomming size: " << size << "\n";
     size_t total_populated = 0;
     RingBuffer* ring = obj->getRingbuffer();
-
-    ring->doRollback();
+    
     num_populated = ring->populate(buff, size);
     total_populated += num_populated;
-    ring->setRollback();
-    // if(!obj->trySteps(2)) {
-    //   std::cout << "Bad chunk" << std::endl;
-    //   std::cout << "do we have any other buffers available?" << std::endl;
-    //   ring->doRollback();
-    //   obj->saved_buffs.push_back(std::make_pair(buff,size));
-    //   for(auto it = obj->saved_buffs.begin(); it < obj->saved_buffs.end(); ++it) {
-    //     ring->populate(it->first, it->second);
-    //     if(obj->trySteps(2)) {
-    //       obj->saved_buffs.erase(it);
-    //       break;
-    //     }
-    //   }
-    // }
-    // ring->doRollback();
-
+    
+    obj->trySteps();
+    
     do {
-        ring->doRollback();
-        num_populated = ring->populate(buff + total_populated, size - total_populated);
-        total_populated += num_populated;
+      std::cout << "=============================\nstarting main loop " << total_populated << " of " << size << " populated" <<" \n";
         do {
-          ring->setRollback();
+          ring->saveRollback();
           if(!obj->oneStep()) {
+            //ring->doRollback();
             break;
           }
-          ring->setRollback();
+          ring->saveOverRollback();
+          if(count > ring->getCapacity()) {
+            std::cout << "something is wrong in read: " << std::endl;
+          }
+          count++;
         }while(ring->getNumUnread());
-        ring->doRollback();
-        if(count > size) {
-          std::cout << "read too long in ringbuffer" << std::endl;
-          ring->printStats();
-          throw;
-        }
-        count++;
+        ring->loadRollback();
+        std::cout << "number of oneSteps before break: " << count << std::endl;
+        num_populated = ring->populate(buff + total_populated, size - total_populated);
+        total_populated += num_populated;
+        //std::cout << "ending main loop\n=============================\n";
     }while(total_populated < size);
-    //std::cout << "Ending UnpackStream \n";
+
+    std::cout << "Ending UnpackStream\n";
+    std::cout << "last registerd eventnumber was: " << obj->registerd_events << "\n";
+    ring->clearRollback();
+    ring->printStats();
 }
 
 NAN_METHOD(Decoder::Printas) {

@@ -4,8 +4,15 @@
 Core::Core(size_t pointer, size_t size, size_t timestamp) 
         : MemoryObject(pointer, timestamp, 0, size)
 {
-    end_ = pointer + managed_memory_;
     end_ = pointer + size;
+    //std::cout << "Core Created: " << std::hex <<"start: " << pointer_ << " end: " << end_ << std::dec <<" at: " << timestamp << std::endl;
+}
+
+void Core::printContent() const {
+    std::cout << "\tcore: " << std::hex << getPointer() << std::dec << " managed: " <<  getManagedMemory() << " size: " <<  getUsedMemory() << " at timestmap: " << getBirth() << "\n";
+    for(auto it = allocations_.begin(); it != allocations_.end(); ++it) {
+        it->second.printContent();
+    }
 }
 
 bool Core::pointerInside(size_t pointer) {
@@ -37,6 +44,7 @@ size_t Core::removeAllocation(size_t pointer, size_t timestamp) {
 }
 
 size_t Core::addAllocation(size_t pointer, size_t size, size_t timestamp) {
+    //std::cout << "trying to add allocation: " << std::hex << pointer << std::dec << " size: " << size << " at: " << timestamp << " ";
     if(allocationInside(pointer,size)) {
         Allocation a(pointer, size, timestamp);
         auto emp = allocations_.insert(std::make_pair(pointer,a));

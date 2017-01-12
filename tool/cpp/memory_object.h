@@ -24,13 +24,14 @@ public:
     size_t getLastUpdate() const { return last_update_; }
     void   setLastUpdate(size_t time) { last_update_ = time;}
 
-protected:
     size_t pointer_;
-    const size_t birth_;
+    size_t birth_;
     size_t death_;
     size_t last_update_;
     size_t used_memory_;
     size_t managed_memory_;
+protected:
+   
 private:
 
 };

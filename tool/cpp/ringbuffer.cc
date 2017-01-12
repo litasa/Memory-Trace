@@ -8,11 +8,17 @@ RingBuffer::RingBuffer(int value) : capacity_(value) {
     //for dev should be removed
     memset(data_,0,capacity_);
 
-    rollback_ = 0;
+    rollback_read_ = 0;
     read_pos_ = 0;
+
+    rollback_write_ = 0;
     write_pos_ = 0;
+
     unread_ = 0;
+    rollback_unread_ = 0;
+
     num_read_ = 0;
+    rollback_num_read_ = 0;
 }
 
 RingBuffer::~RingBuffer() {
@@ -48,6 +54,10 @@ size_t RingBuffer::getWritePosition() {
 
 size_t RingBuffer::getNumProcessed() {
     return num_read_;
+}
+
+size_t RingBuffer::getCapacity() {
+    return capacity_;
 }
 
 size_t RingBuffer::extractString(std::string& str, size_t length) {
@@ -86,32 +96,25 @@ size_t RingBuffer::populate(char* buff, size_t size) {
         if(write_pos_ == capacity_) {
             write_pos_ = 0;
         }
+       //std::cout << "\ncopied: " << bytes_to_write << " using method 1: capacity_: "<< capacity_ << "\n";
+        //std::cout << "read_pos_: " << read_pos_ << " write_pos_: " << write_pos_ << " unread_: " << unread_ <<" data at read_pos_" << (int)(uint8_t)data_[read_pos_] << "\n";
     }
     else {
+        //std::cout << "\ncopied: " << bytes_to_write << " using method 2: capacity_: "<< capacity_ << "\n";
+        //std::cout << "read_pos_: " << read_pos_ << " write_pos_: " << write_pos_ << " unread_: " << unread_ << "\n";
         size_t size_1 = capacity_ - write_pos_;
         memcpy(data_ + write_pos_, buff, size_1);
+        //std::cout << "copied size_1: " << size_1 << " from write_pos_: " << " data at read_pos_" << (int)(uint8_t)data_[read_pos_] << "\n";
         size_t size_2 = bytes_to_write - size_1;
         memcpy(data_, buff + size_1, size_2);
         write_pos_ = size_2;
+        //std::cout << "copied size_2: " << size_2 << " from 0" << " data at read_pos_" << (int)(uint8_t)data_[read_pos_] << "\n";
+        if(bytes_to_write == capacity_) {
+        //std::cout << "memcomp: " << memcmp(data_,buff,capacity_);
+        }
     }
     unread_ += bytes_to_write;
     return bytes_to_write;
-}
-
-void RingBuffer::setRollback() {
-    rollback_ = read_pos_;
-}
-
-void RingBuffer::doRollback() {
-    size_t read = read_pos_;
-    if(rollback_ > read) {
-      //if read_pos_ wrapped around
-      read += capacity_;
-  }
-  size_t items_undone = read - rollback_;
-  unread_ += items_undone;
-  num_read_ -= items_undone;
-  read_pos_ = rollback_;
 }
 
 void RingBuffer::printStats() {
@@ -119,7 +122,45 @@ void RingBuffer::printStats() {
     std::cout << "\n\tRead pos: " << read_pos_;
     std::cout << "\n\tWrite pos: " << write_pos_;
     std::cout << "\n\tNum read: " << num_read_;
-    std::cout << "\n\tRollback: " << rollback_;
     std::cout << "\n\tUnread: " << unread_;
-    std::cout << "\n";
+    std::cout << "\n\tNumber of rollbacks " << rollbacks_.size();
+    std::cout << "\n\n";
+}
+
+void RingBuffer::saveRollback() {
+    rollback roll;
+    roll.read_pos = read_pos_;
+    roll.write_pos = write_pos_;
+    roll.num_read = num_read_;
+    roll.unread = unread_;
+    rollbacks_.push(roll);
+}
+void RingBuffer::saveOverRollback() {
+    rollback roll = rollbacks_.top();
+    roll.read_pos = read_pos_;
+    roll.write_pos = write_pos_;
+    roll.num_read = num_read_;
+    roll.unread = unread_;
+}
+
+void RingBuffer::loadRollback() {
+    rollback roll = rollbacks_.top();
+    rollbacks_.pop();
+    read_pos_ = roll.read_pos;
+    write_pos_ = roll.write_pos;
+    num_read_ = roll.num_read;
+    unread_ = roll.unread; 
+}
+
+void RingBuffer::removeRollback() {
+    rollbacks_.pop();
+}
+
+void RingBuffer::clearRollback() {
+    size_t count = 0;
+    while(!rollbacks_.empty()) {
+        rollbacks_.pop();
+        count++;
+    }
+    std::cout << "cleared: " << count << " rollbacks\n";
 }
