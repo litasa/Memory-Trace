@@ -28,7 +28,7 @@ public:
 
     std::map<size_t,Core*> recently_dead_;
 
-const int id_;
+    const int id_;
     const std::string name_;
 private:
     

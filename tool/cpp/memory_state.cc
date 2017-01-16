@@ -1,6 +1,7 @@
 #include "memory_state.h"
 
 MemoryState::MemoryState() {
+
 };
 
 MemoryState::~MemoryState() {

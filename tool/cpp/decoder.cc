@@ -1,12 +1,38 @@
 #include "decoder.h"
 
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 
 Decoder::Decoder() {
     ring_ = new RingBuffer();
     memory_state_ = new MemoryState();
     registerd_events = 0;
+
+    setupEventDatabase();
+}
+
+void Decoder::setupEventDatabase() {
+  int rc;
+    rc = sqlite3_open("event.db", &event_db_);
+    if( rc ){
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(event_db_));
+    }else{
+      fprintf(stdout, "Opened event database successfully\n");
+    }
+    char *err_msg = 0;
+    char *sql = "CREATE TABLE Events(EventNumber INTEGER PRIMARY KEY, Type TEXT, Heap INTEGER, Timestamp BIGINTEGER);";
+
+    rc = sqlite3_exec(event_db_, sql, 0, 0, &err_msg);
+
+    if (rc != SQLITE_OK ) {
+        
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        
+        sqlite3_free(err_msg);        
+        
+        return;
+    }
 }
 
 RingBuffer* Decoder::getRingbuffer() {
@@ -16,6 +42,7 @@ RingBuffer* Decoder::getRingbuffer() {
 Decoder::~Decoder() {
     delete ring_;
     delete memory_state_;
+    sqlite3_close(event_db_);
 }
 
 bool Decoder::decodeValue(uint64_t& ret) {
@@ -60,11 +87,11 @@ void Decoder::trySteps() {
   size_t current_count = registerd_events;
   size_t current_time = last_timestamp;
   size_t num_throwaway = 0;
-
+std::stringstream temp;
   recording_ = false;
   do{
     ring_->saveRollback();
-    bool success = oneStep();
+    bool success = oneStep(temp);
     
     if(!success) {
       ring_->loadRollback();
@@ -80,9 +107,6 @@ void Decoder::trySteps() {
   if(current_count + 1 != registerd_events && last_timestamp < current_time) {
     throw;
   }
-  //std::cout << "num throwaway: " << num_throwaway;
-  //std::cout << " previous eventnumber was: " << current_count << " found event_number is: " << registerd_events << "\n";
-  //std::cout << " previous timestamp was: " << current_time << " found timestamp is: " << last_timestamp << "\n";
 
   ring_->loadRollback(); //go back to right before successful event
   ring_->saveRollback(); //and save it
@@ -92,7 +116,7 @@ void Decoder::trySteps() {
   last_timestamp = current_time;
 }
 
-bool Decoder::oneStep() {
+bool Decoder::oneStep(std::stringstream& sql) {
   int current_code;
   size_t count;
 
@@ -142,7 +166,15 @@ bool Decoder::oneStep() {
         if(print_error) {std::cout << "\tDecode system_frequency failed" << std::endl;}
         return false;
       }
+      if(recording_) {
+        sql << "INSERT INTO Events(EventNumber, Type, Timestamp)"
+            " VALUES (" << count << ", " << current_code << ", " << time_stamp << ");";
+
       memory_state_->setInits(stream_magic, platform, system_frequency);
+      
+      }
+
+
       if(print_ok){std::cout << "(" << registerd_events << ")BeginStream\n\ttime_stamp: " << time_stamp << "\n\tplatform: " << platform << "\n\tsystem frequency: " << system_frequency << "\n";}
       break;
     }
@@ -150,6 +182,10 @@ bool Decoder::oneStep() {
     case EndStream :
       {
         if(print_ok){std::cout << "(" << registerd_events << ")Endstream\n\ttime_stamp: " << time_stamp << "\n\tDo nothing\n";}
+        if(recording_) {
+          sql << "INSERT INTO Events(EventNumber, Type, Timestamp)"
+            " VALUES (" << count << ", " << current_code << ", " << time_stamp << ");";
+        }
       }
     break;
 
@@ -169,6 +205,9 @@ bool Decoder::oneStep() {
 
        memory_state_->addHeap(id,name, time_stamp);
 
+       sql << "INSERT INTO Events(EventNumber, Type, Timestamp)"
+            " VALUES (" << count << ", " << current_code << ", " << time_stamp << ");";
+
       }
       if(print_ok){std::cout << "(" << registerd_events << ")HeapCreate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n\tName: " << name << "\n";}
       break;
@@ -183,6 +222,9 @@ bool Decoder::oneStep() {
       }
       if(recording_) {
         memory_state_->removeHeap(id, time_stamp);
+
+        sql << "INSERT INTO Events(EventNumber, Type, Timestamp)"
+            " VALUES (" << count << ", " << current_code << ", " << time_stamp << ");";
       }
       if(print_ok){std::cout << "(" << registerd_events << ")HeapDestroy\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n";}
       break;
@@ -207,6 +249,10 @@ bool Decoder::oneStep() {
       }
       if(recording_) {
       memory_state_->addCore(id,pointer,size_bytes,time_stamp);
+
+
+      sql << "INSERT INTO Events(EventNumber, Type, Timestamp)"
+            " VALUES (" << count << ", " << current_code << ", " << time_stamp << ");";
 
       }
        if(print_ok){std::cout << "(" << registerd_events << ")HeapAddCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
@@ -233,6 +279,10 @@ bool Decoder::oneStep() {
       if(recording_) {
       memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
 
+
+      sql << "INSERT INTO Events(EventNumber, Type, Timestamp)"
+            " VALUES (" << count << ", " << current_code << ", " << time_stamp << ");";
+
       }
        if(print_ok){std::cout << "(" << registerd_events << ")HeapRemoveCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
       break;
@@ -257,6 +307,9 @@ bool Decoder::oneStep() {
       if(recording_) {
       memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
 
+
+      sql << "INSERT INTO Events(EventNumber, Type, Timestamp)"
+            " VALUES (" << count << ", " << current_code << ", " << time_stamp << ");";
       }
        if(print_ok){std::cout << "(" << registerd_events << ")HeapAllocate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
       break;
@@ -276,6 +329,11 @@ bool Decoder::oneStep() {
       }
       if(recording_) {
       memory_state_->removeAllocation(id,pointer, time_stamp);
+
+
+
+      sql << "INSERT INTO Events(EventNumber, Type, Timestamp)"
+            " VALUES (" << count << ", " << current_code << ", " << time_stamp << ");";
         
       }
        if(print_ok){std::cout << "(" << registerd_events << ")HeapFree\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n"; }

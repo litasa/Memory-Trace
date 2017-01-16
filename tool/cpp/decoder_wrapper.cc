@@ -1,9 +1,11 @@
 #include "decoder.h"
 
 #include <iostream>
+#include <sstream>
 
 #include <stdlib.h>
 #include <math.h> //signbit
+#include "./sqlite3/sqlite3.h"
 
 Nan::Persistent<v8::Function> Decoder::constructor;
 
@@ -15,6 +17,7 @@ NAN_MODULE_INIT(Decoder::Init) {
   Nan::SetPrototypeMethod(tpl, "unpackStream", UnpackStream);
   Nan::SetPrototypeMethod(tpl, "printas", Printas);
   Nan::SetPrototypeMethod(tpl, "getMemoryAsArray", GetMemoryAsArray);
+  Nan::SetPrototypeMethod(tpl, "createDB", CreateDB);
   /*Debug - start*/
   /*Debug - end*/
 
@@ -49,14 +52,14 @@ NAN_METHOD(Decoder::UnpackStream) {
     
     num_populated = ring->populate(buff, size);
     total_populated += num_populated;
-    
+    std::stringstream sql;
     obj->trySteps();
     
     do {
       //std::cout << "=============================\nstarting main loop " << total_populated << " of " << size << " populated" <<" \n";
         do {
           ring->saveRollback();
-          if(!obj->oneStep()) {
+          if(!obj->oneStep(sql)) {
             //ring->doRollback();
             break;
           }
@@ -72,7 +75,9 @@ NAN_METHOD(Decoder::UnpackStream) {
         total_populated += num_populated;
         //std::cout << "ending main loop\n=============================\n";
     }while(total_populated < size);
-
+    
+    //char *err_msg = 0;
+    //std::thread test(sqlite3_exec,obj->event_db_, sql.str().c_str(),  0, 0, &err_msg);
     //std::cout << "Ending UnpackStream\n";
     //std::cout << "last registerd eventnumber was: " << obj->registerd_events << "\n";
     ring->clearRollback();
@@ -120,7 +125,9 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
   info.GetReturnValue().Set(list_of_heaps);
 }
 
-NAN_METHOD(Decoder::GetNewEvents) {
+NAN_METHOD(Decoder::CreateDB) {
+
+  //  info.GetReturnValue().Set(Nan::Null());
   // Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
   // //auto ret = obj->getNewEvents();
   // v8::Local<v8::Array> result_list = Nan::New<v8::Array>((int)ret.size());

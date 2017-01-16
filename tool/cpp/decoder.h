@@ -6,6 +6,7 @@
 #include "memory_state.h"
 #include <iostream>
 #include <fstream>
+#include "./sqlite3/sqlite3.h"
 
 class Decoder : public Nan::ObjectWrap {
   public:
@@ -16,7 +17,7 @@ class Decoder : public Nan::ObjectWrap {
     bool decodeValue(int& ret);
     bool decodeString(std::string& ret);
 
-    bool oneStep();
+    bool oneStep(std::stringstream& sql);
 
     void trySteps();
 
@@ -27,11 +28,14 @@ class Decoder : public Nan::ObjectWrap {
     explicit Decoder(); //128 * 1024, 0x20000
     ~Decoder();
 
+    void setupEventDatabase();
+
     bool recording_ = true;
     bool print_error = false;
     bool print_ok = false;
     size_t last_timestamp = 0;
     RingBuffer* ring_;
+    sqlite3* event_db_;
     
     unsigned long long registerd_events;
 
@@ -44,7 +48,7 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(UnpackStream);
     static NAN_METHOD(Printas);
     static NAN_METHOD(GetMemoryAsArray);
-    static NAN_METHOD(GetNewEvents);
+    static NAN_METHOD(CreateDB);
 
     enum EventCode
     {
