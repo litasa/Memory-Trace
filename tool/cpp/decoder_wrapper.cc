@@ -92,7 +92,7 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
   v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
 
   double last_trend = 0;
-  size_t previous_size = 0;
+  double previous_size = 0;
   for(int j = 0; j < heaps.size(); ++j) {
     std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
     v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>((int)allocs->size());

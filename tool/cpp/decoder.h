@@ -46,21 +46,6 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(GetMemoryAsArray);
     static NAN_METHOD(GetNewEvents);
 
-    enum EventCode
-    {
-      BeginStream     = 1,
-      EndStream,
-
-      HeapCreate = 18,
-      HeapDestroy,
-
-      HeapAddCore,
-      HeapRemoveCore,
-
-      HeapAllocate,
-      HeapFree,
-    };
-
     /* Wrapper functions - end */
 };
 

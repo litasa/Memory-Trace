@@ -1,5 +1,5 @@
 
-datasets = [];
+datasets = [{data: []}];
 initChart = function () {
 		var ctx = document.getElementById("myChart");
 		
@@ -44,8 +44,13 @@ Visualization = new function() {
 	this.newDataset = function(arr) {
 		for(var i = 0; i < arr.length; ++i) {
 			//arr[i].lineTension =  0,
-			//arr[i].borderColor = 
-			this.chart.data.datasets[i] = arr[i];
+			if(this.chart.data.datasets[i] == undefined) {
+				this.chart.data.datasets[i] = {data: []};
+			}
+			this.chart.data.datasets[i].data = this.chart.data.datasets[i].data.concat(arr[i].data);
+			while(this.chart.data.datasets[i].data.length > 5000) {
+				this.chart.data.datasets[i].data.shift();
+			}
 			this.chart.data.datasets[i].borderWidth = 1;
 			if(i == 1) {
 				this.chart.data.datasets[i].borderColor = 'rgba(250, 250, 1, 1)';
@@ -73,4 +78,4 @@ ipcRenderer.on('memory', function(event, data) {
 
 setInterval(function() {
 	Visualization.chart.update();
-}, 200);
+}, 800);

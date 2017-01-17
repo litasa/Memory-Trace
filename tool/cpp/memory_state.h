@@ -8,6 +8,7 @@
 #include "core.h"
 #include "allocation.h"
 #include "heap.h"
+#include "event.h"
 
 class MemoryState {
 public:
@@ -15,6 +16,8 @@ public:
     ~MemoryState();
 
     void setInits(size_t stream_magic, std::string platform, size_t frequency);
+
+    void addEvent(Event::Event* event);
 
     bool addHeap(const int id, const std::string& name, size_t timestamp);
     bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
@@ -34,6 +37,7 @@ public:
     double frequency_;
     std::vector<Heap*> getHeaps();
 private:
+    std::vector<Event::Event*> eventList;
     std::unordered_map<int, Heap> heaps_;
     std::string platform_;
     size_t stream_magic_;

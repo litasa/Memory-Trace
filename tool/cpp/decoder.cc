@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include "event.h"
 
 Decoder::Decoder() {
     ring_ = new RingBuffer();
@@ -95,6 +96,8 @@ void Decoder::trySteps() {
 bool Decoder::oneStep() {
   int current_code;
   size_t count;
+  Event::Event* event;
+
 
   if(!decodeValue(count)) {
     if(print_error) {std::cout << "\treading count failed" << std::endl;}
@@ -124,7 +127,7 @@ bool Decoder::oneStep() {
   }
 
   switch(current_code) {
-    case BeginStream :
+    case Event::Code::BeginStream :
     {
       std::string platform;
       size_t system_frequency;
@@ -142,18 +145,18 @@ bool Decoder::oneStep() {
         if(print_error) {std::cout << "\tDecode system_frequency failed" << std::endl;}
         return false;
       }
-      memory_state_->setInits(stream_magic, platform, system_frequency);
+      event = new Event::InitStream(count, current_code, time_stamp, stream_magic, platform, system_frequency);
       if(print_ok){std::cout << "(" << registerd_events << ")BeginStream\n\ttime_stamp: " << time_stamp << "\n\tplatform: " << platform << "\n\tsystem frequency: " << system_frequency << "\n";}
       break;
     }
 
-    case EndStream :
+    case Event::Code::EndStream :
       {
         if(print_ok){std::cout << "(" << registerd_events << ")Endstream\n\ttime_stamp: " << time_stamp << "\n\tDo nothing\n";}
       }
     break;
 
-    case HeapCreate :
+    case Event::Code::HeapCreate :
     { 
       std::string name;
       int id;
@@ -166,15 +169,15 @@ bool Decoder::oneStep() {
         return false;
       }
       if(recording_) {
-
-       memory_state_->addHeap(id,name, time_stamp);
+        event = new Event::AddHeap(count, current_code, time_stamp, id, name);
+        //memory_state_->addHeap(id,name, time_stamp);
 
       }
       if(print_ok){std::cout << "(" << registerd_events << ")HeapCreate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n\tName: " << name << "\n";}
       break;
     }
 
-    case HeapDestroy :
+    case Event::Code::HeapDestroy :
     {
       int id;
       if(!decodeValue(id)) {
@@ -182,13 +185,14 @@ bool Decoder::oneStep() {
         return false;
       }
       if(recording_) {
-        memory_state_->removeHeap(id, time_stamp);
+        event = new Event::RemoveHeap(count, current_code, time_stamp, id);
+        //memory_state_->removeHeap(id, time_stamp);
       }
       if(print_ok){std::cout << "(" << registerd_events << ")HeapDestroy\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n";}
       break;
     }
 
-    case HeapAddCore :
+    case Event::Code::HeapAddCore :
     {
       int id;
       size_t pointer;
@@ -206,14 +210,15 @@ bool Decoder::oneStep() {
         return false;
       }
       if(recording_) {
-      memory_state_->addCore(id,pointer,size_bytes,time_stamp);
+        event = new Event::AddCore(count, current_code, time_stamp, id, pointer, size_bytes);
+        //memory_state_->addCore(id,pointer,size_bytes,time_stamp);
 
       }
        if(print_ok){std::cout << "(" << registerd_events << ")HeapAddCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
       break;
     }
 
-    case HeapRemoveCore :
+    case Event::Code::HeapRemoveCore :
     {  
       int id;
       size_t pointer;
@@ -231,13 +236,14 @@ bool Decoder::oneStep() {
         return false;
       }
       if(recording_) {
-      memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
+        event = new Event::RemoveCore(count, current_code, time_stamp, id, pointer, size_bytes);
+        //memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
 
       }
        if(print_ok){std::cout << "(" << registerd_events << ")HeapRemoveCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
       break;
     }
-    case HeapAllocate:
+    case Event::Code::HeapAllocate:
     {
       int id;
       size_t pointer;
@@ -255,14 +261,15 @@ bool Decoder::oneStep() {
         return false;
       }
       if(recording_) {
-      memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
+        event = new Event::AddAllocation(count, current_code, time_stamp, id, pointer, size_bytes);
+        //memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
 
       }
        if(print_ok){std::cout << "(" << registerd_events << ")HeapAllocate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
       break;
     }
 
-    case HeapFree:
+    case Event::Code::HeapFree:
     { 
       int id;
       size_t pointer;
@@ -275,7 +282,8 @@ bool Decoder::oneStep() {
         return false;
       }
       if(recording_) {
-      memory_state_->removeAllocation(id,pointer, time_stamp);
+        event = new Event::RemoveAllocation(count, current_code, time_stamp, id, pointer);
+        //memory_state_->removeAllocation(id,pointer, time_stamp);
         
       }
        if(print_ok){std::cout << "(" << registerd_events << ")HeapFree\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n"; }
@@ -286,8 +294,9 @@ bool Decoder::oneStep() {
       return false;
     break;
   } //switch(current code)
-
-  
+  if(recording_) {
+    memory_state_->addEvent(event);    
+  }
   last_timestamp = time_stamp;
   registerd_events++;
   return true;
