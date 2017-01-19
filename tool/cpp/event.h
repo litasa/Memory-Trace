@@ -33,13 +33,20 @@ namespace Event
 
     struct InitStream : public Event {
         InitStream(uint64_t eventNumber, unsigned int eventType, uint64_t timestamp, uint64_t stream_magic, std::string& platform, uint64_t frequency)
-        : Event(eventNumber, eventType, timestamp), magic(stream_magic), platform(platform), system_frequency(system_frequency)
+        : Event(eventNumber, eventType, timestamp), stream_magic(stream_magic), platform(platform), system_frequency(system_frequency)
         { };
         ~InitStream();
 
-        uint64_t magic;
+        uint64_t stream_magic;
         std::string platform;
         uint64_t system_frequency;
+    };
+
+    struct StopStream : public Event {
+        StopStream(uint64_t eventNumber, unsigned int eventType, uint64_t timestamp)
+        : Event(eventNumber, eventType, timestamp)
+        { };
+        ~StopStream();
     };
 
     struct AddHeap : public Event {

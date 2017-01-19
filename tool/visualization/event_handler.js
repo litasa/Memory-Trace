@@ -47,10 +47,8 @@ Visualization = new function() {
 			if(this.chart.data.datasets[i] == undefined) {
 				this.chart.data.datasets[i] = {data: []};
 			}
-			this.chart.data.datasets[i].data = this.chart.data.datasets[i].data.concat(arr[i].data);
-			while(this.chart.data.datasets[i].data.length > 5000) {
-				this.chart.data.datasets[i].data.shift();
-			}
+			this.chart.data.datasets[i] = arr[i];
+			this.chart.data.datasets[i].spanGaps = true;
 			this.chart.data.datasets[i].borderWidth = 1;
 			if(i == 1) {
 				this.chart.data.datasets[i].borderColor = 'rgba(250, 250, 1, 1)';

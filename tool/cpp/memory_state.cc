@@ -181,6 +181,12 @@ void MemoryState::addEvent(Event::Event* event) {
             removeHeap((int)data->id, data->timestamp);
             break;
         }
+        case Event::Code::BeginStream :
+        {
+            Event::InitStream* data = (Event::InitStream*)event;
+            setInits(data->stream_magic, data->platform, data->system_frequency);
+            break;
+        }
         default :
         {
             std::cout << "event not handled my memory: " << event->eventType << std::endl;

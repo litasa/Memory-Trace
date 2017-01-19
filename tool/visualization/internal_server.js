@@ -26,8 +26,8 @@ var server = net.createServer(function(socket) {
       Visualization.newDataset(arr);
       
     var end = performance.now();
-   console.log("unpackStream and getMemoryAsArray took" + (end - start));
-   last_time = performance.now();
+    console.log("unpackStream and getMemoryAsArray took" + (end - start));
+    last_time = performance.now();
   })
 
   socket.on('error', function(err) {

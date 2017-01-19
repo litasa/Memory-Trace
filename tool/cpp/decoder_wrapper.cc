@@ -51,20 +51,19 @@ NAN_METHOD(Decoder::UnpackStream) {
     total_populated += num_populated;
     
     obj->trySteps();
-    
+    Event::Event* event;
     do {
       //std::cout << "=============================\nstarting main loop " << total_populated << " of " << size << " populated" <<" \n";
         do {
           ring->saveRollback();
-          if(!obj->oneStep()) {
+          event = obj->oneStep();
+          if(event == nullptr) {
             //ring->doRollback();
             break;
           }
           ring->saveOverRollback();
-          if(count > ring->getCapacity()) {
-            //std::cout << "something is wrong in read: " << std::endl;
-          }
           count++;
+          obj->memory_state_->addEvent(event);
         }while(ring->getNumUnread());
         ring->loadRollback();
         //std::cout << "number of oneSteps before break: " << count << std::endl;
@@ -95,10 +94,9 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
   double previous_size = 0;
   for(int j = 0; j < heaps.size(); ++j) {
     std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
-    v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>((int)allocs->size());
+    std::vector<v8::Local<v8::Object>> alloc_list;
     for(int i = 0; i < allocs->size(); ++i) {
-      
-      double time = (double)(*allocs)[i].first * obj->memory_state_->frequency_; // s
+      double time = (double)(*allocs)[i].first * obj->memory_state_->frequency_;
       double used_size = (double)((*allocs)[i].second);
 
       double trend = used_size - previous_size;
@@ -106,12 +104,18 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
           v8::Local<v8::Object> object = Nan::New<v8::Object>();
           Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
           Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
-          Nan::Set(allocation_list, i, object);
+          alloc_list.push_back(object);
       }
       last_trend = trend;
       previous_size = used_size;
     }
     allocs->clear();
+
+    v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>(alloc_list.size());
+    for(int i = 0; i < alloc_list.size(); ++i) {
+      Nan::Set(allocation_list, i, alloc_list[i]);
+    }    
+
     v8::Local<v8::Object> heap_obj = Nan::New<v8::Object>();
     Nan::Set(heap_obj, Nan::New<v8::String>("label").ToLocalChecked(), Nan::New<v8::String>(heaps[j]->getName().c_str()).ToLocalChecked());
     Nan::Set(heap_obj, Nan::New<v8::String>("data").ToLocalChecked(), allocation_list);

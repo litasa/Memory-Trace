@@ -16,7 +16,7 @@ class Decoder : public Nan::ObjectWrap {
     bool decodeValue(int& ret);
     bool decodeString(std::string& ret);
 
-    bool oneStep();
+    Event::Event* oneStep();
 
     void trySteps();
 
@@ -27,7 +27,6 @@ class Decoder : public Nan::ObjectWrap {
     explicit Decoder(); //128 * 1024, 0x20000
     ~Decoder();
 
-    bool recording_ = true;
     bool print_error = false;
     bool print_ok = false;
     size_t last_timestamp = 0;

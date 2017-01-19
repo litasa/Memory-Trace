@@ -42,7 +42,6 @@ private:
     std::string platform_;
     size_t stream_magic_;
     size_t last_update_ = 0;
-    //std::vector<Heap> recently_dead_heaps_;
 
     int num_heaps_added = 0;
     int num_heaps_removed = 0;
