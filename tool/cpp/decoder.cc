@@ -1,6 +1,7 @@
 #include "decoder.h"
 
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include "event.h"
 
@@ -95,7 +96,7 @@ Event::Event* Decoder::oneStep() {
   int current_code;
   size_t count;
   Event::Event* event;
-
+  std::stringstream ss;
 
   if(!decodeValue(count)) {
     if(print_error) {std::cout << "\treading count failed" << std::endl;}
@@ -145,14 +146,14 @@ Event::Event* Decoder::oneStep() {
       }
       event = new Event::InitStream(count, current_code, time_stamp, stream_magic, platform, system_frequency);
 
-      if(print_ok){std::cout << "(" << registerd_events << ")BeginStream\n\ttime_stamp: " << time_stamp << "\n\tplatform: " << platform << "\n\tsystem frequency: " << system_frequency << "\n";}
+      if(print_ok){event->getAsVerbose(ss);}
       break;
     }
 
     case Event::Code::EndStream :
       {
         event = new Event::StopStream(count, current_code, time_stamp);
-        if(print_ok){std::cout << "(" << registerd_events << ")Endstream\n\ttime_stamp: " << time_stamp << "\n\tDo nothing\n";}
+        if(print_ok){event->getAsVerbose(ss);}
       }
     break;
 
@@ -170,7 +171,7 @@ Event::Event* Decoder::oneStep() {
       }
         event = new Event::AddHeap(count, current_code, time_stamp, id, name);
         //memory_state_->addHeap(id,name, time_stamp);
-      if(print_ok){std::cout << "(" << registerd_events << ")HeapCreate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n\tName: " << name << "\n";}
+      if(print_ok){event->getAsVerbose(ss);}
       break;
     }
 
@@ -183,7 +184,7 @@ Event::Event* Decoder::oneStep() {
       }
         event = new Event::RemoveHeap(count, current_code, time_stamp, id);
         //memory_state_->removeHeap(id, time_stamp);
-      if(print_ok){std::cout << "(" << registerd_events << ")HeapDestroy\n\ttime_stamp: " << time_stamp << "\n\tId: " << id << "\n";}
+      if(print_ok){event->getAsVerbose(ss);}
       break;
     }
 
@@ -206,7 +207,7 @@ Event::Event* Decoder::oneStep() {
       }
         event = new Event::AddCore(count, current_code, time_stamp, id, pointer, size_bytes);
         //memory_state_->addCore(id,pointer,size_bytes,time_stamp);
-       if(print_ok){std::cout << "(" << registerd_events << ")HeapAddCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
+       if(print_ok){event->getAsVerbose(ss);}
       break;
     }
 
@@ -229,7 +230,7 @@ Event::Event* Decoder::oneStep() {
       }
         event = new Event::RemoveCore(count, current_code, time_stamp, id, pointer, size_bytes);
         //memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
-       if(print_ok){std::cout << "(" << registerd_events << ")HeapRemoveCore\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
+       if(print_ok){event->getAsVerbose(ss);}
       break;
     }
     case Event::Code::HeapAllocate:
@@ -251,7 +252,7 @@ Event::Event* Decoder::oneStep() {
       }
         event = new Event::AddAllocation(count, current_code, time_stamp, id, pointer, size_bytes);
         //memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
-       if(print_ok){std::cout << "(" << registerd_events << ")HeapAllocate\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n\tSize: " << size_bytes << "\n"; }
+       if(true){event->getAsVerbose(ss);}
       break;
     }
 
@@ -269,7 +270,7 @@ Event::Event* Decoder::oneStep() {
       }
         event = new Event::RemoveAllocation(count, current_code, time_stamp, id, pointer);
         //memory_state_->removeAllocation(id,pointer, time_stamp);
-       if(print_ok){std::cout << "(" << registerd_events << ")HeapFree\n\ttime_stamp: " << time_stamp << "\n\tId: " << id <<"\n\tPointer: " << std::hex << pointer << std::dec << "\n"; }
+       if(print_ok){event->getAsVerbose(ss);}
       break;
     }
     default:
@@ -279,6 +280,7 @@ Event::Event* Decoder::oneStep() {
   } //switch(current code)
   last_timestamp = time_stamp;
   registerd_events++;
+  std::cout << ss.str();
   return event;
 }
 

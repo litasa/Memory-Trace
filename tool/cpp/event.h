@@ -2,6 +2,7 @@
 #define EVENT_H
 
 #include <string>
+#include <sstream>
 
 namespace Event 
 {
@@ -26,6 +27,12 @@ namespace Event
         : eventNumber(eventNumber), eventType(eventType), timestamp(timestamp) {};
         ~Event() {};
 
+        virtual void getAsCSV(std::stringstream& ss) {
+		    ss << eventNumber << "," << eventType << "," << timestamp;
+	    }
+
+	    virtual void getAsVerbose(std::stringstream& ss) = 0;
+
         uint64_t eventNumber;
         unsigned int eventType;
         uint64_t timestamp;
@@ -37,6 +44,19 @@ namespace Event
         { };
         ~InitStream();
 
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << stream_magic << "," << platform << "," << system_frequency << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "InitStream " << "at time: " << timestamp;
+            ss << "\n\tstream magic: " << std::showbase << std::hex << stream_magic << std::dec;
+            ss << "\n\tplatform: " << platform;
+            ss << "\n\tsystem frequency: " << system_frequency;
+            ss << "\n";
+        }
+
         uint64_t stream_magic;
         std::string platform;
         uint64_t system_frequency;
@@ -47,6 +67,14 @@ namespace Event
         : Event(eventNumber, eventType, timestamp)
         { };
         ~StopStream();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "StopStream " << "at time: " << timestamp;
+        }
     };
 
     struct AddHeap : public Event {
@@ -57,6 +85,18 @@ namespace Event
         {};
         ~AddHeap();
 
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << name << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "AddHeap " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tname: " << name;
+            ss << "\n";
+        }
+
         uint64_t id;
         std::string name;
     };
@@ -66,6 +106,16 @@ namespace Event
         : Event(eventNumber, eventType, time), id(id) {};
         ~RemoveHeap();
 
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "RemoveHeap " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n";
+        }
         uint64_t id;
     };
 
@@ -73,6 +123,19 @@ namespace Event
         AddCore(uint64_t eventNumber, unsigned int eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes)
         : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
         ~AddCore();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << pointer << "," << size << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "AddCore " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n\tsize" << size;
+            ss << "\n";
+        }
 
         uint64_t id;
         uint64_t pointer;
@@ -84,6 +147,19 @@ namespace Event
         : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
         ~RemoveCore();
 
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << pointer << "," << size << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "RemoveCore " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n\tsize" << size;
+            ss << "\n";
+        }
+
         uint64_t id;
         uint64_t pointer;
         uint64_t size;
@@ -94,6 +170,19 @@ namespace Event
         : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
         ~AddAllocation();
 
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << pointer << "," << size << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "AddAllocation " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n\tsize" << size;
+            ss << "\n";
+        }
+
         uint64_t id;
         uint64_t pointer;
         uint64_t size;
@@ -103,6 +192,18 @@ namespace Event
         RemoveAllocation(uint64_t eventNumber, unsigned int eventType, uint64_t time, uint64_t id,uint64_t pointer)
         : Event(eventNumber, eventType, time), id(id), pointer(pointer) { };
         ~RemoveAllocation();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << pointer << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "RemoveAllocation " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n";
+        }
 
         uint64_t id;
         uint64_t pointer;
