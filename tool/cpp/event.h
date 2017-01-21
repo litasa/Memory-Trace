@@ -133,7 +133,7 @@ namespace Event
             ss << "(" << eventNumber << ")" << "AddCore " << "at time: " << timestamp;
             ss << "\n\tid: " << id;
             ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
-            ss << "\n\tsize" << size;
+            ss << "\n\tsize: " << size;
             ss << "\n";
         }
 
@@ -156,7 +156,7 @@ namespace Event
             ss << "(" << eventNumber << ")" << "RemoveCore " << "at time: " << timestamp;
             ss << "\n\tid: " << id;
             ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
-            ss << "\n\tsize" << size;
+            ss << "\n\tsize: " << size;
             ss << "\n";
         }
 
@@ -179,7 +179,7 @@ namespace Event
             ss << "(" << eventNumber << ")" << "AddAllocation " << "at time: " << timestamp;
             ss << "\n\tid: " << id;
             ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
-            ss << "\n\tsize" << size;
+            ss << "\n\tsize: " << size;
             ss << "\n";
         }
 

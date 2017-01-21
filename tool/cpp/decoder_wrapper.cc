@@ -40,8 +40,6 @@ NAN_METHOD(Decoder::UnpackStream) {
     char* buff = (char*) node::Buffer::Data(info[0]->ToObject());
     size_t size = node::Buffer::Length(info[0]);
 
-    //std::cout << "Starting new UnpackStream \n"; 
-
     size_t count = 0;
     size_t num_populated = 0;
     size_t total_populated = 0;
@@ -53,12 +51,10 @@ NAN_METHOD(Decoder::UnpackStream) {
     obj->trySteps();
     Event::Event* event;
     do {
-      //std::cout << "=============================\nstarting main loop " << total_populated << " of " << size << " populated" <<" \n";
         do {
           ring->saveRollback();
           event = obj->oneStep();
           if(event == nullptr) {
-            //ring->doRollback();
             break;
           }
           ring->saveOverRollback();
@@ -66,16 +62,11 @@ NAN_METHOD(Decoder::UnpackStream) {
           obj->memory_state_->addEvent(event);
         }while(ring->getNumUnread());
         ring->loadRollback();
-        //std::cout << "number of oneSteps before break: " << count << std::endl;
         num_populated = ring->populate(buff + total_populated, size - total_populated);
         total_populated += num_populated;
-        //std::cout << "ending main loop\n=============================\n";
     }while(total_populated < size);
 
-    //std::cout << "Ending UnpackStream\n";
-    //std::cout << "last registerd eventnumber was: " << obj->registerd_events << "\n";
     ring->clearRollback();
-    //ring->printStats();
 }
 
 NAN_METHOD(Decoder::Printas) {
@@ -84,7 +75,6 @@ NAN_METHOD(Decoder::Printas) {
 
 NAN_METHOD(Decoder::GetMemoryAsArray) {
   Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
-  unsigned int exclude_time = info[0]->Uint32Value();
 
   std::vector<Heap*> heaps = obj->getMemoryState();
  
@@ -99,15 +89,12 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
       double time = (double)(*allocs)[i].first * obj->memory_state_->frequency_;
       double used_size = (double)((*allocs)[i].second);
 
-      double trend = used_size - previous_size;
       if(i % 7 == 0) {
           v8::Local<v8::Object> object = Nan::New<v8::Object>();
           Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
           Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
           alloc_list.push_back(object);
       }
-      last_trend = trend;
-      previous_size = used_size;
     }
     allocs->clear();
 

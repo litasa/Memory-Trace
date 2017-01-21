@@ -45,19 +45,17 @@ bool Decoder::decodeValue(int& ret) {
 }
 
 bool Decoder::decodeString(std::string& ret) {
-
-        uint64_t length;
-        if(!decodeValue(length)) {
-            return false;
-        }
-        if(!ring_->extractString(ret, length)) {
-            return false;
-        }
-        return true;
+  uint64_t length;
+  if(!decodeValue(length)) {
+      return false;
+  }
+  if(!ring_->extractString(ret, length)) {
+      return false;
+  }
+  return true;
 }
 
 void Decoder::trySteps() {
-  //std::cout << "starting try steps\n";
   ring_->saveRollback();
   size_t current_count = registerd_events;
   size_t current_time = last_timestamp;
@@ -81,9 +79,6 @@ void Decoder::trySteps() {
   if(current_count + 1 != registerd_events && last_timestamp < current_time) {
     throw;
   }
-  //std::cout << "num throwaway: " << num_throwaway;
-  //std::cout << " previous eventnumber was: " << current_count << " found event_number is: " << registerd_events << "\n";
-  //std::cout << " previous timestamp was: " << current_time << " found timestamp is: " << last_timestamp << "\n";
 
   ring_->loadRollback(); //go back to right before successful event
   ring_->saveRollback(); //and save it
@@ -144,8 +139,8 @@ Event::Event* Decoder::oneStep() {
         if(print_error) {std::cout << "\tDecode system_frequency failed" << std::endl;}
         return nullptr;
       }
+      
       event = new Event::InitStream(count, current_code, time_stamp, stream_magic, platform, system_frequency);
-
       if(print_ok){event->getAsVerbose(ss);}
       break;
     }
@@ -158,7 +153,7 @@ Event::Event* Decoder::oneStep() {
     break;
 
     case Event::Code::HeapCreate :
-    { 
+    {
       std::string name;
       int id;
       if(!decodeValue(id)) {
@@ -169,8 +164,8 @@ Event::Event* Decoder::oneStep() {
         if(print_error) {   std::cout << "decode Add Heap name failed\n";}
         return nullptr;
       }
-        event = new Event::AddHeap(count, current_code, time_stamp, id, name);
-        //memory_state_->addHeap(id,name, time_stamp);
+      
+      event = new Event::AddHeap(count, current_code, time_stamp, id, name);
       if(print_ok){event->getAsVerbose(ss);}
       break;
     }
@@ -182,8 +177,8 @@ Event::Event* Decoder::oneStep() {
         if(print_error) {   std::cout << "decode Heap Destroy id failed\n";}
         return nullptr;
       }
-        event = new Event::RemoveHeap(count, current_code, time_stamp, id);
-        //memory_state_->removeHeap(id, time_stamp);
+      
+      event = new Event::RemoveHeap(count, current_code, time_stamp, id);
       if(print_ok){event->getAsVerbose(ss);}
       break;
     }
@@ -205,9 +200,9 @@ Event::Event* Decoder::oneStep() {
         if(print_error) {  std::cout << "decode Add Core size failed\n";}
         return nullptr;
       }
-        event = new Event::AddCore(count, current_code, time_stamp, id, pointer, size_bytes);
-        //memory_state_->addCore(id,pointer,size_bytes,time_stamp);
-       if(print_ok){event->getAsVerbose(ss);}
+      
+      event = new Event::AddCore(count, current_code, time_stamp, id, pointer, size_bytes);
+      if(print_ok){event->getAsVerbose(ss);}
       break;
     }
 
@@ -228,9 +223,9 @@ Event::Event* Decoder::oneStep() {
         if(print_error) { std::cout << "decode Remove Core size failed\n";}
         return nullptr;
       }
-        event = new Event::RemoveCore(count, current_code, time_stamp, id, pointer, size_bytes);
-        //memory_state_->removeCore(id,pointer,size_bytes, time_stamp);
-       if(print_ok){event->getAsVerbose(ss);}
+      
+      event = new Event::RemoveCore(count, current_code, time_stamp, id, pointer, size_bytes);
+      if(print_ok){event->getAsVerbose(ss);}
       break;
     }
     case Event::Code::HeapAllocate:
@@ -250,9 +245,9 @@ Event::Event* Decoder::oneStep() {
         if(print_error) { std::cout << "decode Heap Allocate size failed\n";}
         return nullptr;
       }
-        event = new Event::AddAllocation(count, current_code, time_stamp, id, pointer, size_bytes);
-        //memory_state_->addAllocation(id,pointer,size_bytes, time_stamp);
-       if(true){event->getAsVerbose(ss);}
+
+      event = new Event::AddAllocation(count, current_code, time_stamp, id, pointer, size_bytes);
+      if(true) {event->getAsVerbose(ss);}
       break;
     }
 
@@ -268,9 +263,9 @@ Event::Event* Decoder::oneStep() {
         if(print_error) { std::cout << "decode HeapFree pointer failed\n";}
         return nullptr;
       }
-        event = new Event::RemoveAllocation(count, current_code, time_stamp, id, pointer);
-        //memory_state_->removeAllocation(id,pointer, time_stamp);
-       if(print_ok){event->getAsVerbose(ss);}
+
+      event = new Event::RemoveAllocation(count, current_code, time_stamp, id, pointer);
+      if(print_ok){event->getAsVerbose(ss);}
       break;
     }
     default:
