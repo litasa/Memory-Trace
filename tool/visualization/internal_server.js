@@ -24,6 +24,7 @@ var server = net.createServer(function(socket) {
       decoder.unpackStream(data);
       var arr = decoder.getMemoryAsArray();
       Visualization.newDataset(arr);
+      console.log(decoder.getCurrentMemory());
       
     var end = performance.now();
     console.log("unpackStream and getMemoryAsArray took" + (end - start));
@@ -43,7 +44,3 @@ server.on('listening', function(data) {
 ipcRenderer.on('stream-end', function(event, data) {
   console.log('finished recieving data: ' + total_data);
 })
-
-var addArrayToVisualization = function(arr) {
-  console.log(arr[0].name);
-}

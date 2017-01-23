@@ -20,7 +20,7 @@ bool Core::pointerInside(size_t pointer) {
 }
 
 bool Core::allocationInside(size_t pointer, size_t size) {
-    return (getPointer() <= pointer) && (end_ >= pointer + size);
+    return (getPointer() <= pointer) && (end_ >= (pointer + size));
 }
 
 Allocation* Core::getAllocation(size_t pointer) {
@@ -32,30 +32,33 @@ Allocation* Core::getAllocation(size_t pointer) {
     return &(found->second);
 }
 
-size_t Core::removeAllocation(size_t pointer, size_t timestamp) {
+bool Core::removeAllocation(size_t pointer, size_t timestamp) {
     size_t bytes = allocations_.at(pointer).getUsedMemory();
     size_t num_removed = allocations_.erase(pointer);
     if(num_removed == 1) {
         used_memory_ -= bytes;
         setLastUpdate(timestamp);
-        return bytes;
+        return true;
     }
-    return 0;
+    return false;
 }
 
-size_t Core::addAllocation(size_t pointer, size_t size, size_t timestamp) {
+bool Core::addAllocation(size_t pointer, size_t size, size_t timestamp) {
     //std::cout << "trying to add allocation: " << std::hex << pointer << std::dec << " size: " << size << " at: " << timestamp << " ";
     if(allocationInside(pointer,size)) {
         Allocation a(pointer, size, timestamp);
         auto emp = allocations_.insert(std::make_pair(pointer,a));
         if(!emp.second) {
-            //std::cout << "Adding Allocation failed (already exists): " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " created: " << timestamp << "\n";
-            //std::cout << "had values: " << emp.first->second.allocator_id << " pointer: " << std::hex << emp.first->second.pointer << std::dec << " size: " << emp.first->second.size << " created: " << emp.first->second.birth << "\n";
-            return 0;
+            std::cout << "Adding Allocation failed (already exists in core): " << std::hex << this->pointer_ << std::dec << " size: " << this->managed_memory_ << " created: " << this->birth_ << "\n";
+            return false;
         }
         used_memory_ += size;
         setLastUpdate(timestamp);
-        return size;
+        return true;
     }
-    return 0;
+    // std::cout << "Adding Allocation failed: " << std::hex << pointer << std::dec << " size: " << size << " at timestmap: " << timestamp << "\n";
+    // std::cout << "\t(is not inside core): " << std::hex << this->pointer_ << " end: " << end_ << std::dec << " size: " << this->managed_memory_ << " created: " << this->birth_ << "\n";    
+    //std::cout << "Allocation: " << std::hex << pointer << std::dec << ", size: " << size << ", timestamp: " << timestamp << "\n";
+    //std::cout << "Core: " << std::hex << pointer_ << ", end: " << end_ << std::dec << ", bytes left: " << managed_memory_ - used_memory_ <<"\n";
+    return false;
 }

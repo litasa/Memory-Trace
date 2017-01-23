@@ -111,8 +111,9 @@ static void TestCustomAllocator()
 	BlockAllocator a(16, size, "Allocator A");
 	BlockAllocator b(32, size, "Allocator B");
 
-	
-	while(true) {
+	MemTrace::StartRecordingEvent("while loop");
+	while(times) {
+		MemTrace::StartRecordingEvent("start one iteration");
 		std::vector<void*> pointer_a;
 		std::vector<void*> pointer_b;
 		for(int j = 0; j < size - 1 ; ++j)
@@ -130,7 +131,10 @@ static void TestCustomAllocator()
 		for(int j = 0; j < size - 1; ++j) {
 			b.Free(pointer_b[j]);
 		}
+		times--;
+		MemTrace::StopRecordingEvent("start one iteration");
 	}
+	MemTrace::StopRecordingEvent("while loop");
 }
 
 #define PRINT 0

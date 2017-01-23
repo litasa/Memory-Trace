@@ -15,6 +15,8 @@ class Decoder : public Nan::ObjectWrap {
     bool decodeValue(uint64_t& ret);
     bool decodeValue(int& ret);
     bool decodeString(std::string& ret);
+    bool decodeBool(bool& ret);
+    bool decodeHeader(uint64_t& count, int& current_code, uint64_t& time_stamp, uint64_t& thread_id);
 
     Event::Event* oneStep();
 
@@ -28,7 +30,7 @@ class Decoder : public Nan::ObjectWrap {
     ~Decoder();
 
     bool print_error = false;
-    bool print_ok = false;
+    bool print_ok = true;
     size_t last_timestamp = 0;
     RingBuffer* ring_;
     
@@ -43,7 +45,7 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(UnpackStream);
     static NAN_METHOD(Printas);
     static NAN_METHOD(GetMemoryAsArray);
-    static NAN_METHOD(GetNewEvents);
+    static NAN_METHOD(GetCurrentMemoryUsage);
 
     /* Wrapper functions - end */
 };

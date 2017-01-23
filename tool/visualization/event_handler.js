@@ -48,6 +48,7 @@ Visualization = new function() {
 				this.chart.data.datasets[i] = {data: []};
 			}
 			this.chart.data.datasets[i] = arr[i];
+			//this.chart.data.datasets[i].data = this.chart.data.datasets[i].data.concat(arr[i].data);			
 			this.chart.data.datasets[i].spanGaps = true;
 			this.chart.data.datasets[i].borderWidth = 1;
 			if(i == 1) {

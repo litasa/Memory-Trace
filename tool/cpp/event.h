@@ -8,17 +8,20 @@ namespace Event
 {
     enum Code
         {
-        BeginStream     = 1,
-        EndStream,
+            BeginStream     = 1,
+            EndStream,
 
-        HeapCreate = 18,
-        HeapDestroy,
+            HeapCreate = 10,
+            HeapDestroy,
 
-        HeapAddCore,
-        HeapRemoveCore,
+            HeapAddCore,
+            HeapRemoveCore,
 
-        HeapAllocate,
-        HeapFree,
+            HeapAllocate,
+            HeapFree,
+
+            EventStart = 20,
+            EventEnd,
         };
 
     struct Event {
@@ -78,10 +81,11 @@ namespace Event
     };
 
     struct AddHeap : public Event {
-        AddHeap(uint64_t eventNumber, unsigned int eventType, uint64_t time, uint64_t id, std::string& name)
+        AddHeap(uint64_t eventNumber, unsigned int eventType, uint64_t time, uint64_t id, std::string& name, bool own_core)
         : Event(eventNumber, eventType, time)
         , id(id)
         , name(name)
+        , own_core(own_core)
         {};
         ~AddHeap();
 
@@ -99,6 +103,7 @@ namespace Event
 
         uint64_t id;
         std::string name;
+        bool own_core;
     };
 
     struct RemoveHeap : public Event {
@@ -207,6 +212,22 @@ namespace Event
 
         uint64_t id;
         uint64_t pointer;
+    };
+
+    struct StartEvent : public Event {
+        StartEvent(uint64_t eventNumber, unsigned int eventType, uint64_t time, std::string& name)
+        : Event(eventNumber, eventType, time), name(name) { };
+        ~StartEvent();
+
+        std::string name;
+    };
+
+    struct EndEvent : public Event {
+        EndEvent(uint64_t eventNumber, unsigned int eventType, uint64_t time, std::string& name)
+        : Event(eventNumber, eventType, time), name(name) { };
+        ~EndEvent();
+
+        std::string name;
     };
 }
 #endif //EVENT_H

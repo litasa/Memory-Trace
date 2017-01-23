@@ -17,9 +17,9 @@ void MemoryState::setInits(size_t stream_magic, std::string platform, size_t fre
     frequency_ = 1/(double)frequency;
 }
 
-bool MemoryState::addHeap(const int id, const std::string& name, size_t timestamp) {
+bool MemoryState::addHeap(const int id, const std::string& name, size_t timestamp, bool own_core) {
     //std::cout << "Wanting to add Heap: " << id << ", " << name << " at: " << timestamp << "\n";
-    Heap h(id, name, timestamp);
+    Heap h(id, name, own_core, timestamp);
     auto emp = heaps_.emplace(id, h);
     if(!emp.second) {
         std::cout << "Adding Heap failed: " << "Id: " << id << ", name: " << name << "\n";
@@ -52,7 +52,6 @@ bool MemoryState::addCore(const int id, const size_t pointer, const size_t size,
 
 bool MemoryState::addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp) {
     //std::cout << "Wanting to Allocation to: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n"; 
-
 
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
@@ -109,7 +108,6 @@ bool MemoryState::removeCore(const int id, const size_t pointer, const size_t si
 
 bool MemoryState::removeHeap(const int id, size_t timestamp) {
 
-
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << "Removing non existing heap: " << id << ", at time: " << timestamp << "\n";
@@ -120,6 +118,7 @@ bool MemoryState::removeHeap(const int id, size_t timestamp) {
         heap->setLastUpdate(timestamp);
         num_heaps_removed++;
         last_update_ = timestamp;
+        heap->dead = true;
         return true;
     }
     std::cout << "remove heap failed at: " << timestamp << std::endl;
@@ -172,7 +171,7 @@ void MemoryState::addEvent(Event::Event* event) {
         case Event::Code::HeapCreate :
         {
             Event::AddHeap* data = (Event::AddHeap*)event;
-            addHeap((int)data->id, data->name, data->timestamp);
+            addHeap((int)data->id, data->name, data->own_core, data->timestamp);
             break;
         }
         case Event::Code::HeapDestroy :
@@ -187,9 +186,21 @@ void MemoryState::addEvent(Event::Event* event) {
             setInits(data->stream_magic, data->platform, data->system_frequency);
             break;
         }
+
+        case Event::Code::EventStart :
+        {
+            std::cout << "Event: " << ((Event::StartEvent*)event)->name << " started" << std::endl;
+            break;
+        }
+
+        case Event::Code::EventEnd :
+        {
+            std::cout << "Event: " << ((Event::EndEvent*)event)->name << " ended" << std::endl;            
+            break;
+        }
         default :
         {
-            std::cout << "event not handled my memory: " << event->eventType << std::endl;
+            std::cout << "event not handled by memory: " << event->eventType << std::endl;
             break;
         }
     }

@@ -78,7 +78,7 @@ namespace MemTrace
     kBeginStream     = 1,
     kEndStream,
 
-    kHeapCreate = 18,
+    kHeapCreate = 10,
     kHeapDestroy,
 
     kHeapAddCore,
@@ -86,6 +86,9 @@ namespace MemTrace
 
     kHeapAllocate,
     kHeapFree,
+
+	kEventStart = 20,
+	kEventEnd,
   };
 
   //-----------------------------------------------------------------------------
@@ -218,6 +221,11 @@ namespace MemTrace
       EmitUnsigned(uintptr_t(ptr));
     }
 
+	void EmitBool(const bool val)
+	{
+		EmitUnsigned((uint64_t)val);
+	}
+
     //-----------------------------------------------------------------------------
     // Emit a string to the output stream.
     void EmitString(const char* str)
@@ -238,7 +246,7 @@ namespace MemTrace
 	  EmitUnsigned(count);
       EmitUnsigned(code);
       uint64_t delta = EmitTimeStamp();
-	  //MemTracePrint("event: %i, time: %d, num: %i\n",code, delta, count);
+	  EmitUnsigned(GetCurrentThreadId());
     }
 	void EndEvent(EventCode code)
 	{
@@ -491,7 +499,7 @@ void MemTrace::BeginStream() {
 	State.m_Encoder.EndEvent(kBeginStream);
 }
 
-MemTrace::HeapId MemTrace::HeapCreate(const char* name)
+MemTrace::HeapId MemTrace::HeapCreate(const char* name, bool owns_core)
 {
   if (!State.m_Active)
     return ~0u;
@@ -503,6 +511,7 @@ MemTrace::HeapId MemTrace::HeapCreate(const char* name)
   State.m_Encoder.BeginEvent(kHeapCreate);
   State.m_Encoder.EmitUnsigned(id);
   State.m_Encoder.EmitString(name);
+  State.m_Encoder.EmitBool(owns_core);
   State.m_Encoder.EndEvent(kHeapCreate);
   return id;
 }
@@ -572,6 +581,29 @@ void MemTrace::HeapFree(HeapId id, const void* ptr)
   State.m_Encoder.EmitUnsigned(id);
   State.m_Encoder.EmitPointer(ptr);
   State.m_Encoder.EndEvent(kHeapFree);
+}
+
+/* Starts a new new event recording. */
+void MemTrace::StartRecordingEvent(const char* eventName) {
+	if (!State.m_Active)
+    return;
+
+  CSAutoLock lock(State.m_Lock);
+
+  State.m_Encoder.BeginEvent(kEventStart);
+  State.m_Encoder.EmitString(eventName);
+  State.m_Encoder.EndEvent(kEventStart);
+}
+
+void MemTrace::StopRecordingEvent(const char* eventName) {
+	if (!State.m_Active)
+    return;
+
+  CSAutoLock lock(State.m_Lock);
+
+  State.m_Encoder.BeginEvent(kEventEnd);
+  State.m_Encoder.EmitString(eventName);
+  State.m_Encoder.EndEvent(kEventEnd);
 }
 
 #endif // MEMTRACE_ENABLE

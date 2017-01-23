@@ -19,7 +19,7 @@ public:
 
     void addEvent(Event::Event* event);
 
-    bool addHeap(const int id, const std::string& name, size_t timestamp);
+    bool addHeap(const int id, const std::string& name, size_t timestamp, bool own_core);
     bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
     bool addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp);
 

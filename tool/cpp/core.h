@@ -13,8 +13,8 @@ class Core : public MemoryObject {
 
     bool pointerInside(size_t pointer);
     bool allocationInside(size_t pointer, size_t size);
-    size_t removeAllocation(size_t pointer, size_t timestamp);
-    size_t addAllocation(size_t pointer, size_t size, size_t timestamp);
+    bool removeAllocation(size_t pointer, size_t timestamp);
+    bool addAllocation(size_t pointer, size_t size, size_t timestamp);
     Allocation* getAllocation(size_t pointer);
 
     size_t getManagedSize() { return managed_memory_; }

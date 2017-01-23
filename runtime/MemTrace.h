@@ -51,7 +51,7 @@ namespace MemTrace
 
   void	  BeginStream();
 
-  HeapId  HeapCreate(const char* name);
+  HeapId  HeapCreate(const char* name, bool owns_core = true);
   void    HeapDestroy(HeapId heap_id);
 
   void    HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
@@ -60,6 +60,8 @@ namespace MemTrace
   void    HeapAllocate(HeapId heap_id, const void* ptr, size_t size_bytes);
   void    HeapFree(HeapId heap_id, const void* ptr);
 
+  void	  StartRecordingEvent(const char* eventName);
+  void    StopRecordingEvent(const char* eventName);
 
   void DummyInitFunction(char dummy);
 
