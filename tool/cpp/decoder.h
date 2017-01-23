@@ -16,7 +16,7 @@ class Decoder : public Nan::ObjectWrap {
     bool decodeValue(int& ret);
     bool decodeString(std::string& ret);
     bool decodeBool(bool& ret);
-    bool decodeHeader(uint64_t& count, int& current_code, uint64_t& time_stamp, uint64_t& thread_id);
+    bool decodeHeader(std::stringstream& ss,uint64_t& count, int& current_code, uint64_t& time_stamp, uint64_t& thread_id);
 
     Event::Event* oneStep();
 
@@ -30,7 +30,7 @@ class Decoder : public Nan::ObjectWrap {
     ~Decoder();
 
     bool print_error = false;
-    bool print_ok = true;
+    bool print_ok = false;
     size_t last_timestamp = 0;
     RingBuffer* ring_;
     

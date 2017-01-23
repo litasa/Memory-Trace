@@ -19,7 +19,7 @@ public:
 
     void addEvent(Event::Event* event);
 
-    bool addHeap(const int id, const std::string& name, size_t timestamp, bool own_core);
+    bool addHeap(const int id, const std::string& type, const std::string& name, size_t timestamp);
     bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
     bool addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp);
 
@@ -37,6 +37,7 @@ public:
     double frequency_;
     std::vector<Heap*> getHeaps();
 private:
+    bool debug = false;
     std::vector<Event::Event*> eventList;
     std::unordered_map<int, Heap> heaps_;
     std::string platform_;

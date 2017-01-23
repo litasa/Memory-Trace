@@ -122,10 +122,14 @@ NAN_METHOD(Decoder::GetCurrentMemoryUsage) {
           v8::Local<v8::Object> object = Nan::New<v8::Object>();
           double time = heaps[i]->getLastUpdate() * obj->memory_state_->frequency_;
           int current_size = heaps[i]->used_memory_;
-          std::cout << "\n\tId: " << heaps[i]->id_ << " Name: " <<heaps[i]->getName() << " Managed size: " << heaps[i]->managed_memory_ << " Used Memory: " << heaps[i]->used_memory_ << " is dead: " << heaps[i]->dead;
+          std::cout << "\n\tId: " << heaps[i]->id_ << " Name: " <<heaps[i]->getName() << " Managed size: " << heaps[i]->managed_memory_ << " Used Memory: ";
+          std::cout << heaps[i]->used_memory_ << " type: " << heaps[i]->type_ << " backing:";
+          heaps[i]->printBacking();
+          std::cout << "\n";
           //Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
           //Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(current_size)); //current size
           //Nan::Set(list_of_heaps, i, object);    
-  } 
+  }
+  std::cout << "\n";
   //info.GetReturnValue().Set(list_of_heaps);
 }

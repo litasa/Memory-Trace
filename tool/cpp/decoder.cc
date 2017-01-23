@@ -49,6 +49,10 @@ bool Decoder::decodeString(std::string& ret) {
   if(!decodeValue(length)) {
       return false;
   }
+  if(length == 0) {
+    ret = "";
+    return true;
+  }
   if(!ring_->extractString(ret, length)) {
       return false;
   }
@@ -97,11 +101,7 @@ void Decoder::trySteps() {
   last_timestamp = current_time;
 }
 
-Event::Event* Decoder::oneStep() {
-  int current_code;
-  size_t count;
-  Event::Event* event;
-  std::stringstream ss;
+bool Decoder::decodeHeader(std::stringstream& ss,uint64_t& count, int& current_code, uint64_t& time_stamp, uint64_t& thread_id) {
 
   if(!decodeValue(count)) {
     if(print_error) {std::cout << "\treading count failed" << std::endl;}
@@ -137,9 +137,9 @@ Event::Event* Decoder::oneStep() {
   size_t time_stamp;
   size_t thread_id;
   Event::Event* event;
+  std::stringstream ss;
 
-
-  if(!decodeHeader(count, current_code, time_stamp, thread_id)) {
+  if(!decodeHeader(ss, count, current_code, time_stamp, thread_id)) {
     return nullptr;
   }
 
@@ -178,10 +178,15 @@ Event::Event* Decoder::oneStep() {
     case Event::Code::HeapCreate :
     {
       std::string name;
+      std::string type;
       int id;
       bool own_core;
       if(!decodeValue(id)) {
         if(print_error) {   std::cout << "decode Add Heap id failed\n";}
+        return nullptr;
+      }
+      if(!decodeString(type)) {
+        if(print_error) { std::cout << "decode Add Heap type failed\n"; }
         return nullptr;
       }
       if(!decodeString(name)) {
@@ -189,7 +194,7 @@ Event::Event* Decoder::oneStep() {
         return nullptr;
       }
 
-      event = new Event::AddHeap(count, current_code, time_stamp, id, name);
+      event = new Event::AddHeap(count, current_code, time_stamp, id, type, name);
       if(print_ok){event->getAsVerbose(ss);}
       break;
     }
@@ -274,7 +279,7 @@ Event::Event* Decoder::oneStep() {
       }
 
       event = new Event::AddAllocation(count, current_code, time_stamp, id, pointer, size_bytes);
-      if(true) {event->getAsVerbose(ss);}
+      if(print_ok) {event->getAsVerbose(ss);}
 
       break;
     }
@@ -306,7 +311,7 @@ Event::Event* Decoder::oneStep() {
           return nullptr;
         }
         event = new Event::StartEvent(count, current_code, time_stamp, eventName);
-       if(print_ok){std::cout << "(" << registerd_events << ")StartEvent\n\ttime_stamp: " << time_stamp << "\n\tname: " << eventName << "\n";}
+       if(print_ok){ event->getAsVerbose(ss); }
        break;
     }
 
@@ -318,8 +323,24 @@ Event::Event* Decoder::oneStep() {
           return nullptr;
         }
         event = new Event::EndEvent(count, current_code, time_stamp, eventName);
-        if(print_ok){std::cout << "(" << registerd_events << ")EndEvent\n\ttime_stamp: " << time_stamp << "\n\tname: " << eventName << "\n";}
-        break;
+       if(print_ok){ event->getAsVerbose(ss); }
+       break;
+    }
+
+    case Event::Code::SetBackingAllocator:
+    {
+      int for_heap;
+      int set_to_heap;
+      if(!decodeValue(for_heap)) {
+        if(print_error) { std::cout << "decode SetBackingAllocator failed at for_heap\n";}
+        return nullptr;
+      }
+      if(!decodeValue(set_to_heap)) {
+        if(print_error) { std::cout << "decode SetBackingAllocator failed at set_to_heap\n";}
+        return nullptr;
+      }
+      event = new Event::HeapSetBackingAllocator(count,current_code, time_stamp,for_heap,set_to_heap);
+      break;
     }
     default:
       std::cout << "Unhandled Event " << current_code << ", time_stamp: " << time_stamp << " num unread: " << ring_->getNumUnread() << "\n";

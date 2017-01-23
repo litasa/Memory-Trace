@@ -20,7 +20,13 @@ let testWindow
 function createWindow () {
   // Create the browser window.
   //internalServerWindow = new BrowserWindow({width: 800, height: 600, title: "InternalServer"})
-  chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
+  if(testing) {
+    testWindow = new BrowserWindow({width: 800, height: 600, title: "Test"})
+    testWindow.loadURL(`file://${__dirname}/test.html`)
+    testWindow.webContents.openDevTools()
+  }
+  else {
+      chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
   serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server"})
   serverWindow.hide();
   //
@@ -35,15 +41,7 @@ function createWindow () {
   chartWindow.webContents.openDevTools()
   //serverWindow.webContents.openDevTools()
   //internalServerWindow.webContents.openDevTools()
-
-  if(testing){
-    testWindow = new BrowserWindow({width: 800, height: 600, title: "Test"})
-    testWindow.loadURL(`file://${__dirname}/test-place/test.html`)
-    testWindow.webContents.openDevTools()
-  }
-  //
-  // Emitted when the window is closed.
-  chartWindow.on('closed', function () {
+   chartWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
@@ -51,6 +49,10 @@ function createWindow () {
     serverWindow = null
     //internalServerWindow = null
   })
+  }
+  //
+  // Emitted when the window is closed.
+ 
 }
 
 // This method will be called when Electron has finished

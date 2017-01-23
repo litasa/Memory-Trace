@@ -17,9 +17,9 @@ void MemoryState::setInits(size_t stream_magic, std::string platform, size_t fre
     frequency_ = 1/(double)frequency;
 }
 
-bool MemoryState::addHeap(const int id, const std::string& name, size_t timestamp, bool own_core) {
-    //std::cout << "Wanting to add Heap: " << id << ", " << name << " at: " << timestamp << "\n";
-    Heap h(id, name, own_core, timestamp);
+bool MemoryState::addHeap(const int id, const std::string& type, const std::string& name, size_t timestamp) {
+    if(debug){std::cout << "Wanting to add Heap: " << id << ", " << name << " at: " << timestamp << "\n";}
+    Heap h(id, type, name, timestamp);
     auto emp = heaps_.emplace(id, h);
     if(!emp.second) {
         std::cout << "Adding Heap failed: " << "Id: " << id << ", name: " << name << "\n";
@@ -31,7 +31,7 @@ bool MemoryState::addHeap(const int id, const std::string& name, size_t timestam
 }
 
 bool MemoryState::addCore(const int id, const size_t pointer, const size_t size, size_t timestamp) {
-    //std::cout << "Wanting to add core to: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n";
+    if(debug){std::cout << "Wanting to add core to: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n";}
 
 
     Heap* heap = getHeap(id);
@@ -51,7 +51,7 @@ bool MemoryState::addCore(const int id, const size_t pointer, const size_t size,
 }
 
 bool MemoryState::addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp) {
-    //std::cout << "Wanting to Allocation to: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n"; 
+    if(debug){std::cout << "Wanting to Allocation to: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n"; }
 
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
@@ -70,7 +70,7 @@ bool MemoryState::addAllocation(const int id, const size_t pointer, const size_t
 }
 
 bool MemoryState::removeAllocation(const int id, const size_t pointer, size_t timestamp) {
-    //std::cout << "Wanting to remove allocation from: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " at: " << timestamp << "\n";    
+    if(debug){std::cout << "Wanting to remove allocation from: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " at: " << timestamp << "\n";    }
 
 
     Heap* heap = getHeap(id);
@@ -87,7 +87,7 @@ bool MemoryState::removeAllocation(const int id, const size_t pointer, size_t ti
 }
 
 bool MemoryState::removeCore(const int id, const size_t pointer, const size_t size, size_t timestamp) {
-    //std::cout << "Wanting to remove core from: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n";    
+    if(debug){std::cout << "Wanting to remove core from: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n";    }
 
 
     Heap* heap = getHeap(id);
@@ -171,13 +171,19 @@ void MemoryState::addEvent(Event::Event* event) {
         case Event::Code::HeapCreate :
         {
             Event::AddHeap* data = (Event::AddHeap*)event;
-            addHeap((int)data->id, data->name, data->own_core, data->timestamp);
+            addHeap((int)data->id, data->type, data->name, data->timestamp);
             break;
         }
         case Event::Code::HeapDestroy :
         {
             Event::RemoveHeap* data = (Event::RemoveHeap*)event;
             removeHeap((int)data->id, data->timestamp);
+            break;
+        }
+        case Event::Code::SetBackingAllocator :
+        {
+            Event::HeapSetBackingAllocator* data = (Event::HeapSetBackingAllocator*)event;
+            getHeap(data->for_heap)->setBackingAllocator(data->set_to_heap);
             break;
         }
         case Event::Code::BeginStream :

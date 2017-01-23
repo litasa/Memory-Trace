@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-Heap::Heap(int id, std::string name, bool own_core, size_t timestamp)
-    : MemoryObject(0, timestamp, 0, 0), id_(id), name_(name), own_core_(own_core)
+Heap::Heap(int id, std::string type, std::string name, size_t timestamp)
+    : MemoryObject(0, timestamp, 0, 0), id_(id), type_(type), name_(name)
 {
         
 }
@@ -76,7 +76,6 @@ bool Heap::addCore(size_t pointer, size_t timestamp, size_t managed_size) {
 }
 
 bool Heap::addAllocation(size_t pointer, size_t size, size_t timestamp) {
-    if(own_core_) {
         for(auto it = cores_.begin(); it != cores_.end(); ++it) {
             if(it->second->addAllocation(pointer, size, timestamp)) {
                 alloc_to_core.emplace(pointer,it->second->getPointer());
@@ -84,8 +83,7 @@ bool Heap::addAllocation(size_t pointer, size_t size, size_t timestamp) {
                 simple_allocation_events_.push_back(std::make_pair(timestamp, used_memory_));
                 return true;
             }
-        }
-    }   
+        }   
     return 0;
 // =======
 //     else {
@@ -112,4 +110,15 @@ bool Heap::removeAllocation(size_t pointer, size_t timestamp) {
     used_memory_ -= removed_memory;
     simple_allocation_events_.push_back(std::make_pair(timestamp,used_memory_));
     return true;
+}
+
+bool Heap::setBackingAllocator(unsigned int alloc) {
+    backing_allocator_ids.push_back(alloc);
+    return true;
+}
+
+void Heap::printBacking() {
+    for(int i = 0; i < backing_allocator_ids.size(); ++i) {
+        std::cout << " " << backing_allocator_ids[i];
+    }
 }
