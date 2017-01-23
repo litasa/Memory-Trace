@@ -219,6 +219,16 @@ namespace Event
         : Event(eventNumber, eventType, time), name(name) { };
         ~StartEvent();
 
+        virtual void getAsCSV(std::stringstream& ss) override {
+            Event::getAsCSV(ss);
+            ss << "," << name << "\n";
+        }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "StartEvent" << "at time: " << timestamp;
+            ss << "\n\tname: " << name << "\n";
+        }
+
         std::string name;
     };
 
@@ -226,6 +236,16 @@ namespace Event
         EndEvent(uint64_t eventNumber, unsigned int eventType, uint64_t time, std::string& name)
         : Event(eventNumber, eventType, time), name(name) { };
         ~EndEvent();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+            Event::getAsCSV(ss);
+            ss << "," << name << "\n";
+        }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "EndEvent" << "at time: " << timestamp;
+            ss << "\n\tname: " << name << "\n";
+        }
 
         std::string name;
     };
