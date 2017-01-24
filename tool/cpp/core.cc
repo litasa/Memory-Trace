@@ -1,11 +1,10 @@
 #include "core.h"
 #include <iostream>
 
-Core::Core(size_t pointer, size_t size, size_t timestamp) 
-        : MemoryObject(pointer, timestamp, 0, size)
+Core::Core(size_t timestamp, size_t pointer, size_t size) 
+        : MemoryObject(timestamp, pointer, 0, size)
 {
     end_ = pointer + size;
-    //std::cout << "Core Created: " << std::hex <<"start: " << pointer_ << " end: " << end_ << std::dec <<" at: " << timestamp << std::endl;
 }
 
 void Core::printContent() const {
@@ -32,18 +31,19 @@ Allocation* Core::getAllocation(size_t pointer) {
     return &(found->second);
 }
 
-bool Core::removeAllocation(size_t pointer, size_t timestamp) {
+size_t Core::removeAllocation(size_t timestamp, size_t pointer) {
     size_t bytes = allocations_.at(pointer).getUsedMemory();
     size_t num_removed = allocations_.erase(pointer);
     if(num_removed == 1) {
         used_memory_ -= bytes;
         setLastUpdate(timestamp);
-        return true;
+        return bytes;
     }
-    return false;
+    std::cout << "Remove allocation failed in core" << std::endl;    
+    return 0;
 }
 
-bool Core::addAllocation(size_t pointer, size_t size, size_t timestamp) {
+bool Core::addAllocation(size_t timestamp, size_t pointer, size_t size) {
     //std::cout << "trying to add allocation: " << std::hex << pointer << std::dec << " size: " << size << " at: " << timestamp << " ";
     if(allocationInside(pointer,size)) {
         Allocation a(pointer, size, timestamp);
@@ -58,7 +58,7 @@ bool Core::addAllocation(size_t pointer, size_t size, size_t timestamp) {
     }
     // std::cout << "Adding Allocation failed: " << std::hex << pointer << std::dec << " size: " << size << " at timestmap: " << timestamp << "\n";
     // std::cout << "\t(is not inside core): " << std::hex << this->pointer_ << " end: " << end_ << std::dec << " size: " << this->managed_memory_ << " created: " << this->birth_ << "\n";    
-    //std::cout << "Allocation: " << std::hex << pointer << std::dec << ", size: " << size << ", timestamp: " << timestamp << "\n";
-    //std::cout << "Core: " << std::hex << pointer_ << ", end: " << end_ << std::dec << ", bytes left: " << managed_memory_ - used_memory_ <<"\n";
+    // std::cout << "\tAllocation: " << std::hex << pointer << std::dec << ", size: " << size << ", timestamp: " << timestamp << "\n";
+    // std::cout << "\tCore: " << std::hex << pointer_ << ", end: " << end_ << std::dec << ", bytes left: " << managed_memory_ - used_memory_ <<"\n";
     return false;
 }

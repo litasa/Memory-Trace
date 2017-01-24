@@ -232,7 +232,7 @@ Event::Event* Decoder::oneStep() {
       }
  
       event = new Event::AddCore(count, current_code, time_stamp, id, pointer, size_bytes);
-      if(print_ok){event->getAsVerbose(ss);}
+      if(true){event->getAsVerbose(ss);}
 
       break;
     }

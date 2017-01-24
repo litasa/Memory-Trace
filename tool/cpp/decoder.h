@@ -26,7 +26,7 @@ class Decoder : public Nan::ObjectWrap {
     
     std::vector<Heap*> getMemoryState();
   private:
-    explicit Decoder(); //128 * 1024, 0x20000
+    explicit Decoder();
     ~Decoder();
 
     bool print_error = false;

@@ -8,7 +8,7 @@
 
 class Heap : public MemoryObject {
 public:
-    Heap(int id, std::string type, std::string name, size_t birth);
+    Heap(size_t timestamp, int id, std::string type, std::string name);
     ~Heap();
 
     std::map<size_t,Core*> cores_;//pointer to core start, core
@@ -17,11 +17,11 @@ public:
     Core* getCore(size_t pointer);
     Core* getCoreForAllocation(size_t pointer);
 
-    bool removeCore(size_t pointer, size_t timestamp);
-    bool addCore(size_t pointer, size_t timestamp, size_t managed_size);
+    bool removeCore(size_t timestamp, size_t pointer);
+    bool addCore(size_t timestamp, size_t pointer, size_t managed_size);
 
-    bool removeAllocation(size_t pointer, size_t timestamp);
-    bool addAllocation(size_t pointer, size_t size, size_t timestamp);
+    bool removeAllocation(size_t timestamp, size_t pointer);
+    bool addAllocation(size_t timestamp, size_t pointer, size_t size);
 
     bool setBackingAllocator(unsigned int alloc);
     std::string getName() const { return name_; }

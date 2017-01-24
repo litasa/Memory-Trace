@@ -7,14 +7,14 @@
 
 class Core : public MemoryObject {
     public:
-    Core(size_t pointer, size_t size, size_t timestamp);
+    Core(size_t timestamp, size_t pointer, size_t size);
 
     //~Core();
 
     bool pointerInside(size_t pointer);
     bool allocationInside(size_t pointer, size_t size);
-    bool removeAllocation(size_t pointer, size_t timestamp);
-    bool addAllocation(size_t pointer, size_t size, size_t timestamp);
+    size_t removeAllocation(size_t timestamp, size_t pointer);
+    bool addAllocation(size_t timestamp, size_t pointer, size_t size);
     Allocation* getAllocation(size_t pointer);
 
     size_t getManagedSize() { return managed_memory_; }

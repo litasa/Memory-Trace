@@ -3,7 +3,7 @@
 
 class MemoryObject {
 public:
-    MemoryObject(size_t pointer, size_t timestamp, size_t used_size, size_t managed_size) 
+    MemoryObject(size_t timestamp, size_t pointer, size_t used_size, size_t managed_size) 
     : pointer_(pointer), birth_(timestamp), death_(-1), last_update_(timestamp), used_memory_(used_size), managed_memory_(managed_size)
     { }
     

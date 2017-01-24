@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-Heap::Heap(int id, std::string type, std::string name, size_t timestamp)
-    : MemoryObject(0, timestamp, 0, 0), id_(id), type_(type), name_(name)
+Heap::Heap(size_t timestamp, int id, std::string type, std::string name)
+    : MemoryObject(timestamp, 0, 0, 0), id_(id), type_(type), name_(name)
 {
         
 }
@@ -44,7 +44,7 @@ Core* Heap::getCoreForAllocation(size_t pointer) {
     return getCore(found->second);
 }
 
-bool Heap::removeCore(size_t pointer, size_t timestamp) {
+bool Heap::removeCore(size_t timestamp, size_t pointer) {
     Core* core = cores_.at(pointer);
     size_t managed = core->getManagedSize();
     if(core->getNumberOfAllocations() > 0) {
@@ -58,13 +58,15 @@ bool Heap::removeCore(size_t pointer, size_t timestamp) {
     
     if(items_removed == 1) {
         managed_memory_ -= managed;
+        std::cout << "Removing Core Managed size is: " << managed_memory_ << std::endl; 
+        
         return true;
     }
     return false;
 }
 
-bool Heap::addCore(size_t pointer, size_t timestamp, size_t managed_size) {
-    Core* c = new Core(pointer,timestamp,managed_size);
+bool Heap::addCore(size_t timestamp, size_t pointer, size_t managed_size) {
+    Core* c = new Core(timestamp, pointer, managed_size);
     auto emp = cores_.insert(std::make_pair(pointer, c));
     if(!emp.second) {
         std::cout << "Adding Core failed pointer: " << std::hex << pointer << std::dec << " managed_size: " << managed_size << " timestamp: " << timestamp  << "\n";
@@ -72,18 +74,20 @@ bool Heap::addCore(size_t pointer, size_t timestamp, size_t managed_size) {
         return false;
     }
     managed_memory_ += managed_size;
+    std::cout << "Adding Core Managed size is: " << managed_memory_ << std::endl; 
     return true;
 }
 
-bool Heap::addAllocation(size_t pointer, size_t size, size_t timestamp) {
+bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
         for(auto it = cores_.begin(); it != cores_.end(); ++it) {
-            if(it->second->addAllocation(pointer, size, timestamp)) {
+            if(it->second->addAllocation(timestamp, pointer, size)) {
                 alloc_to_core.emplace(pointer,it->second->getPointer());
                 used_memory_ += size;
                 simple_allocation_events_.push_back(std::make_pair(timestamp, used_memory_));
                 return true;
             }
-        }   
+        }
+        std::cout << "did not find a core for allocation in heap: " << id_ << " pointer: " << std::hex << pointer << std::dec << " size: " << size << " at timestamp " << timestamp << "\n";
     return 0;
 // =======
 //     else {
@@ -101,12 +105,12 @@ bool Heap::addAllocation(size_t pointer, size_t size, size_t timestamp) {
 // >>>>>>> Stashed changes
 }
 
-bool Heap::removeAllocation(size_t pointer, size_t timestamp) {
+bool Heap::removeAllocation(size_t timestamp, size_t pointer) {
     Core* core = getCoreForAllocation(pointer);
     if(core == nullptr) {
         return false;
     }
-    size_t removed_memory = core->removeAllocation(pointer,timestamp);
+    size_t removed_memory = core->removeAllocation(timestamp, pointer);
     used_memory_ -= removed_memory;
     simple_allocation_events_.push_back(std::make_pair(timestamp,used_memory_));
     return true;

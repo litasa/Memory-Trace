@@ -63,7 +63,7 @@ public:
     m_ElemSize = elem_size;
     m_ElemCount = elem_count;
 
-    m_HeapId = MemTrace::HeapCreate(name);
+    m_HeapId = MemTrace::HeapCreate("BlockAllocator",name);
     MemTrace::HeapAddCore(m_HeapId, m_MemRange, mem_size);
 
     for (size_t i = 0; i < elem_count - 1; ++i)

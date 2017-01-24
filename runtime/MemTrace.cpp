@@ -89,6 +89,9 @@ namespace MemTrace
 
 	kEventStart = 20,
 	kEventEnd,
+
+	//Stingray specifics from here on
+	kSetBackingAllocator = 30,
   };
 
   //-----------------------------------------------------------------------------
@@ -220,11 +223,6 @@ namespace MemTrace
     {
       EmitUnsigned(uintptr_t(ptr));
     }
-
-	void EmitBool(const bool val)
-	{
-		EmitUnsigned((uint64_t)val);
-	}
 
     //-----------------------------------------------------------------------------
     // Emit a string to the output stream.
@@ -499,7 +497,7 @@ void MemTrace::BeginStream() {
 	State.m_Encoder.EndEvent(kBeginStream);
 }
 
-MemTrace::HeapId MemTrace::HeapCreate(const char* name, bool owns_core)
+MemTrace::HeapId MemTrace::HeapCreate(const char* type, const char* name)
 {
   if (!State.m_Active)
     return ~0u;
@@ -510,8 +508,8 @@ MemTrace::HeapId MemTrace::HeapCreate(const char* name, bool owns_core)
 
   State.m_Encoder.BeginEvent(kHeapCreate);
   State.m_Encoder.EmitUnsigned(id);
+  State.m_Encoder.EmitString(type);
   State.m_Encoder.EmitString(name);
-  State.m_Encoder.EmitBool(owns_core);
   State.m_Encoder.EndEvent(kHeapCreate);
   return id;
 }
@@ -586,7 +584,7 @@ void MemTrace::HeapFree(HeapId id, const void* ptr)
 /* Starts a new new event recording. */
 void MemTrace::StartRecordingEvent(const char* eventName) {
 	if (!State.m_Active)
-    return;
+		return;
 
   CSAutoLock lock(State.m_Lock);
 
@@ -597,13 +595,25 @@ void MemTrace::StartRecordingEvent(const char* eventName) {
 
 void MemTrace::StopRecordingEvent(const char* eventName) {
 	if (!State.m_Active)
-    return;
+		return;
 
   CSAutoLock lock(State.m_Lock);
 
   State.m_Encoder.BeginEvent(kEventEnd);
   State.m_Encoder.EmitString(eventName);
   State.m_Encoder.EndEvent(kEventEnd);
+}
+
+void MemTrace::HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap) {
+	if(!State.m_Active)
+		return;
+
+  CSAutoLock lock(State.m_Lock);
+
+  State.m_Encoder.BeginEvent(kSetBackingAllocator);
+  State.m_Encoder.EmitUnsigned(for_heap);
+  State.m_Encoder.EmitUnsigned(set_to_heap);
+  State.m_Encoder.EndEvent(kSetBackingAllocator);
 }
 
 #endif // MEMTRACE_ENABLE

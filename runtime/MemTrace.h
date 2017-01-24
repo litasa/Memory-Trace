@@ -51,7 +51,7 @@ namespace MemTrace
 
   void	  BeginStream();
 
-  HeapId  HeapCreate(const char* name, bool owns_core = true);
+  HeapId  HeapCreate(const char* type, const char* name);
   void    HeapDestroy(HeapId heap_id);
 
   void    HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
@@ -63,7 +63,11 @@ namespace MemTrace
   void	  StartRecordingEvent(const char* eventName);
   void    StopRecordingEvent(const char* eventName);
 
+
   void DummyInitFunction(char dummy);
+
+  /* Stingray Engine Specifics */
+  void	  HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap);
 
 #endif
 

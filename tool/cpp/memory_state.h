@@ -19,13 +19,13 @@ public:
 
     void addEvent(Event::Event* event);
 
-    bool addHeap(const int id, const std::string& type, const std::string& name, size_t timestamp);
-    bool addCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
-    bool addAllocation(const int id, const size_t pointer, const size_t size, size_t timestamp);
+    bool addHeap(size_t timestamp, const int id, const std::string& type, const std::string& name);
+    bool addCore(size_t timestamp, const int id, const size_t pointer, const size_t size);
+    bool addAllocation(size_t timestamp, const int id, const size_t pointer, const size_t size);
 
-    bool removeHeap(const int id, size_t timestamp);
-    bool removeCore(const int id, const size_t pointer, const size_t size, size_t timestamp);
-    bool removeAllocation(const int id, const size_t pointer, size_t timestamp);
+    bool removeHeap(size_t timestamp, const int id);
+    bool removeCore(size_t timestamp, const int id, const size_t pointer, const size_t size);
+    bool removeAllocation(size_t timestamp, const int id, const size_t pointer);
 
     void print(size_t timestamp, int id = -1) const;
     void printAll() const;
