@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-Heap::Heap(size_t timestamp, int id, std::string type, std::string name)
+Heap::Heap(size_t timestamp, size_t id, std::string type, std::string name)
     : MemoryObject(timestamp, 0, 0, 0), id_(id), type_(type), name_(name)
 {
         
@@ -38,7 +38,7 @@ Core* Heap::getCore(size_t pointer) {
 Core* Heap::getCoreForAllocation(size_t pointer) {
     auto found = alloc_to_core.find(pointer);
     if(found == alloc_to_core.end()) {
-        std::cout << "No core mapper Found" << std::endl;
+        //std::cout << "No core mapper Found" << std::endl;
         return nullptr;
     }
     return getCore(found->second);
@@ -57,8 +57,11 @@ bool Heap::removeCore(size_t timestamp, size_t pointer) {
     delete core;
     
     if(items_removed == 1) {
-        managed_memory_ -= managed;
-        std::cout << "Removing Core Managed size is: " << managed_memory_ << std::endl; 
+        managed_memory_ = managed_memory_ - managed;
+        if(cores_.size() == 0) {
+            managed_memory_ = 0;
+        }
+        //std::cout << "Removing Core Managed size is: " << managed_memory_ << std::endl; 
         
         return true;
     }
@@ -69,12 +72,12 @@ bool Heap::addCore(size_t timestamp, size_t pointer, size_t managed_size) {
     Core* c = new Core(timestamp, pointer, managed_size);
     auto emp = cores_.insert(std::make_pair(pointer, c));
     if(!emp.second) {
-        std::cout << "Adding Core failed pointer: " << std::hex << pointer << std::dec << " managed_size: " << managed_size << " timestamp: " << timestamp  << "\n";
+        //std::cout << "Adding Core failed pointer: " << std::hex << pointer << std::dec << " managed_size: " << managed_size << " timestamp: " << timestamp  << "\n";
         printContent();
         return false;
     }
     managed_memory_ += managed_size;
-    std::cout << "Adding Core Managed size is: " << managed_memory_ << std::endl; 
+    //std::cout << "Adding Core Managed size is: " << managed_memory_ << std::endl; 
     return true;
 }
 
@@ -87,7 +90,7 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
                 return true;
             }
         }
-        std::cout << "did not find a core for allocation in heap: " << id_ << " pointer: " << std::hex << pointer << std::dec << " size: " << size << " at timestamp " << timestamp << "\n";
+        //std::cout << "did not find a core for allocation in heap: " << id_ << " pointer: " << std::hex << pointer << std::dec << " size: " << size << " at timestamp " << timestamp << "\n";
     return 0;
 // =======
 //     else {
@@ -116,7 +119,7 @@ bool Heap::removeAllocation(size_t timestamp, size_t pointer) {
     return true;
 }
 
-bool Heap::setBackingAllocator(unsigned int alloc) {
+bool Heap::setBackingAllocator(size_t alloc) {
     backing_allocator_ids.push_back(alloc);
     return true;
 }

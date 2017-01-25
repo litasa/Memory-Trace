@@ -8,7 +8,7 @@
 
 class Heap : public MemoryObject {
 public:
-    Heap(size_t timestamp, int id, std::string type, std::string name);
+    Heap(size_t timestamp, size_t id, std::string type, std::string name);
     ~Heap();
 
     std::map<size_t,Core*> cores_;//pointer to core start, core
@@ -23,16 +23,17 @@ public:
     bool removeAllocation(size_t timestamp, size_t pointer);
     bool addAllocation(size_t timestamp, size_t pointer, size_t size);
 
-    bool setBackingAllocator(unsigned int alloc);
+    bool setBackingAllocator(size_t alloc);
     std::string getName() const { return name_; }
+    std::string getType() const { return type_; }
     void printBacking();
 
     void printContent() const;
 
-    std::vector<int> backing_allocator_ids;
+    std::vector<size_t> backing_allocator_ids;
     std::map<size_t,Core*> recently_dead_;
     bool dead = false;
-    const int id_;
+    const size_t id_;
     const std::string type_;
     const std::string name_;
     bool own_core_;

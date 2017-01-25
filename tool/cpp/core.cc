@@ -8,7 +8,7 @@ Core::Core(size_t timestamp, size_t pointer, size_t size)
 }
 
 void Core::printContent() const {
-    std::cout << "\tcore: " << std::hex << getPointer() << std::dec << " managed: " <<  getManagedMemory() << " size: " <<  getUsedMemory() << " at timestmap: " << getBirth() << "\n";
+    //std::cout << "\tcore: " << std::hex << getPointer() << std::dec << " managed: " <<  getManagedMemory() << " size: " <<  getUsedMemory() << " at timestmap: " << getBirth() << "\n";
     for(auto it = allocations_.begin(); it != allocations_.end(); ++it) {
         it->second.printContent();
     }
@@ -25,7 +25,7 @@ bool Core::allocationInside(size_t pointer, size_t size) {
 Allocation* Core::getAllocation(size_t pointer) {
     auto found = allocations_.find(pointer);
     if(found == allocations_.end()) {
-        std::cout << "No allocation Found" << std::endl;
+        //std::cout << "No allocation Found" << std::endl;
         return nullptr;
     }
     return &(found->second);
@@ -39,7 +39,7 @@ size_t Core::removeAllocation(size_t timestamp, size_t pointer) {
         setLastUpdate(timestamp);
         return bytes;
     }
-    std::cout << "Remove allocation failed in core" << std::endl;    
+    //std::cout << "Remove allocation failed in core" << std::endl;    
     return 0;
 }
 
@@ -49,7 +49,7 @@ bool Core::addAllocation(size_t timestamp, size_t pointer, size_t size) {
         Allocation a(pointer, size, timestamp);
         auto emp = allocations_.insert(std::make_pair(pointer,a));
         if(!emp.second) {
-            std::cout << "Adding Allocation failed (already exists in core): " << std::hex << this->pointer_ << std::dec << " size: " << this->managed_memory_ << " created: " << this->birth_ << "\n";
+            //std::cout << "Adding Allocation failed (already exists in core): " << std::hex << this->pointer_ << std::dec << " size: " << this->managed_memory_ << " created: " << this->birth_ << "\n";
             return false;
         }
         used_memory_ += size;

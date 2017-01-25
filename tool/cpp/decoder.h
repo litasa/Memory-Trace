@@ -13,12 +13,15 @@ class Decoder : public Nan::ObjectWrap {
 
     RingBuffer* getRingbuffer();
     bool decodeValue(uint64_t& ret);
-    bool decodeValue(int& ret);
     bool decodeString(std::string& ret);
     bool decodeBool(bool& ret);
-    bool decodeHeader(std::stringstream& ss,uint64_t& count, int& current_code, uint64_t& time_stamp, uint64_t& thread_id);
+    bool decodeHeader(std::stringstream& ss,uint64_t& count, uint64_t& current_code, uint64_t& time_stamp, uint64_t& thread_id);
 
     Event::Event* oneStep();
+
+    bool print_ok();
+
+    void saveToFile(bool save, Event::Event* event);
 
     void trySteps();
 
@@ -28,9 +31,10 @@ class Decoder : public Nan::ObjectWrap {
   private:
     explicit Decoder();
     ~Decoder();
-
+    std::ofstream outfile;
+    const char* filename = "test.csv";
     bool print_error = false;
-    bool print_ok = false;
+    //bool print_ok = false;
     size_t last_timestamp = 0;
     RingBuffer* ring_;
     

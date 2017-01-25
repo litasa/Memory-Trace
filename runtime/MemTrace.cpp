@@ -378,6 +378,8 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
   {
     MemTracePrint("MemTrace: Warning: Couldn't set send buffer size to %d bytes\n", sndbufsize);
   }
+  unsigned long mode = 1;  // 1 to enable non-blocking socket
+  ioctlsocket(sock, FIONBIO, &mode);
 
   //creating the network send block function inside InitSocket
 			  auto write_block_fn = [](const void* block, size_t size) -> void
@@ -385,16 +387,34 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 				// If we don't have a socket, we drop everything on the floor.
 				if (INVALID_SOCKET == State.m_Socket)
 				  return;
-				uint64_t before_send_time = TimerGetSystemCounter();
-				size_t sent = send(State.m_Socket, (const char*)block, (int)size, 0);
+				size_t sent = 0;
+				while(true)
+				{
+					sent = send(State.m_Socket, (const char*)block, (int)size, 0);
+					if(sent != -1) {
+						break;
+					}
+				}
 				if (size != sent)
 				{
 				  MemTracePrint("MemTrace: send() failed - shutting down\n");
 				  MemTrace::ErrorShutdown();
 				}
 				total_sent += sent;
-				uint64_t delta = TimerGetSystemCounter() - before_send_time;
-				FileWrite(State.m_BootFile, block, size);
+				while(true)
+				{
+					size_t recieved = recv(State.m_Socket, (char *)block, (int)size,0);
+					int error = WSAGetLastError();
+					if(error == WSAEWOULDBLOCK) //if no data is there to be read to read
+					{
+						break;
+					}
+					if(recieved != -1) {
+						MemTrace::HandleMessage((char *)block,recieved);
+						MemTracePrint("recieved: %i\n",recieved);
+						break;
+					}
+				}
 			  };
 	//end of write_block_fn
   if (!was_active)
@@ -412,6 +432,14 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
   {
     ErrorShutdown();
   }
+}
+
+void MemTrace::HandleMessage(char* block, int size)
+{
+	char *str = new char[size];
+	memcpy(str,block,size);
+	MemTracePrint("Message recieved, contained %s",str);
+	delete [] str;
 }
 
 void MemTrace::ErrorShutdown()

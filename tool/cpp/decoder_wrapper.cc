@@ -82,23 +82,26 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
  
   v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
 
-  double last_trend = 0;
-  double previous_size = 0;
   for(int j = 0; j < heaps.size(); ++j) {
     std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
     std::vector<v8::Local<v8::Object>> alloc_list;
     for(int i = 0; i < allocs->size(); ++i) {
-      double time = (double)(*allocs)[i].first * obj->memory_state_->frequency_;
+      double time = (double)(*allocs)[i].first; //* obj->memory_state_->frequency_;
       double used_size = (double)((*allocs)[i].second);
+      double timedistance = 0;
+      if(i != 0) {
+        timedistance = time - (double)(*allocs)[i-1].first;
+      }
 
-      if(i % 7 == 0) {
+      if(timedistance > 500) {
           v8::Local<v8::Object> object = Nan::New<v8::Object>();
           Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
           Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
+          //std::cout << "x: " << time << " y: " << used_size << "\n";
           alloc_list.push_back(object);
+          allocs->clear();
       }
     }
-    allocs->clear();
 
     v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>(alloc_list.size());
     for(int i = 0; i < alloc_list.size(); ++i) {
@@ -106,30 +109,33 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
     }    
 
     v8::Local<v8::Object> heap_obj = Nan::New<v8::Object>();
-    Nan::Set(heap_obj, Nan::New<v8::String>("label").ToLocalChecked(), Nan::New<v8::String>(heaps[j]->getName().c_str()).ToLocalChecked());
+    std::stringstream label;
+    label << "(" << heaps[j]->id_ << ")" << " " << heaps[j]->getName();
+    Nan::Set(heap_obj, Nan::New<v8::String>("label").ToLocalChecked(), Nan::New<v8::String>(label.str().c_str()).ToLocalChecked());
     Nan::Set(heap_obj, Nan::New<v8::String>("data").ToLocalChecked(), allocation_list);
+    Nan::Set(heap_obj, Nan::New<v8::String>("type").ToLocalChecked(), Nan::New<v8::String>(heaps[j]->getType().c_str()).ToLocalChecked());
     Nan::Set(list_of_heaps, j, heap_obj);
   }
   info.GetReturnValue().Set(list_of_heaps);
 }
 
 NAN_METHOD(Decoder::GetCurrentMemoryUsage) {
-  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
-  std::vector<Heap*> heaps = obj->getMemoryState();
-  v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
-  std::cout << "Printing memory list:";
-  for(int i = 0; i < heaps.size(); ++i) {
-          v8::Local<v8::Object> object = Nan::New<v8::Object>();
-          double time = heaps[i]->getLastUpdate() * obj->memory_state_->frequency_;
-          int current_size = heaps[i]->used_memory_;
-          std::cout << "\n\tId: " << heaps[i]->id_ << " Name: " <<heaps[i]->getName() << " Managed size: " << heaps[i]->managed_memory_ << " Used Memory: ";
-          std::cout << heaps[i]->used_memory_ << " type: " << heaps[i]->type_ << " backing:";
-          heaps[i]->printBacking();
-          std::cout << "\n";
-          //Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
-          //Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(current_size)); //current size
-          //Nan::Set(list_of_heaps, i, object);    
-  }
-  std::cout << "\n";
+  // Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  // std::vector<Heap*> heaps = obj->getMemoryState();
+  //v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
+  // std::cout << "Printing memory list:";
+  // for(int i = 0; i < heaps.size(); ++i) {
+  //         v8::Local<v8::Object> object = Nan::New<v8::Object>();
+  //         double time = heaps[i]->getLastUpdate() * obj->memory_state_->frequency_;
+  //         int current_size = heaps[i]->used_memory_;
+  //         std::cout << "\n\tId: " << heaps[i]->id_ << " Name: " <<heaps[i]->getName() << " Managed size: " << heaps[i]->managed_memory_ << " Used Memory: ";
+  //         std::cout << heaps[i]->used_memory_ << " type: " << heaps[i]->type_ << " backing:";
+  //         heaps[i]->printBacking();
+  //         std::cout << "\n";
+  //         //Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
+  //         //Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(current_size)); //current size
+  //         //Nan::Set(list_of_heaps, i, object);
+  // }
+  // std::cout << "\n";
   //info.GetReturnValue().Set(list_of_heaps);
 }

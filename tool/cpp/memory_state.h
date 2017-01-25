@@ -19,18 +19,18 @@ public:
 
     void addEvent(Event::Event* event);
 
-    bool addHeap(size_t timestamp, const int id, const std::string& type, const std::string& name);
-    bool addCore(size_t timestamp, const int id, const size_t pointer, const size_t size);
-    bool addAllocation(size_t timestamp, const int id, const size_t pointer, const size_t size);
+    bool addHeap(size_t timestamp, const size_t id, const std::string& type, const std::string& name);
+    bool addCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
+    bool addAllocation(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
 
-    bool removeHeap(size_t timestamp, const int id);
-    bool removeCore(size_t timestamp, const int id, const size_t pointer, const size_t size);
-    bool removeAllocation(size_t timestamp, const int id, const size_t pointer);
+    bool removeHeap(size_t timestamp, const size_t id);
+    bool removeCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
+    bool removeAllocation(size_t timestamp, const size_t id, const size_t pointer);
 
-    void print(size_t timestamp, int id = -1) const;
+    void print(size_t timestamp, size_t id = -1) const;
     void printAll() const;
 
-    Heap* getHeap(const int id);
+    Heap* getHeap(const size_t id);
 
     void printStats();
 
@@ -39,7 +39,7 @@ public:
 private:
     bool debug = false;
     std::vector<Event::Event*> eventList;
-    std::unordered_map<int, Heap> heaps_;
+    std::unordered_map<size_t, Heap> heaps_;
     std::string platform_;
     size_t stream_magic_;
     size_t last_update_ = 0;

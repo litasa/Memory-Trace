@@ -39,6 +39,7 @@ var external_server = net.createServer(function (external_socket) {
       if (first_connect) {
         first_connect = false;
         sendToChart('first-data-recieved');
+        external_socket.write("test\0")
       }
 
       total_data_recieved += data.length;

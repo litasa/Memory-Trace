@@ -9,6 +9,8 @@ var total_data = 0;
 
 var list = '\\\\.\\pipe\\internal_server'
 
+var update_frequency = 800;
+
 var server = net.createServer(function(socket) {
   
   console.log('internal_server connection recieved');
