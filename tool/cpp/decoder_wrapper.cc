@@ -82,26 +82,55 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
  
   v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
 
+  int removed = 0;
+  // /* ========= Moving Average filtering ========= */
   for(int j = 0; j < heaps.size(); ++j) {
     std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
-    std::vector<v8::Local<v8::Object>> alloc_list;
-    for(int i = 0; i < allocs->size(); ++i) {
-      double time = (double)(*allocs)[i].first; //* obj->memory_state_->frequency_;
-      double used_size = (double)((*allocs)[i].second);
-      double timedistance = 0;
-      if(i != 0) {
-        timedistance = time - (double)(*allocs)[i-1].first;
-      }
-
-      if(timedistance > 500) {
-          v8::Local<v8::Object> object = Nan::New<v8::Object>();
-          Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
-          Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
-          //std::cout << "x: " << time << " y: " << used_size << "\n";
-          alloc_list.push_back(object);
-          allocs->clear();
-      }
+    if(allocs->size() == 0) {
+      continue;
     }
+    std::vector<v8::Local<v8::Object>> alloc_list;
+    int ma_sample_size = min(allocs->size(),800);
+    //std::cout << " alloc_size: " << allocs->size() << "ma_sample_size: " << ma_sample_size << std::endl;
+    for(int current_sample = 0; current_sample < allocs->size(); current_sample += ma_sample_size) {
+        size_t sum_mem = 0;
+        size_t sum_pos = 0;
+        int samples = min(allocs->size() - current_sample, ma_sample_size);
+        for(int k = current_sample; k < current_sample + samples; ++k) {
+          sum_mem += (*allocs)[k].second;
+          sum_pos += (*allocs)[k].first;
+        }
+        //std::cout << "sum_mem: " << sum_mem << " sum_pos: " << sum_pos << " current_sample: " << current_sample << " samples: " << samples << std::endl;        
+        double time = (double)(sum_pos)/(double)(samples); //* obj->memory_state_->frequency_;        
+        double used_size = (double)(sum_mem)/(double)(samples);
+        v8::Local<v8::Object> object = Nan::New<v8::Object>();
+        Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
+        Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
+        //std::cout << "x: " << time << " y: " << used_size << "\n";
+        alloc_list.push_back(object);        
+  }
+  allocs->clear();  
+
+  // /* ========= Filter on timesteps distance ========= */
+  // for(int j = 0; j < heaps.size(); ++j) {
+  //   std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
+  //   std::vector<v8::Local<v8::Object>> alloc_list;
+  //   for(int i = 0; i < allocs->size(); ++i) {
+  //     double time = (double)(*allocs)[i].first; //* obj->memory_state_->frequency_;
+  //     double used_size = (double)((*allocs)[i].second);
+  //     double timedistance = 0;
+  //     if(i != 0) {
+  //       timedistance = time - (double)(*allocs)[i-1].first;
+  //     }
+
+  //     if(timedistance > 50) {
+  //         v8::Local<v8::Object> object = Nan::New<v8::Object>();
+  //         Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
+  //         Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
+  //         //std::cout << "x: " << time << " y: " << used_size << "\n";
+  //         alloc_list.push_back(object);
+  //     }
+  //   }
 
     v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>(alloc_list.size());
     for(int i = 0; i < alloc_list.size(); ++i) {

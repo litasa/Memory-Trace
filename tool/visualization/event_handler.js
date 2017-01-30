@@ -40,43 +40,37 @@ initChart = function () {
 				animation: {
 					duration: 0
 				},
-				zoom: {
-					enabled: true,
-					mode: 'xy'
-				},
 				responsive: false,
 			 }
 		});
-		count = 0;
 		Visualization.chart.update();
 }
 
 Visualization = new function() {
 	this.MaxHorizontal = 100;
-	this.Scale = 100;
-	this.updated = true;
-
+	this.latest_time = 0;
 	this.newDataset = function(arr) {
 		for(var i = 0; i < this.chart.data.datasets.length; ++i) {
 			var exists = _.findWhere(arr, {label: this.chart.data.datasets[i].label})
 			
 			if(exists === undefined) {
+				//data does not already exist. Handle it below
 				continue;
 			}
 			var index = _.indexOf(arr,exists);
 			arr.splice(index,1);
 
 			this.chart.data.datasets[i].data = this.chart.data.datasets[i].data.concat(exists.data);
-
-			// if(this.chart.data.datasets[i].data.length > 300) {
-			// 	var items_to_remove = this.chart.data.datasets[i].data.length - 300;
-			// 	this.chart.data.datasets[i].data.splice(0,items_to_remove);
-			// 	//console.log("current size" + this.chart.data.datasets[i].data.length);
-			// }
-			//this.chart.data.datasets.pointRadius = 0;
-			//this.chart.data.datasets.spawnGaps = true;
+			if(this.chart.data.datasets[i].data.length == 0) {
+				this.chart.data.datasets.splice(i,1);
+				console.log("removing items")
+			}
 		}
 		for(var i = 0; i < arr.length; ++i) {
+			if(arr[i].data.length == 0) {
+				console.log("removing items 2")
+				continue;
+			}
 			var dataset = {
 				label: arr[i].label,
 				allocatorType: arr[i].type,
@@ -88,6 +82,7 @@ Visualization = new function() {
 			}
 			this.chart.data.datasets.push(dataset);
 		}
+		Visualization.chart.update();
 	}
 }
 
@@ -104,6 +99,7 @@ ipcRenderer.on('memory', function(event, data) {
 })
 
 setInterval(function() {
+	//console.log(Visualization.chart.options.scales.xAxes[0].ticks.min);
 	Visualization.chart.update();
 	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();	
 }, 2000);

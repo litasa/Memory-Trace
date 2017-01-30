@@ -28,7 +28,7 @@ function createWindow () {
   else {
       chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
   serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server"})
-  serverWindow.hide();
+  //serverWindow.hide();
   //
   // and load the index.html of the app.
   //internalServerWindow.loadURL(`file://${__dirname}/internal-server/internal-server.html`)
@@ -39,7 +39,7 @@ function createWindow () {
 
   // Open the DevTools.
   chartWindow.webContents.openDevTools()
-  //serverWindow.webContents.openDevTools()
+  serverWindow.webContents.openDevTools()
   //internalServerWindow.webContents.openDevTools()
    chartWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows

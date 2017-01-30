@@ -19,17 +19,18 @@ var server = net.createServer(function(socket) {
   socket.on('data', function(data) {
     var time = performance.now();
     var diff = time - last_time;
-    console.log("time since last on data event: " + diff );
+    //console.log("time since last on data event: " + diff );
     total_data += data.length;
-    console.log("start: \n" + "Total data recieved: " + total_data);
+    //console.log("start: \n" + "Total data recieved: " + total_data);
     var start = performance.now();
       decoder.unpackStream(data);
       var arr = decoder.getMemoryAsArray();
+      arr = _.compact(arr);
       Visualization.newDataset(arr);
-      console.log(decoder.getCurrentMemory());
+      //console.log(decoder.getCurrentMemory());
       
     var end = performance.now();
-    console.log("unpackStream and getMemoryAsArray took" + (end - start));
+    //console.log("unpackStream and getMemoryAsArray took" + (end - start));
     last_time = performance.now();
   })
 

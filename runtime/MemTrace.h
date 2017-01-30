@@ -63,7 +63,8 @@ namespace MemTrace
   void	  StartRecordingEvent(const char* eventName);
   void    StopRecordingEvent(const char* eventName);
 
-  void    HandleMessage(char* msg, int size);
+  void    HandleMessage(char* msg, size_t size);
+  void	  Pause();
 
 
   void DummyInitFunction(char dummy);

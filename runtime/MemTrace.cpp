@@ -97,12 +97,13 @@ namespace MemTrace
   //-----------------------------------------------------------------------------
   // Type of callback to transmit an encoded block of event data to output stream
   typedef void (TransmitBlockFn)(const void* block, size_t size_bytes);
+  typedef void (ListeningFn)(const void* block, size_t size_bytes);
 
   //-----------------------------------------------------------------------------
   // Local functions.
 
   // Common init routine.
-  static void InitCommon(TransmitBlockFn* fn);
+  static void InitCommon(TransmitBlockFn* transFn, ListeningFn* listFn);
   // Panic shutdown
   static void ErrorShutdown();
 
@@ -111,9 +112,14 @@ namespace MemTrace
   // to compress the outgoing data.
   class Encoder
   {
+  public:
+	  void RecieveMessage() {
+		  m_ListenFn(m_Buffers[m_CurBuffer ^ 1], kBufferSize);
+	  }
   private:
     size_t                        m_WriteOffset;                    // Write offset within current buffer
     TransmitBlockFn*              m_TransmitFn;                     // Function to transmit (partially) filled blocks
+	ListeningFn*			      m_ListenFn;
     uint64_t                      m_StartTime;                      // System timer for initial event. We use a delta to generate smaller numbers.
 
     int                           m_CurBuffer;                      // Index of current encoding buffer
@@ -129,6 +135,7 @@ namespace MemTrace
       // Flip buffers.
       m_WriteOffset = 0;
       m_CurBuffer  ^= 1;
+	  RecieveMessage();
     }
 
     //-----------------------------------------------------------------------------
@@ -168,18 +175,20 @@ namespace MemTrace
   public:
     //-----------------------------------------------------------------------------
     // Initialize the encoder with a function that writes encoded blocks to some output device.
-    void Init(TransmitBlockFn *transmit_fn)
+    void Init(TransmitBlockFn *transmit_fn, ListeningFn* listen_fn)
     {
       m_WriteOffset  = 0;
       m_TransmitFn   = transmit_fn;
+	  m_ListenFn	 = listen_fn;
       m_StartTime    = TimerGetSystemCounter();
     }
 
     //-----------------------------------------------------------------------------
     // Swap out the transmit function (for file->socket switcharoo)
-    void SetTransmitFn(TransmitBlockFn* fn)
+    void SetTransmitFn(TransmitBlockFn* fn, ListeningFn* listen_fn)
     {
       m_TransmitFn = fn;
+	  m_ListenFn = listen_fn;
     }
 
     //-----------------------------------------------------------------------------
@@ -266,6 +275,8 @@ namespace MemTrace
     SOCKET          m_Socket;                     // Output socket during normal operation
     char            m_BootFileName[128];
 
+	bool			m_Paused = false;
+
   } State;
 }
 
@@ -278,7 +289,7 @@ namespace MemTrace
 //-----------------------------------------------------------------------------
 // Common init routine for first time setup
 
-static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn)
+static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn, ListeningFn* listening_fn)
 {
   if (State.m_Active)
   {
@@ -293,7 +304,7 @@ static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn)
   State.m_Socket     = INVALID_SOCKET;
 
   State.m_Lock.Init();
-  State.m_Encoder.Init(write_block_fn);
+  State.m_Encoder.Init(write_block_fn, listening_fn);
 
   BeginStream();
 }
@@ -320,7 +331,7 @@ void MemTrace::InitFile(const char* trace_temp_file)
     FileWrite(State.m_BootFile, block, size);
   };
 
-  InitCommon(write_block_fn);
+  InitCommon(write_block_fn, nullptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -401,25 +412,30 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 				  MemTrace::ErrorShutdown();
 				}
 				total_sent += sent;
-				while(true)
-				{
-					size_t recieved = recv(State.m_Socket, (char *)block, (int)size,0);
-					int error = WSAGetLastError();
-					if(error == WSAEWOULDBLOCK) //if no data is there to be read to read
-					{
-						break;
-					}
-					if(recieved != -1) {
-						MemTrace::HandleMessage((char *)block,recieved);
-						MemTracePrint("recieved: %i\n",recieved);
-						break;
-					}
-				}
+			  };
+
+			  auto listen_fn = [](const void* block, size_t size) -> void
+			  {
+				  if (INVALID_SOCKET == State.m_Socket)
+					  return;
+				  while (true)
+				  {
+					  size_t recieved = recv(State.m_Socket, (char *)block, (int)size, 0);
+					  int error = WSAGetLastError();
+					  if (error == WSAEWOULDBLOCK) //if no data is there to be read to read
+					  {
+						  break;
+					  }
+					  if (recieved != -1) {
+						  MemTrace::HandleMessage((char *)block, recieved);
+						  break;
+					  }
+				  }
 			  };
 	//end of write_block_fn
   if (!was_active)
   {
-    InitCommon(write_block_fn);
+    InitCommon(write_block_fn, listen_fn);
     State.m_Socket = sock;
   }
 
@@ -434,12 +450,28 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
   }
 }
 
-void MemTrace::HandleMessage(char* block, int size)
+void MemTrace::HandleMessage(char* block, size_t size)
 {
-	char *str = new char[size];
+	char str [255];
 	memcpy(str,block,size);
-	MemTracePrint("Message recieved, contained %s",str);
-	delete [] str;
+	if (strcmp(str, "pause") == 0)
+	{
+		State.m_Paused = true;
+		MemTrace::Pause();
+	}
+	if (strcmp(str, "resume") == 0)
+	{
+		State.m_Paused = false;
+	}
+	MemTracePrint("Message recieved, contained %s\n",str);
+}
+
+void MemTrace::Pause()
+{
+	while (State.m_Paused)
+	{
+		State.m_Encoder.RecieveMessage();
+	}
 }
 
 void MemTrace::ErrorShutdown()

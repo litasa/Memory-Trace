@@ -37,3 +37,11 @@ document.getElementById('select-file').addEventListener('click',function(){
         }
     });
 },false);
+
+document.getElementById('Pause').addEventListener('click',function() {
+    sendToServer("pause");
+},false)
+
+document.getElementById('Resume').addEventListener('click',function() {
+    sendToServer("resume");
+},false)

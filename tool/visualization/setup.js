@@ -21,5 +21,5 @@ ipcRenderer.once('connection-established', function() {
 })
 
 ipcRenderer.on('event-done', function(event, data) {
-
+  console.log("data recieved");
 })
