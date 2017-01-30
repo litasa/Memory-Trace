@@ -138,7 +138,12 @@ void Decoder::saveToFile(bool save, Event::Event* event) {
   if(save) {
     std::stringstream ss;
     event->getAsCSV(ss);
-    outfile << ss.str().c_str();
+    if(outfile.good()) {
+      outfile << ss.str().c_str();      
+    }
+    else {
+      std::cout << "file error" << std::endl;
+    }
   }
 }
 

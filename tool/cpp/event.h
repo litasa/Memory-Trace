@@ -76,6 +76,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
+            ss << ", #stream ended";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {

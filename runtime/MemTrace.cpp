@@ -116,7 +116,7 @@ namespace MemTrace
 		void RecieveMessage() {
 			m_ListenFn(m_Buffers[m_CurBuffer ^ 1], kBufferSize);
 		}
-	private:
+	public:
 		size_t                        m_WriteOffset;                    // Write offset within current buffer
 		TransmitBlockFn*              m_TransmitFn;                     // Function to transmit (partially) filled blocks
 		ListeningFn*			      m_ListenFn;
@@ -539,6 +539,10 @@ void MemTrace::Shutdown()
 	// Flush and shut down writer.
 	State.m_Encoder.Flush();
 	MemTracePrint("Sent: %i Bytes\n", total_sent);
+	int64_t diff = TimerGetSystemCounter() - State.m_Encoder.m_StartTime;
+	double time_taken = diff / double(TimerGetSystemFrequencyInt());
+	MemTracePrint("Time taken: %f seconds\n", time_taken);
+	MemTracePrint("Number of events registerd: %i\n", count);
 	closesocket(State.m_Socket);
 
 	State.m_Lock.Leave();

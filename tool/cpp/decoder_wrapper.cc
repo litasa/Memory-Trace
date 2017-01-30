@@ -101,7 +101,10 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
           sum_pos += (*allocs)[k].first;
         }
         //std::cout << "sum_mem: " << sum_mem << " sum_pos: " << sum_pos << " current_sample: " << current_sample << " samples: " << samples << std::endl;        
-        double time = (double)(sum_pos)/(double)(samples); //* obj->memory_state_->frequency_;        
+        double time = (double)(sum_pos)/(double)(samples); //* obj->memory_state_->frequency_;
+        //std::cout << "time: " << time << std::endl;
+        time = time / obj->memory_state_->frequency_;
+        //std::cout << "time: " << time << "frequency: " << obj->memory_state_->frequency_ << std::endl;
         double used_size = (double)(sum_mem)/(double)(samples);
         v8::Local<v8::Object> object = Nan::New<v8::Object>();
         Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time

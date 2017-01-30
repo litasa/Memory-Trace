@@ -14,7 +14,7 @@ MemoryState::~MemoryState() {
 void MemoryState::setInits(size_t stream_magic, std::string platform, size_t frequency) {
     stream_magic_ = stream_magic;
     platform_ = platform;
-    frequency_ = 1/(double)frequency;
+    frequency_ = (double)(frequency);
 }
 
 bool MemoryState::addHeap(size_t timestamp, const uint64_t id, const std::string& type, const std::string& name) {
