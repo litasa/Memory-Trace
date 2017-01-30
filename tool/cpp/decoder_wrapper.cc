@@ -76,7 +76,7 @@ NAN_METHOD(Decoder::Printas) {
 }
 
 NAN_METHOD(Decoder::GetMemoryAsArray) {
-  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+    Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
 
   std::vector<Heap*> heaps = obj->getMemoryState();
  
@@ -146,6 +146,7 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
     Nan::Set(list_of_heaps, j, heap_obj);
   }
   info.GetReturnValue().Set(list_of_heaps);
+  
 }
 
 NAN_METHOD(Decoder::GetCurrentMemoryUsage) {

@@ -20,7 +20,7 @@ public:
     bool removeCore(size_t timestamp, size_t pointer);
     bool addCore(size_t timestamp, size_t pointer, size_t managed_size);
 
-    bool removeAllocation(size_t timestamp, size_t pointer);
+    bool removeAllocation(size_t timestamp, size_t pointer, bool debug = false);
     bool addAllocation(size_t timestamp, size_t pointer, size_t size);
 
     bool setBackingAllocator(size_t alloc);

@@ -41,6 +41,18 @@ initChart = function () {
 					duration: 0
 				},
 				responsive: false,
+				pan: {
+						enabled: true,
+						mode: 'xy'
+				},
+				zoom: {
+					enabled: true,
+					mode: 'xy',
+					limits: {
+						max: 10,
+						min: 0.5
+					}
+				}
 			 }
 		});
 		Visualization.chart.update();
@@ -50,6 +62,7 @@ Visualization = new function() {
 	this.MaxHorizontal = 100;
 	this.latest_time = 0;
 	this.newDataset = function(arr) {
+		try{
 		for(var i = 0; i < this.chart.data.datasets.length; ++i) {
 			var exists = _.findWhere(arr, {label: this.chart.data.datasets[i].label})
 			
@@ -82,7 +95,16 @@ Visualization = new function() {
 			}
 			this.chart.data.datasets.push(dataset);
 		}
-		Visualization.chart.update();
+		this.updateScales();
+		this.chart.update();
+	} catch(err) {
+		console.log(err);
+	}
+			}
+
+	this.updateScales = function() {
+		this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - 4000000, 0);
+		//this.chart.update();	
 	}
 }
 
@@ -99,7 +121,7 @@ ipcRenderer.on('memory', function(event, data) {
 })
 
 setInterval(function() {
-	//console.log(Visualization.chart.options.scales.xAxes[0].ticks.min);
+	Visualization.updateScales();
 	Visualization.chart.update();
 	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();	
 }, 2000);

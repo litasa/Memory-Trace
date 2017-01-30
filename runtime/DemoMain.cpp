@@ -142,7 +142,7 @@ static void TestCustomAllocator()
 int main(int argc, char* argv[])
 {
 	//MemTrace::InitSocket("192.168.1.123",8181);
-	MemTrace::InitSocket("10.150.44.213",8181);
+	MemTrace::InitSocket("10.150.44.215",8181);
 	//MemTrace::InitFile("nasdnas.bin");
 	TestCustomAllocator();
 	MemTrace::Flush();

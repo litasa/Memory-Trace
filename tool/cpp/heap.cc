@@ -90,30 +90,18 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
                 return true;
             }
         }
-        //std::cout << "did not find a core for allocation in heap: " << id_ << " pointer: " << std::hex << pointer << std::dec << " size: " << size << " at timestamp " << timestamp << "\n";
+        std::cout << "did not find a core for allocation in heap: " << id_ << " pointer: " << std::hex << pointer << std::dec << " size: " << size << " at timestamp " << timestamp << "\n";
     return 0;
-// =======
-//     else {
-//         used_memory_ += size;
-//         simple_allocation_events_.push_back(std::make_pair(timestamp, used_memory_));
-//     }
-    
-//    std::cout << "Did not find core for: " << std::hex << pointer << std::dec << " in heap: " << id_ << " that contains\n";
-//    for(auto it = cores_.begin(); it != cores_.end(); ++it) {
-//        std::cout << "\tpointer: " << std::hex << it->second->pointer_ << " end: " << it->second->end_  << std::dec << " managed: " << it->second->managed_memory_ << " used: " << it->second->used_memory_;
-//        std::cout << "\n\tcore.pointer_ <= pointer? " << (it->second->pointer_ <= pointer) << " core.end_ >= (pointer + size) " << (it->second->end_ >= (pointer + size));
-//        std::cout << "\n";
-//    }
-//     return false;
-// >>>>>>> Stashed changes
 }
 
-bool Heap::removeAllocation(size_t timestamp, size_t pointer) {
+bool Heap::removeAllocation(size_t timestamp, size_t pointer, bool debug) {
+    if(debug){std::cout << "in heap remove allocation" << std::endl;    }
     Core* core = getCoreForAllocation(pointer);
     if(core == nullptr) {
+        if(debug){std::cout << "core was null" << std::endl;    }
         return false;
     }
-    size_t removed_memory = core->removeAllocation(timestamp, pointer);
+    size_t removed_memory = core->removeAllocation(timestamp, pointer, debug);
     used_memory_ -= removed_memory;
     simple_allocation_events_.push_back(std::make_pair(timestamp,used_memory_));
     return true;

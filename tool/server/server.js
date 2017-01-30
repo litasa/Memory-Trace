@@ -48,6 +48,7 @@ var external_server = net.createServer(function (socket) {
       var diff = performance.now() - start;
       console.log("data ended with process time: " + diff);
       last_time = performance.now();
+        //socket.write("pause\0")      
       sendToChart('event-done');
     })
 

@@ -99,27 +99,27 @@ void Decoder::trySteps() {
 bool Decoder::decodeHeader(std::stringstream& ss,uint64_t& count, uint64_t& current_code, uint64_t& time_stamp, uint64_t& thread_id) {
 
   if(!decodeValue(count)) {
-    if(print_error) {std::cout << "\treading count failed" << std::endl;}
+    if(print_error()) {std::cout << "\treading count failed" << std::endl;}
     return false;
   }
 
   if(count != registerd_events) {
-    if(print_error) {std::cout << "\tgatherd event != registrd_events" << count << "!=" << registerd_events << std::endl;}
+    if(print_error()) {std::cout << "\tgatherd event != registrd_events" << count << "!=" << registerd_events << std::endl;}
     return false;
   }
 
   if(!decodeValue(current_code)) {
-    if(print_error) {std::cout << "\treading current_code failed" << std::endl;}
+    if(print_error()) {std::cout << "\treading current_code failed" << std::endl;}
       return false;
   }
 
   if(!decodeValue(time_stamp)) {
-    if(print_error) {std::cout << "\treading time_stamp failed" << std::endl;}
+    if(print_error()) {std::cout << "\treading time_stamp failed" << std::endl;}
       return false;
   }
 
   if(!decodeValue(thread_id)) {
-    if(print_error) {std::cout << "\treading thread_id failed" << std::endl;}
+    if(print_error()) {std::cout << "\treading thread_id failed" << std::endl;}
     return false;
   }
 
@@ -127,7 +127,11 @@ bool Decoder::decodeHeader(std::stringstream& ss,uint64_t& count, uint64_t& curr
 }
 
 bool Decoder::print_ok() {
-  return false; //registerd_events > 20686300;
+  return false; //registerd_events > 133965; //registerd_events > 20686300;
+}
+
+bool Decoder::print_error() {
+  return print_ok();
 }
 
 void Decoder::saveToFile(bool save, Event::Event* event) {
@@ -158,15 +162,15 @@ Event::Event* Decoder::oneStep() {
       size_t stream_magic;
 
       if(!decodeValue(stream_magic)) {
-        if(print_error) {std::cout << "\t\tDecode stream_magic failed" << std::endl;}
+        if(print_error()) {std::cout << "\t\tDecode stream_magic failed" << std::endl;}
         return nullptr;
       }
       if(!decodeString(platform)) {
-        if(print_error) {std::cout << "\tDecode platform failed" << std::endl;}
+        if(print_error()) {std::cout << "\tDecode platform failed" << std::endl;}
         return nullptr;
       }
       if(!decodeValue(system_frequency)) {
-        if(print_error) {std::cout << "\tDecode system_frequency failed" << std::endl;}
+        if(print_error()) {std::cout << "\tDecode system_frequency failed" << std::endl;}
         return nullptr;
       }
       
@@ -189,15 +193,15 @@ Event::Event* Decoder::oneStep() {
       size_t id;
       bool own_core;
       if(!decodeValue(id)) {
-        if(print_error) {   std::cout << "decode Add Heap id failed\n";}
+        if(print_error()) {   std::cout << "decode Add Heap id failed\n";}
         return nullptr;
       }
       if(!decodeString(type)) {
-        if(print_error) { std::cout << "decode Add Heap type failed\n"; }
+        if(print_error()) { std::cout << "decode Add Heap type failed\n"; }
         return nullptr;
       }
       if(!decodeString(name)) {
-        if(print_error) {   std::cout << "decode Add Heap name failed\n";}
+        if(print_error()) {   std::cout << "decode Add Heap name failed\n";}
         return nullptr;
       }
 
@@ -210,7 +214,7 @@ Event::Event* Decoder::oneStep() {
     {
       size_t id;
       if(!decodeValue(id)) {
-        if(print_error) {   std::cout << "decode Heap Destroy id failed\n";}
+        if(print_error()) {   std::cout << "decode Heap Destroy id failed\n";}
         return nullptr;
       }
    
@@ -226,15 +230,15 @@ Event::Event* Decoder::oneStep() {
       size_t pointer;
       size_t size_bytes;
       if(!decodeValue(id)) {
-        if(print_error) {   std::cout << "decode Add Core id failed\n";}
+        if(print_error()) {   std::cout << "decode Add Core id failed\n";}
         return nullptr;
       }
       if(!decodeValue(pointer)) {
-        if(print_error) {  std::cout << "decode Add Core pointer failed\n";}
+        if(print_error()) {  std::cout << "decode Add Core pointer failed\n";}
         return nullptr;
       }
       if(!decodeValue(size_bytes)) {
-        if(print_error) {  std::cout << "decode Add Core size failed\n";}
+        if(print_error()) {  std::cout << "decode Add Core size failed\n";}
         return nullptr;
       }
  
@@ -250,15 +254,15 @@ Event::Event* Decoder::oneStep() {
       size_t pointer;
       size_t size_bytes;
       if(!decodeValue(id)) {
-        if(print_error) {  std::cout << "decode Remove Core error failed\n";}
+        if(print_error()) {  std::cout << "decode Remove Core error failed\n";}
         return nullptr;
       }
       if(!decodeValue(pointer)) {
-        if(print_error) {  std::cout << "decode Remove Core pointer failed\n";}
+        if(print_error()) {  std::cout << "decode Remove Core pointer failed\n";}
         return nullptr;
       }
       if(!decodeValue(size_bytes)) {
-        if(print_error) { std::cout << "decode Remove Core size failed\n";}
+        if(print_error()) { std::cout << "decode Remove Core size failed\n";}
         return nullptr;
       }
     
@@ -273,15 +277,15 @@ Event::Event* Decoder::oneStep() {
       size_t pointer;
       size_t size_bytes;
       if(!decodeValue(id)) {
-        if(print_error) { std::cout << "decode Heap Allocate id failed\n";}
+        if(print_error()) { std::cout << "decode Heap Allocate id failed\n";}
         return nullptr;
       }
       if(!decodeValue(pointer)) {
-        if(print_error) { std::cout << "decode Heap Allocate pointer failed\n";}
+        if(print_error()) { std::cout << "decode Heap Allocate pointer failed\n";}
         return nullptr;
       }
       if(!decodeValue(size_bytes)) {
-        if(print_error) { std::cout << "decode Heap Allocate size failed\n";}
+        if(print_error()) { std::cout << "decode Heap Allocate size failed\n";}
         return nullptr;
       }
 
@@ -296,11 +300,11 @@ Event::Event* Decoder::oneStep() {
       size_t id;
       size_t pointer;
       if(!decodeValue(id)) {
-        if(print_error) { std::cout << "decode HeapFree id failed\n";}
+        if(print_error()) { std::cout << "decode HeapFree id failed\n";}
         return nullptr;
       }
       if(!decodeValue(pointer)) {
-        if(print_error) { std::cout << "decode HeapFree pointer failed\n";}
+        if(print_error()) { std::cout << "decode HeapFree pointer failed\n";}
         return nullptr;
       }
 
@@ -314,7 +318,7 @@ Event::Event* Decoder::oneStep() {
     {
         std::string eventName;
         if(!decodeString(eventName)) {
-          if(print_error) { std::cout << "decode EventStart failed\n";}
+          if(print_error()) { std::cout << "decode EventStart failed\n";}
           return nullptr;
         }
         event = new Event::StartEvent(count, current_code, time_stamp, eventName);
@@ -326,7 +330,7 @@ Event::Event* Decoder::oneStep() {
     {
         std::string eventName;
         if(!decodeString(eventName)) {
-          if(print_error) { std::cout << "decode EventStart failed\n";}
+          if(print_error()) { std::cout << "decode EventStart failed\n";}
           return nullptr;
         }
         event = new Event::EndEvent(count, current_code, time_stamp, eventName);
@@ -339,11 +343,11 @@ Event::Event* Decoder::oneStep() {
       uint64_t for_heap;
       uint64_t set_to_heap;
       if(!decodeValue(for_heap)) {
-        if(print_error) { std::cout << "decode SetBackingAllocator failed at for_heap\n";}
+        if(print_error()) { std::cout << "decode SetBackingAllocator failed at for_heap\n";}
         return nullptr;
       }
       if(!decodeValue(set_to_heap)) {
-        if(print_error) { std::cout << "decode SetBackingAllocator failed at set_to_heap\n";}
+        if(print_error()) { std::cout << "decode SetBackingAllocator failed at set_to_heap\n";}
         return nullptr;
       }
       event = new Event::HeapSetBackingAllocator(count,current_code, time_stamp,for_heap,set_to_heap);

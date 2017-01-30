@@ -31,16 +31,17 @@ Allocation* Core::getAllocation(size_t pointer) {
     return &(found->second);
 }
 
-size_t Core::removeAllocation(size_t timestamp, size_t pointer) {
-    size_t bytes = allocations_.at(pointer).getUsedMemory();
-    size_t num_removed = allocations_.erase(pointer);
-    if(num_removed == 1) {
-        used_memory_ -= bytes;
-        setLastUpdate(timestamp);
-        return bytes;
+size_t Core::removeAllocation(size_t timestamp, size_t pointer, bool debug) {
+    auto it = allocations_.find(pointer);
+    if(it == allocations_.end()) {
+        if(debug) {std::cout << "Remove allocation failed in core" << std::endl;    }
+        return 0;
     }
-    //std::cout << "Remove allocation failed in core" << std::endl;    
-    return 0;
+    size_t bytes = it->second.getUsedMemory();
+    allocations_.erase(it);
+    used_memory_ -= bytes;
+    setLastUpdate(timestamp);
+    return bytes;
 }
 
 bool Core::addAllocation(size_t timestamp, size_t pointer, size_t size) {

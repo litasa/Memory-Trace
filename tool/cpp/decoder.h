@@ -20,6 +20,7 @@ class Decoder : public Nan::ObjectWrap {
     Event::Event* oneStep();
 
     bool print_ok();
+    bool print_error();
 
     void saveToFile(bool save, Event::Event* event);
 
@@ -33,7 +34,6 @@ class Decoder : public Nan::ObjectWrap {
     ~Decoder();
     std::ofstream outfile;
     const char* filename = "test.csv";
-    bool print_error = false;
     //bool print_ok = false;
     size_t last_timestamp = 0;
     RingBuffer* ring_;

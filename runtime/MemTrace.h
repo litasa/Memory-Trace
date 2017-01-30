@@ -33,44 +33,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace MemTrace
 {
-  typedef uint32_t HeapId;
+	typedef uint64_t HeapId;
 
 #if MEMTRACE_ENABLE
 
-  // Get connection parameters specified on the command line, if any (returns true)
-  // Useful to forward memtrace configuration along to spawned child processes.
-  bool    GetSocketData(char (&ip_addr_out)[128], int* port_out);
+	// Get connection parameters specified on the command line, if any (returns true)
+	// Useful to forward memtrace configuration along to spawned child processes.
+	bool    GetSocketData(char(&ip_addr_out)[128], int* port_out);
 
-  void    InitFile(const char *trace_temp_file);
+	void    InitFile(const char *trace_temp_file);
 
-  void    InitSocket(const char *server_ip_address, int server_port);
+	void    InitSocket(const char *server_ip_address, int server_port);
 
-  void    Shutdown();
+	void    Shutdown();
 
-  void    Flush();
+	void    Flush();
 
-  void	  BeginStream();
+	void	  BeginStream();
 
-  HeapId  HeapCreate(const char* type, const char* name);
-  void    HeapDestroy(HeapId heap_id);
+	HeapId  HeapCreate(const char* type, const char* name);
+	void    HeapDestroy(HeapId heap_id);
 
-  void    HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
-  void    HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes);
+	void    HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
+	void    HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes);
 
-  void    HeapAllocate(HeapId heap_id, const void* ptr, size_t size_bytes);
-  void    HeapFree(HeapId heap_id, const void* ptr);
+	void    HeapAllocate(HeapId heap_id, const void* ptr, size_t size_bytes);
+	void    HeapFree(HeapId heap_id, const void* ptr);
 
-  void	  StartRecordingEvent(const char* eventName);
-  void    StopRecordingEvent(const char* eventName);
+	void	  StartRecordingEvent(const char* eventName);
+	void    StopRecordingEvent(const char* eventName);
 
-  void    HandleMessage(char* msg, size_t size);
-  void	  Pause();
+	void    HandleMessage(char* msg, size_t size);
+	void	  Pause();
 
+	void DummyInitFunction(char dummy);
 
-  void DummyInitFunction(char dummy);
-
-  /* Stingray Engine Specifics */
-  void	  HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap);
+	/* Stingray Engine Specifics */
+	void	  HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap);
 
 #endif
 
