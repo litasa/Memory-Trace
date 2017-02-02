@@ -3,6 +3,13 @@ Memory Trace
 
 A tool to trace memory allocations in a program. Based on Andreas Fredrikssons MemTrace, but with live graphing capabilities and (hopefully) a cleaner backend.
 
+## Installation ##
+Requirements: npm, windows computer for the memtrace instrumentation code.
+
+To build the tool software open a terminal in the tools directory and call "npm configure" followed by "npm install". When that have finished run "npm start" and the software should open up.
+
+If changes are made to the cpp part of the software then a rebuild is required. Use "npm run build" to rebuild the project.
+
 ## Author ##
 Memory Trace was written by Jakob Törmä Ruhl
 
