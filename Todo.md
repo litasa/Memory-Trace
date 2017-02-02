@@ -7,3 +7,4 @@ Todo:
 * Fix better communication between visualizer and source.
 * A forced allocation should register for two blocks.
 * When removing core also check for forced allocations
+* Remove ugly std::cout code
