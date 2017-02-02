@@ -1,6 +1,6 @@
 Todo:
 
-Fix network error at shutdown.
+~~Fix network error at shutdown.~~
 Create memory internal view
 (experiment) Create a fast and good database solution to stream from
 (experiment) read x amount of operations and then pause
