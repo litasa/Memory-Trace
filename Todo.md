@@ -8,3 +8,5 @@ Todo:
 * A forced allocation should register for two blocks.
 * When removing core also check for forced allocations
 * Remove ugly std::cout code
+* Add the ability to only track one specific heap
+* add slider(or number box) for how much to filter
