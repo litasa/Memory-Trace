@@ -99,8 +99,11 @@ Visualization = new function() {
 	}
 
 	this.updateScales = function() {
-		this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - 10, 0);
-		//this.chart.update();	
+		var win_size = parseInt(document.getElementById('window_size').value)
+		if(isNaN(win_size)) {
+			win_size = 5;
+		}
+		this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
 	}
 }
 

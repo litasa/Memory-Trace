@@ -90,7 +90,6 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
     }
     std::vector<v8::Local<v8::Object>> alloc_list;
     int ma_sample_size = min(allocs->size(),800);
-    //std::cout << " alloc_size: " << allocs->size() << "ma_sample_size: " << ma_sample_size << std::endl;
     for(int current_sample = 0; current_sample < allocs->size(); current_sample += ma_sample_size) {
         size_t sum_mem = 0;
         size_t sum_pos = 0;
@@ -99,16 +98,12 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
           sum_mem += (*allocs)[k].second;
           sum_pos += (*allocs)[k].first;
         }
-        //std::cout << "sum_mem: " << sum_mem << " sum_pos: " << sum_pos << " current_sample: " << current_sample << " samples: " << samples << std::endl;        
-        double time = (double)(sum_pos)/(double)(samples); //* obj->memory_state_->frequency_;
+        double time = (double)(sum_pos)/(double)(samples);
         time /= obj->memory_state_->frequency_;
-        //std::cout << "time: " << time << std::endl;
-        // std::cout << "time: " << time << "frequency: " << obj->memory_state_->frequency_ << std::endl;
         double used_size = (double)(sum_mem)/(double)(samples);
         v8::Local<v8::Object> object = Nan::New<v8::Object>();
         Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
         Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
-        //std::cout << "x: " << time << " y: " << used_size << "\n";
         alloc_list.push_back(object);        
   }
   allocs->clear();  
