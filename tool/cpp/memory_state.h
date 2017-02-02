@@ -21,11 +21,14 @@ public:
 
     bool addHeap(size_t timestamp, const size_t id, const std::string& type, const std::string& name);
     bool addCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
+    bool growCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
     bool addAllocation(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
 
     bool removeHeap(size_t timestamp, const size_t id);
     bool removeCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
+    bool shrinkCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);    
     bool removeAllocation(size_t timestamp, const size_t id, const size_t pointer);
+    bool removeAllAllocations(size_t timestamp, const size_t id);
 
     void print(size_t timestamp, size_t id = -1) const;
     void printAll() const;

@@ -13,18 +13,20 @@ class Core : public MemoryObject {
 
     bool pointerInside(size_t pointer);
     bool allocationInside(size_t pointer, size_t size);
-    size_t removeAllocation(size_t timestamp, size_t pointer, bool debug = false);
-    bool addAllocation(size_t timestamp, size_t pointer, size_t size);
+    size_t removeAllocation(size_t timestamp, size_t pointer);
+    bool addAllocation(size_t timestamp, size_t pointer, size_t size, bool force = false);
     Allocation* getAllocation(size_t pointer);
 
     size_t getManagedSize() { return managed_memory_; }
     size_t getNumberOfAllocations() { return allocations_.size(); }
+    bool removeAllAllocations();
 
     void printContent() const;
 
-size_t end_;
-    size_t managed_memory_;
-    size_t used_memory_;
+    void grow(size_t size);
+    void shrink(size_t size);
+
+    size_t end_;
     std::unordered_map<size_t,Allocation> allocations_;//pointer to allocation start, allocation
     private:
     

@@ -46,7 +46,9 @@ bool MemoryState::addCore(size_t timestamp, const uint64_t id, const size_t poin
         //heap->printContent();
         return true;
     }
-    std::cout << "add core failed at: " << timestamp <<std::endl;
+    std::cout << "add core failed " << std::hex << pointer << std::dec << std::endl;
+    std::cout << "printing heap content" << std::endl;
+    heap->printContent();
     return false;
 }
 
@@ -66,7 +68,18 @@ bool MemoryState::addAllocation(size_t timestamp, const uint64_t id, const size_
     }
     std::cout << "Adding Allocation failed(unknown reason): " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " time: " << timestamp;
     std::cout << " last registerd time was: " << last_update_ << "\n";
+
+    heap->printContent();
     return false;
+}
+
+bool MemoryState::growCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size) {
+        Heap* heap = getHeap(id);
+    if(heap == nullptr) {
+        return false;
+    }
+    heap->growCore(timestamp,pointer,size);
+    return true;
 }
 
 bool MemoryState::removeAllocation(size_t timestamp, const uint64_t id, const size_t pointer) {
@@ -74,12 +87,11 @@ bool MemoryState::removeAllocation(size_t timestamp, const uint64_t id, const si
 
 
     Heap* heap = getHeap(id);
-    if(debug){std::cout << "Heap recieved";    }    
     if(heap == nullptr) {
         std::cout << "Heap: " << id << " not found for core: " << std::hex << pointer << std::dec << " at time: " << timestamp << " trying to remove allocation" << "\n";
         return false;
     }
-    if(heap->removeAllocation(timestamp, pointer, debug)) {
+    if(heap->removeAllocation(timestamp, pointer)) {
         heap->setLastUpdate(timestamp);
         last_update_ = timestamp;
         if(debug){std::cout << "removed\n";    }        
@@ -89,6 +101,20 @@ bool MemoryState::removeAllocation(size_t timestamp, const uint64_t id, const si
     return false;
 }
 
+bool MemoryState::removeAllAllocations(size_t timestamp, const uint64_t id) {
+    if(debug){ std::cout << "Removing all allocations from: " << id << "\n"; }
+    
+    Heap* heap = getHeap(id);
+    if(heap == nullptr) {
+        std::cout << "removing all allocations from dead heap: " << id << "\n";
+        return false;
+    }
+    for(auto it = heap->cores_.begin(); it != heap->cores_.end(); it++) {
+        it->second.removeAllAllocations();
+    }
+    return true;
+}
+
 bool MemoryState::removeCore(size_t timestamp, const uint64_t id, const size_t pointer, const size_t size) {
     if(debug){std::cout << "Wanting to remove core from: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n";    }
 
@@ -96,6 +122,7 @@ bool MemoryState::removeCore(size_t timestamp, const uint64_t id, const size_t p
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << "Heap: " << id << " not found for core: " << std::hex << pointer << std::dec << " at time: " << timestamp<< "\n";
+        return false;
     }
     if(heap->removeCore(timestamp, pointer)) {
         heap->setLastUpdate(timestamp);
@@ -105,8 +132,16 @@ bool MemoryState::removeCore(size_t timestamp, const uint64_t id, const size_t p
     }
     std::cout << "remove core failed at " << timestamp << "\n";
     std::cout << "\ttrying to remove from: " << id << " heap: " << std::hex << pointer << std::dec << " size: " << size << "\n";
-    //heap->printContent();
     return false;
+}
+
+bool MemoryState::shrinkCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size) {
+    Heap* heap = getHeap(id);
+    if(heap == nullptr) {
+        return false;
+    }
+    heap->shrinkCore(timestamp,pointer,size);
+    return true;
 }
 
 bool MemoryState::removeHeap(size_t timestamp, const uint64_t id) {
@@ -177,6 +212,13 @@ void MemoryState::addEvent(Event::Event* event) {
             removeCore(data->timestamp, data->id,data->pointer,data->size);
             break;
         }
+
+        case Event::Code::HeapGrowCore :
+        {
+            Event::GrowCore* data = (Event::GrowCore*)event;
+            growCore(data->timestamp, data->id, data->pointer, data->size);
+            break;
+        }
         case Event::Code::HeapCreate :
         {
             Event::AddHeap* data = (Event::AddHeap*)event;
@@ -199,6 +241,13 @@ void MemoryState::addEvent(Event::Event* event) {
         {
             Event::InitStream* data = (Event::InitStream*)event;
             setInits(data->stream_magic, data->platform, data->system_frequency);
+            break;
+        }
+
+        case Event::Code::HeapFreeAll :
+        {
+            Event::RemoveAllAllocations* data = (Event::RemoveAllAllocations*)event;
+            removeAllAllocations(data->timestamp,data->id);
             break;
         }
 

@@ -14,6 +14,7 @@ Decoder::Decoder() {
 
 RingBuffer* Decoder::getRingbuffer() {
     return ring_;
+    outfile.flush();
     outfile.close();    
 }
 
@@ -72,7 +73,7 @@ void Decoder::trySteps() {
 
   do{
     ring_->saveRollback();
-    Event::Event* success = oneStep();
+    Event::Event* success = oneStep(false);
     
     if(success == nullptr) {
       ring_->loadRollback();
@@ -81,6 +82,7 @@ void Decoder::trySteps() {
       num_throwaway++;
     }
     else {
+      delete success;      
       break;
     }
   }while(ring_->getNumUnread() > 0);
@@ -139,7 +141,8 @@ void Decoder::saveToFile(bool save, Event::Event* event) {
     std::stringstream ss;
     event->getAsCSV(ss);
     if(outfile.good()) {
-      outfile << ss.str().c_str();      
+      outfile << ss.str().c_str();
+      outfile.flush();      
     }
     else {
       std::cout << "file error" << std::endl;
@@ -147,7 +150,7 @@ void Decoder::saveToFile(bool save, Event::Event* event) {
   }
 }
 
-Event::Event* Decoder::oneStep() {
+Event::Event* Decoder::oneStep(bool save_to_file) {
   size_t current_code;
   size_t count;
   size_t time_stamp;
@@ -178,7 +181,6 @@ Event::Event* Decoder::oneStep() {
         if(print_error()) {std::cout << "\tDecode system_frequency failed" << std::endl;}
         return nullptr;
       }
-      
       event = new Event::InitStream(count, current_code, time_stamp, stream_magic, platform, system_frequency);
       if(print_ok()){event->getAsVerbose(ss);}
       break;
@@ -253,6 +255,30 @@ Event::Event* Decoder::oneStep() {
       break;
     }
 
+    case Event::Code::HeapGrowCore :
+    {
+      size_t id;
+      size_t pointer;
+      size_t size_bytes;
+      if(!decodeValue(id)) {
+        if(print_error()) {   std::cout << "decode HeapGrowCore id failed\n";}
+        return nullptr;
+      }
+      if(!decodeValue(pointer)) {
+        if(print_error()) {  std::cout << "decode HeapGrowCore pointer failed\n";}
+        return nullptr;
+      }
+      if(!decodeValue(size_bytes)) {
+        if(print_error()) {  std::cout << "decode HeapGrowCore size failed\n";}
+        return nullptr;
+      }
+ 
+      event = new Event::GrowCore(count, current_code, time_stamp, id, pointer, size_bytes);
+      if(print_ok()){event->getAsVerbose(ss);}
+
+      break;
+    }
+
     case Event::Code::HeapRemoveCore :
     {  
       size_t id;
@@ -276,6 +302,31 @@ Event::Event* Decoder::oneStep() {
 
       break;
     }
+
+    case Event::Code::HeapShrinkCore :
+    {
+      size_t id;
+      size_t pointer;
+      size_t size_bytes;
+      if(!decodeValue(id)) {
+        if(print_error()) {   std::cout << "decode HeapShrinkCore id failed\n";}
+        return nullptr;
+      }
+      if(!decodeValue(pointer)) {
+        if(print_error()) {  std::cout << "decode HeapShrinkCore pointer failed\n";}
+        return nullptr;
+      }
+      if(!decodeValue(size_bytes)) {
+        if(print_error()) {  std::cout << "decode HeapShrinkCore size failed\n";}
+        return nullptr;
+      }
+ 
+      event = new Event::ShrinkCore(count, current_code, time_stamp, id, pointer, size_bytes);
+      if(true){event->getAsVerbose(ss);}
+
+      break;
+    }
+
     case Event::Code::HeapAllocate:
     {
       size_t id;
@@ -316,6 +367,19 @@ Event::Event* Decoder::oneStep() {
       event = new Event::RemoveAllocation(count, current_code, time_stamp, id, pointer);
       if(print_ok()){event->getAsVerbose(ss);}
 
+      break;
+    }
+
+    case Event::Code::HeapFreeAll:
+    {
+      size_t id;
+      if(!decodeValue(id)) {
+        if(print_error()) { std::cout << "decode HeapFreeAll id failed \n"; }
+        return nullptr;
+      }
+
+      event = new Event::RemoveAllAllocations(count, current_code, time_stamp, id);
+      if(print_ok()){ event->getAsVerbose(ss); }
       break;
     }
 
@@ -365,7 +429,7 @@ Event::Event* Decoder::oneStep() {
   } //switch(current code)
   last_timestamp = time_stamp;
   registerd_events++;
-  saveToFile(true, event);
+  saveToFile(save_to_file, event);
   std::cout << ss.str();
   return event;
 }

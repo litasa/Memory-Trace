@@ -11,16 +11,18 @@ public:
     Heap(size_t timestamp, size_t id, std::string type, std::string name);
     ~Heap();
 
-    std::map<size_t,Core*> cores_;//pointer to core start, core
+    std::map<size_t,Core> cores_;//pointer to core start, core
     std::unordered_map<size_t,size_t> alloc_to_core; // allocation pointer -> core pointer
     std::vector<std::pair<size_t, size_t>> simple_allocation_events_; //timestamp, used_size;
     Core* getCore(size_t pointer);
     Core* getCoreForAllocation(size_t pointer);
 
     bool removeCore(size_t timestamp, size_t pointer);
+    bool shrinkCore(size_t timestamp, size_t pointer, size_t size);
     bool addCore(size_t timestamp, size_t pointer, size_t managed_size);
+    bool growCore(size_t timestamp, size_t pointer, size_t size);
 
-    bool removeAllocation(size_t timestamp, size_t pointer, bool debug = false);
+    bool removeAllocation(size_t timestamp, size_t pointer);
     bool addAllocation(size_t timestamp, size_t pointer, size_t size);
 
     bool setBackingAllocator(size_t alloc);
@@ -31,12 +33,11 @@ public:
     void printContent() const;
 
     std::vector<size_t> backing_allocator_ids;
-    std::map<size_t,Core*> recently_dead_;
+    std::map<size_t,Core> recently_dead_;
     bool dead = false;
     const size_t id_;
     const std::string type_;
     const std::string name_;
-    bool own_core_;
 private:
     
 };

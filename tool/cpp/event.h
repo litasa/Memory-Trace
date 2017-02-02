@@ -15,10 +15,13 @@ namespace Event
             HeapDestroy,
 
             HeapAddCore,
+            HeapGrowCore,
             HeapRemoveCore,
+            HeapShrinkCore,
 
             HeapAllocate,
             HeapFree,
+            HeapFreeAll,
 
             EventStart = 20,
             EventEnd,
@@ -44,9 +47,28 @@ namespace Event
         uint64_t timestamp;
     };
 
+    struct RemoveAllAllocations : public Event {
+        RemoveAllAllocations(uint64_t eventNumber, size_t eventType, uint64_t timestamp, uint64_t id)
+        : Event(eventNumber, eventType, timestamp), id(id)
+        { };
+        ~RemoveAllAllocations();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "RemoveAllAllocations " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n";
+        }
+        uint64_t id;
+    };
+
     struct InitStream : public Event {
-        InitStream(uint64_t eventNumber, size_t eventType, uint64_t timestamp, uint64_t stream_magic, std::string& platform, uint64_t frequency)
-        : Event(eventNumber, eventType, timestamp), stream_magic(stream_magic), platform(platform), system_frequency(system_frequency)
+        InitStream(uint64_t eventNumber, size_t eventType, size_t timestamp, size_t stream_magic, std::string& platform, size_t frequency)
+        : Event(eventNumber, eventType, timestamp), stream_magic(stream_magic), platform(platform), system_frequency(frequency)
         { };
         ~InitStream();
 
@@ -152,6 +174,29 @@ namespace Event
         uint64_t size;
     };
 
+    struct GrowCore : public Event {
+        GrowCore(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes)
+        : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
+        ~GrowCore();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << pointer << "," << size << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "GrowCore " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n\tsize: " << size;
+            ss << "\n";
+        }
+
+        uint64_t id;
+        uint64_t pointer;
+        uint64_t size;
+    };
+
     struct RemoveCore : public Event {
         RemoveCore(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes)
         : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
@@ -164,6 +209,29 @@ namespace Event
 
         virtual void getAsVerbose(std::stringstream& ss) override {
             ss << "(" << eventNumber << ")" << "RemoveCore " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n\tsize: " << size;
+            ss << "\n";
+        }
+
+        uint64_t id;
+        uint64_t pointer;
+        uint64_t size;
+    };
+
+    struct ShrinkCore : public Event {
+        ShrinkCore(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes)
+        : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
+        ~ShrinkCore();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << pointer << "," << size << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "ShrinkCore " << "at time: " << timestamp;
             ss << "\n\tid: " << id;
             ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
             ss << "\n\tsize: " << size;

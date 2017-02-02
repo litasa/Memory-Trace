@@ -15,3 +15,4 @@ runtime/vs2012/MemTrace.VC.db
 runtime/vs2012/text.txt
 *.zip
 tool/data/1 min run.7z
+tool/test.csv

@@ -17,7 +17,7 @@ class Decoder : public Nan::ObjectWrap {
     bool decodeBool(bool& ret);
     bool decodeHeader(std::stringstream& ss,uint64_t& count, uint64_t& current_code, uint64_t& time_stamp, uint64_t& thread_id);
 
-    Event::Event* oneStep();
+    Event::Event* oneStep(bool save_to_file = true);
 
     bool print_ok();
     bool print_error();
