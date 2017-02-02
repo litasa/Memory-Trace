@@ -12,3 +12,4 @@ Todo:
 * add slider(or number box) for how much to filter
 * Add view for number of allocations per half second
 * Update visualization scales should not randomly snap to edge
+* Overlay two different runs ontop of eachother
