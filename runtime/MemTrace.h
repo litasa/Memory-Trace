@@ -55,10 +55,13 @@ namespace MemTrace
 	void    HeapDestroy(HeapId heap_id);
 
 	void    HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
+	void	  HeapGrowCore(HeapId heap_id, const void* base, size_t size_bytes);
 	void    HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes);
+	void	  HeapShrinkCore(HeapId heap_id, const void* base, size_t size_bytes);
 
 	void    HeapAllocate(HeapId heap_id, const void* ptr, size_t size_bytes);
 	void    HeapFree(HeapId heap_id, const void* ptr);
+	void	  HeapFreeAll(HeapId heap_id);
 
 	void	  StartRecordingEvent(const char* eventName);
 	void    StopRecordingEvent(const char* eventName);
