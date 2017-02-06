@@ -13,3 +13,4 @@ Todo:
 * Add view for number of allocations per half second
 * Update visualization scales should not randomly snap to edge
 * Overlay two different runs ontop of eachother
+* Add a timesampler (for example get the current status of the heap every 200 ms)
