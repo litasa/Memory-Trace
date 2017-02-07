@@ -43,7 +43,6 @@ bool MemoryState::addCore(size_t timestamp, const uint64_t id, const size_t poin
         num_cores_added++;
         heap->setLastUpdate(timestamp);
         last_update_ = timestamp;
-        //heap->printContent();
         return true;
     }
     std::cout << "add core failed " << std::hex << pointer << std::dec << std::endl;
@@ -154,12 +153,9 @@ bool MemoryState::removeHeap(size_t timestamp, const uint64_t id) {
         std::cout << "Removing non existing heap: " << id << ", at time: " << timestamp << "\n";
         return false;
     }
+    dead_heaps.push_back(*heap);
     size_t items_removed = heaps_.erase(id);
     if(items_removed == 1) {
-        heap->setLastUpdate(timestamp);
-        num_heaps_removed++;
-        last_update_ = timestamp;
-        heap->dead = true;
         return true;
     }
     std::cout << "remove heap failed at: " << timestamp << std::endl;

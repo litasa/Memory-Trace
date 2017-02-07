@@ -21,8 +21,10 @@ var server = net.createServer(function(socket) {
     var start = performance.now();
       decoder.unpackStream(data);
       var arr = decoder.getMemoryAsArray();
+      var removed_heaps = decoder.getCurrentMemory();
       arr = _.compact(arr);
       Visualization.newDataset(arr);
+      Visualization.removeDatasets(removed_heaps);
   })
 
   socket.on('error', function(err) {

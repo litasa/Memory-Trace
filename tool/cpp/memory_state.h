@@ -39,6 +39,7 @@ public:
 
     double frequency_;
     std::vector<Heap*> getHeaps();
+    std::vector<Heap> dead_heaps;
 private:
     bool debug = false;
     std::vector<Event::Event*> eventList;
