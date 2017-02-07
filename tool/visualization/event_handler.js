@@ -35,7 +35,7 @@ initChart = function () {
             		display: false,
         		},
 				tooltips: {
-					enabled: true,
+					enabled: false,
 				},
 				animation: {
 					duration: 0
@@ -89,6 +89,7 @@ Visualization = new function() {
 				spanGaps: true,
 				borderWidth: 1,
 				showLines: true,
+				pointRadius: 0,
 				lineTension: 0,
 				data: arr[i].data
 			}
@@ -96,6 +97,19 @@ Visualization = new function() {
 		}
 		this.updateScales();
 		this.chart.update();
+	}
+
+	this.removeDatasets = function(arr) {
+		for(var i = 0; i < arr.length; ++i) {
+			console.log("here?")
+			var exists = _.findWhere(this.chart.data.datasets, {label: arr[i]})
+			if(exists === undefined) {
+				continue;
+			}
+			var index = _.indexOf(this.chart.data.datasets, exists);
+			console.log(index);
+			this.chart.data.datasets.splice(index,1);
+		}
 	}
 
 	this.updateScales = function() {

@@ -147,9 +147,19 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
 }
 
 NAN_METHOD(Decoder::GetCurrentMemoryUsage) {
-  // Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
-  // std::vector<Heap*> heaps = obj->getMemoryState();
-  //v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
+  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  std::vector<Heap> dead_heaps = obj->memory_state_->dead_heaps;
+  v8::Local<v8::Array> list_of_dead_heaps = Nan::New<v8::Array>((int)dead_heaps.size());
+
+  for(size_t i = 0; i < dead_heaps.size(); ++i) {
+    std::stringstream label;
+    label << "(" << dead_heaps[i].id_ << ")" << " " << dead_heaps[i].getName();
+    Nan::Set(list_of_dead_heaps,i,Nan::New<v8::String>(label.str().c_str()).ToLocalChecked());
+  }
+  obj->memory_state_->dead_heaps.clear();
+  info.GetReturnValue().Set(list_of_dead_heaps);
+
+
   // std::cout << "Printing memory list:";
   // for(int i = 0; i < heaps.size(); ++i) {
   //         v8::Local<v8::Object> object = Nan::New<v8::Object>();

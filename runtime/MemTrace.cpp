@@ -82,10 +82,13 @@ namespace MemTrace
 		kHeapDestroy,
 
 		kHeapAddCore,
+		kHeapGrowCore,
 		kHeapRemoveCore,
+		kHeapShrinkCore,
 
 		kHeapAllocate,
 		kHeapFree,
+		kHeapFreeAll,
 
 		kEventStart = 20,
 		kEventEnd,
@@ -116,7 +119,7 @@ namespace MemTrace
 		void RecieveMessage() {
 			m_ListenFn(m_Buffers[m_CurBuffer ^ 1], kBufferSize);
 		}
-	public:
+	private:
 		size_t                        m_WriteOffset;                    // Write offset within current buffer
 		TransmitBlockFn*              m_TransmitFn;                     // Function to transmit (partially) filled blocks
 		ListeningFn*			      m_ListenFn;
@@ -539,10 +542,6 @@ void MemTrace::Shutdown()
 	// Flush and shut down writer.
 	State.m_Encoder.Flush();
 	MemTracePrint("Sent: %i Bytes\n", total_sent);
-	int64_t diff = TimerGetSystemCounter() - State.m_Encoder.m_StartTime;
-	double time_taken = diff / double(TimerGetSystemFrequencyInt());
-	MemTracePrint("Time taken: %f seconds\n", time_taken);
-	MemTracePrint("Number of events registerd: %i\n", count);
 	closesocket(State.m_Socket);
 
 	State.m_Lock.Leave();
@@ -605,6 +604,20 @@ void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
 	State.m_Encoder.EndEvent(kHeapAddCore);
 }
 
+void MemTrace::HeapGrowCore(HeapId heap_id, const void * base, size_t size_bytes)
+{
+	if (!State.m_Active)
+		return;
+
+	CSAutoLock lock(State.m_Lock);
+
+	State.m_Encoder.BeginEvent(kHeapGrowCore);
+	State.m_Encoder.EmitUnsigned(heap_id);
+	State.m_Encoder.EmitPointer(base);
+	State.m_Encoder.EmitUnsigned(size_bytes);
+	State.m_Encoder.EndEvent(kHeapGrowCore);
+}
+
 void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes)
 {
 	if (!State.m_Active)
@@ -617,6 +630,15 @@ void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_byte
 	State.m_Encoder.EmitPointer(base);
 	State.m_Encoder.EmitUnsigned(size_bytes);
 	State.m_Encoder.EndEvent(kHeapRemoveCore);
+}
+
+void MemTrace::HeapShrinkCore(HeapId heap_id, const void * base, size_t size_bytes)
+{
+	State.m_Encoder.BeginEvent(kHeapShrinkCore);
+	State.m_Encoder.EmitUnsigned(heap_id);
+	State.m_Encoder.EmitPointer(base);
+	State.m_Encoder.EmitUnsigned(size_bytes);
+	State.m_Encoder.EndEvent(kHeapShrinkCore);
 }
 
 void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
@@ -644,6 +666,18 @@ void MemTrace::HeapFree(HeapId id, const void* ptr)
 	State.m_Encoder.EmitUnsigned(id);
 	State.m_Encoder.EmitPointer(ptr);
 	State.m_Encoder.EndEvent(kHeapFree);
+}
+
+void MemTrace::HeapFreeAll(HeapId heap_id)
+{
+	if (!State.m_Active)
+		return;
+
+	CSAutoLock lock(State.m_Lock);
+
+	State.m_Encoder.BeginEvent(kHeapFreeAll);
+	State.m_Encoder.EmitUnsigned(heap_id);
+	State.m_Encoder.EndEvent(kHeapFreeAll);
 }
 
 /* Starts a new new event recording. */
