@@ -38,7 +38,7 @@ Core* Heap::getCoreForAllocation(size_t pointer) {
 bool Heap::removeCore(size_t timestamp, size_t pointer) {
     auto it = cores_.find(pointer);
     if(it == cores_.end()) {
-        std::cout << "remove Core failed in heap" << std::endl;
+        std::cout << "remove Core failed in heap " << id_ << std::endl;
         return false;
     }
     size_t managed = it->second.getManagedSize();

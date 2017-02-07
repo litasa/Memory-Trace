@@ -189,6 +189,7 @@ Event::Event* Decoder::oneStep(bool save_to_file) {
     case Event::Code::EndStream :
       {
         event = new Event::StopStream(count, current_code, time_stamp);
+        _stream_end = true;
         if(print_ok()){event->getAsVerbose(ss);}
       }
     break;
@@ -198,7 +199,6 @@ Event::Event* Decoder::oneStep(bool save_to_file) {
       std::string name;
       std::string type;
       size_t id;
-      bool own_core;
       if(!decodeValue(id)) {
         if(print_error()) {   std::cout << "decode Add Heap id failed\n";}
         return nullptr;

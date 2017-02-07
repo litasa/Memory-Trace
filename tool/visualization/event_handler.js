@@ -101,13 +101,11 @@ Visualization = new function() {
 
 	this.removeDatasets = function(arr) {
 		for(var i = 0; i < arr.length; ++i) {
-			console.log("here?")
 			var exists = _.findWhere(this.chart.data.datasets, {label: arr[i]})
 			if(exists === undefined) {
 				continue;
 			}
 			var index = _.indexOf(this.chart.data.datasets, exists);
-			console.log(index);
 			this.chart.data.datasets.splice(index,1);
 		}
 	}

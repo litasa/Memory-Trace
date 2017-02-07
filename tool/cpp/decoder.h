@@ -34,6 +34,7 @@ class Decoder : public Nan::ObjectWrap {
     ~Decoder();
     std::ofstream outfile;
     const char* filename = "test.csv";
+    bool _stream_end = false;
     //bool print_ok = false;
     size_t last_timestamp = 0;
     RingBuffer* ring_;
@@ -50,6 +51,7 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(Printas);
     static NAN_METHOD(GetMemoryAsArray);
     static NAN_METHOD(GetCurrentMemoryUsage);
+    static NAN_METHOD(StreamEnd);
 
     /* Wrapper functions - end */
 };
