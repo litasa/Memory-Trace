@@ -15,7 +15,6 @@ Todo:
 # UI
 * add slider(or number box) for how much to filter
 * Add view for number of allocations per time
-* Update visualization scales should not randomly snap to edge
 
 # Other
 * (experiment) Create a fast and good database solution to stream from
@@ -23,3 +22,4 @@ Todo:
 
 # Done
 * ~~Fix network error at shutdown.~~
+* ~~Update visualization scales should not randomly snap to edge~~
