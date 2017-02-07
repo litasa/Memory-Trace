@@ -99,11 +99,13 @@ Visualization = new function() {
 	}
 
 	this.updateScales = function() {
-		var win_size = parseInt(document.getElementById('window_size').value)
-		if(isNaN(win_size)) {
-			win_size = 5;
+		if(document.getElementById('follow_alloc').checked) {
+			var win_size = parseInt(document.getElementById('window_size').value)
+			if(isNaN(win_size)) {
+				win_size = 5;
+			}
+			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
 		}
-		this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
 	}
 }
 
