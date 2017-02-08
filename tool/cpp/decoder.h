@@ -49,7 +49,7 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(UnpackStream);
     static NAN_METHOD(Printas);
     static NAN_METHOD(GetMemoryAsArray);
-    static NAN_METHOD(GetCurrentMemoryUsage);
+    static NAN_METHOD(GetDeadHeaps);
 
     /* Wrapper functions - end */
 };

@@ -21,7 +21,7 @@ var server = net.createServer(function(socket) {
     var start = performance.now();
       decoder.unpackStream(data);
       var arr = decoder.getMemoryAsArray();
-      var removed_heaps = decoder.getCurrentMemory();
+      var removed_heaps = decoder.getDeadHeaps();
       arr = _.compact(arr);
       Visualization.newDataset(arr);
       Visualization.removeDatasets(removed_heaps);

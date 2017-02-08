@@ -15,7 +15,7 @@ NAN_MODULE_INIT(Decoder::Init) {
   Nan::SetPrototypeMethod(tpl, "unpackStream", UnpackStream);
   Nan::SetPrototypeMethod(tpl, "printas", Printas);
   Nan::SetPrototypeMethod(tpl, "getMemoryAsArray", GetMemoryAsArray);
-  Nan::SetPrototypeMethod(tpl, "getCurrentMemory", GetCurrentMemoryUsage);
+  Nan::SetPrototypeMethod(tpl, "getDeadHeaps", GetDeadHeaps);
   
   /*Debug - start*/
   /*Debug - end*/
@@ -146,7 +146,7 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
   
 }
 
-NAN_METHOD(Decoder::GetCurrentMemoryUsage) {
+NAN_METHOD(Decoder::GetDeadHeaps) {
   Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
   std::vector<Heap> dead_heaps = obj->memory_state_->dead_heaps;
   v8::Local<v8::Array> list_of_dead_heaps = Nan::New<v8::Array>((int)dead_heaps.size());
