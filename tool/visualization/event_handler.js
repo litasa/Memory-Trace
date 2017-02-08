@@ -101,23 +101,23 @@ Visualization = new function() {
 
 	this.removeDatasets = function(arr) {
 		for(var i = 0; i < arr.length; ++i) {
-			console.log("here?")
 			var exists = _.findWhere(this.chart.data.datasets, {label: arr[i]})
 			if(exists === undefined) {
 				continue;
 			}
 			var index = _.indexOf(this.chart.data.datasets, exists);
-			console.log(index);
 			this.chart.data.datasets.splice(index,1);
 		}
 	}
 
 	this.updateScales = function() {
-		var win_size = parseInt(document.getElementById('window_size').value)
-		if(isNaN(win_size)) {
-			win_size = 5;
+		if(document.getElementById('follow_alloc').checked) {
+			var win_size = parseInt(document.getElementById('window_size').value)
+			if(isNaN(win_size)) {
+				win_size = 5;
+			}
+			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
 		}
-		this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
 	}
 }
 

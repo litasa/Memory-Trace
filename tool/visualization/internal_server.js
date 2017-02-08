@@ -20,11 +20,25 @@ var server = net.createServer(function(socket) {
     total_data += data.length;
     var start = performance.now();
       decoder.unpackStream(data);
+<<<<<<< HEAD
       var arr = decoder.getMemoryAsArray();
       var removed_heaps = decoder.getDeadHeaps();
       arr = _.compact(arr);
       Visualization.newDataset(arr);
       Visualization.removeDatasets(removed_heaps);
+=======
+      console.log(decoder.streamEnd())
+      if(!decoder.streamEnd()) {
+        var arr = decoder.getMemoryAsArray();
+        var removed_heaps = decoder.getCurrentMemory();
+        arr = _.compact(arr);
+        Visualization.newDataset(arr);
+        Visualization.removeDatasets(removed_heaps);
+      }
+      else {
+        console.log("The stream Ended")
+      }
+>>>>>>> 15d45ef500900d811750f6ec9fdbda8cc5e14e8b
   })
 
   socket.on('error', function(err) {

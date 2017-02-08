@@ -15,7 +15,12 @@ NAN_MODULE_INIT(Decoder::Init) {
   Nan::SetPrototypeMethod(tpl, "unpackStream", UnpackStream);
   Nan::SetPrototypeMethod(tpl, "printas", Printas);
   Nan::SetPrototypeMethod(tpl, "getMemoryAsArray", GetMemoryAsArray);
+<<<<<<< HEAD
   Nan::SetPrototypeMethod(tpl, "getDeadHeaps", GetDeadHeaps);
+=======
+  Nan::SetPrototypeMethod(tpl, "getCurrentMemory", GetCurrentMemoryUsage);
+  Nan::SetPrototypeMethod(tpl, "streamEnd", StreamEnd);
+>>>>>>> 15d45ef500900d811750f6ec9fdbda8cc5e14e8b
   
   /*Debug - start*/
   /*Debug - end*/
@@ -89,12 +94,12 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
       continue;
     }
     std::vector<v8::Local<v8::Object>> alloc_list;
-    int ma_sample_size = min(allocs->size(),800);
-    for(int current_sample = 0; current_sample < allocs->size(); current_sample += ma_sample_size) {
+    size_t ma_sample_size = min(allocs->size(),800);
+    for(size_t current_sample = 0; current_sample < allocs->size(); current_sample += ma_sample_size) {
         size_t sum_mem = 0;
         size_t sum_pos = 0;
-        int samples = min(allocs->size() - current_sample, ma_sample_size);
-        for(int k = current_sample; k < current_sample + samples; ++k) {
+        size_t samples = min(allocs->size() - current_sample, ma_sample_size);
+        for(size_t k = current_sample; k < current_sample + samples; ++k) {
           sum_mem += (*allocs)[k].second;
           sum_pos += (*allocs)[k].first;
         }
@@ -129,7 +134,7 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
   //     }
   //   }
 
-    v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>(alloc_list.size());
+    v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>((uint32_t)alloc_list.size());
     for(int i = 0; i < alloc_list.size(); ++i) {
       Nan::Set(allocation_list, i, alloc_list[i]);
     }    
@@ -154,25 +159,17 @@ NAN_METHOD(Decoder::GetDeadHeaps) {
   for(size_t i = 0; i < dead_heaps.size(); ++i) {
     std::stringstream label;
     label << "(" << dead_heaps[i].id_ << ")" << " " << dead_heaps[i].getName();
-    Nan::Set(list_of_dead_heaps,i,Nan::New<v8::String>(label.str().c_str()).ToLocalChecked());
+    Nan::Set(list_of_dead_heaps,(uint32_t)i,Nan::New<v8::String>(label.str().c_str()).ToLocalChecked());
   }
   obj->memory_state_->dead_heaps.clear();
   info.GetReturnValue().Set(list_of_dead_heaps);
+}
 
-
-  // std::cout << "Printing memory list:";
-  // for(int i = 0; i < heaps.size(); ++i) {
-  //         v8::Local<v8::Object> object = Nan::New<v8::Object>();
-  //         double time = heaps[i]->getLastUpdate() * obj->memory_state_->frequency_;
-  //         int current_size = heaps[i]->used_memory_;
-  //         std::cout << "\n\tId: " << heaps[i]->id_ << " Name: " <<heaps[i]->getName() << " Managed size: " << heaps[i]->managed_memory_ << " Used Memory: ";
-  //         std::cout << heaps[i]->used_memory_ << " type: " << heaps[i]->type_ << " backing:";
-  //         heaps[i]->printBacking();
-  //         std::cout << "\n";
-  //         //Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
-  //         //Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(current_size)); //current size
-  //         //Nan::Set(list_of_heaps, i, object);
-  // }
-  // std::cout << "\n";
-  //info.GetReturnValue().Set(list_of_heaps);
+NAN_METHOD(Decoder::StreamEnd) {
+  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  if(obj->_stream_end) {
+    info.GetReturnValue().Set(Nan::True());
+    return;
+  }
+  info.GetReturnValue().Set(Nan::False());
 }
