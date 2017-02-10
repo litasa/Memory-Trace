@@ -4,11 +4,11 @@ MemoryState::MemoryState() {
 };
 
 MemoryState::~MemoryState() {
-    for(auto &it:eventList)
-    {
-        delete it;
-    }
-    eventList.clear();
+    // for(auto &it:eventList)
+    // {
+    //     delete it;
+    // }
+    // eventList.clear();
 };
 
 void MemoryState::setInits(size_t stream_magic, std::string platform, size_t frequency) {
@@ -18,7 +18,6 @@ void MemoryState::setInits(size_t stream_magic, std::string platform, size_t fre
 }
 
 bool MemoryState::addHeap(size_t timestamp, const uint64_t id, const std::string& type, const std::string& name) {
-    if(debug){std::cout << "Wanting to add Heap: " << id << ", " << name << " at: " << timestamp << "\n";}
     Heap h(timestamp, id, type, name);
     auto emp = heaps_.emplace(id, h);
     if(!emp.second) {
@@ -31,9 +30,6 @@ bool MemoryState::addHeap(size_t timestamp, const uint64_t id, const std::string
 }
 
 bool MemoryState::addCore(size_t timestamp, const uint64_t id, const size_t pointer, const size_t size) {
-    if(debug){std::cout << "Wanting to add core to: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n";}
-
-
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << "Heap: " << id << " not found for core: " << std::hex << pointer << std::dec << " at time: "<< timestamp <<"\n";
@@ -45,15 +41,10 @@ bool MemoryState::addCore(size_t timestamp, const uint64_t id, const size_t poin
         last_update_ = timestamp;
         return true;
     }
-    std::cout << "add core failed " << std::hex << pointer << std::dec << std::endl;
-    std::cout << "printing heap content" << std::endl;
-    heap->printContent();
     return false;
 }
 
 bool MemoryState::addAllocation(size_t timestamp, const uint64_t id, const size_t pointer, const size_t size) {
-    if(debug){std::cout << "Wanting to Allocation to: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n"; }
-
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << "Heap: " << id << " not found for core: " << std::hex << pointer << std::dec << " trying to allocate" <<"\n";
@@ -67,8 +58,6 @@ bool MemoryState::addAllocation(size_t timestamp, const uint64_t id, const size_
     }
     std::cout << "Adding Allocation failed(unknown reason): " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " time: " << timestamp;
     std::cout << " last registerd time was: " << last_update_ << "\n";
-
-    heap->printContent();
     return false;
 }
 
@@ -82,9 +71,6 @@ bool MemoryState::growCore(size_t timestamp, const size_t id, const size_t point
 }
 
 bool MemoryState::removeAllocation(size_t timestamp, const uint64_t id, const size_t pointer) {
-    if(debug){std::cout << "Wanting to remove allocation from: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " at: " << timestamp << "\n";    }
-
-
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << "Heap: " << id << " not found for core: " << std::hex << pointer << std::dec << " at time: " << timestamp << " trying to remove allocation" << "\n";
@@ -93,16 +79,12 @@ bool MemoryState::removeAllocation(size_t timestamp, const uint64_t id, const si
     if(heap->removeAllocation(timestamp, pointer)) {
         heap->setLastUpdate(timestamp);
         last_update_ = timestamp;
-        if(debug){std::cout << "removed\n";    }        
         return true;
     }
-        if(debug){std::cout << "unable to remove\n";    }            
     return false;
 }
 
 bool MemoryState::removeAllAllocations(size_t timestamp, const uint64_t id) {
-    if(debug){ std::cout << "Removing all allocations from: " << id << "\n"; }
-    
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << "removing all allocations from dead heap: " << id << "\n";
@@ -115,9 +97,6 @@ bool MemoryState::removeAllAllocations(size_t timestamp, const uint64_t id) {
 }
 
 bool MemoryState::removeCore(size_t timestamp, const uint64_t id, const size_t pointer, const size_t size) {
-    if(debug){std::cout << "Wanting to remove core from: " << id << ", addres start: " <<std::hex << pointer <<std::dec << " size: " << size << " at: " << timestamp << "\n";    }
-
-
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         std::cout << "Heap: " << id << " not found for core: " << std::hex << pointer << std::dec << " at time: " << timestamp<< "\n";
@@ -129,8 +108,6 @@ bool MemoryState::removeCore(size_t timestamp, const uint64_t id, const size_t p
         last_update_ = timestamp;
         return true;
     }
-    std::cout << "remove core failed at " << timestamp << "\n";
-    std::cout << "\ttrying to remove from: " << id << " heap: " << std::hex << pointer << std::dec << " size: " << size << "\n";
     return false;
 }
 
@@ -144,7 +121,6 @@ bool MemoryState::shrinkCore(size_t timestamp, const size_t id, const size_t poi
 }
 
 bool MemoryState::removeHeap(size_t timestamp, const uint64_t id) {
-
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         if(id == -1) {
@@ -153,12 +129,13 @@ bool MemoryState::removeHeap(size_t timestamp, const uint64_t id) {
         std::cout << "Removing non existing heap: " << id << ", at time: " << timestamp << "\n";
         return false;
     }
+    heap->death_ = timestamp;
     dead_heaps.push_back(*heap);
     size_t items_removed = heaps_.erase(id);
     if(items_removed == 1) {
         return true;
     }
-    std::cout << "remove heap failed at: " << timestamp << std::endl;
+    std::cout << "removing heap failed" << std::endl;
     return false;
 }
 
@@ -264,5 +241,5 @@ void MemoryState::addEvent(Event::Event* event) {
             break;
         }
     }
-    eventList.push_back(event);
+    //eventList.push_back(event);
 }

@@ -29,11 +29,13 @@ var external_server = net.createServer(function (socket) {
       console.log("socket connected")
     })
 
+    var counter = 0;
     socket.on('data', function (data) {
-      console.log("data recieved")
-      var start = performance.now();
-      var daff = performance.now() - last_time;
-      //console.log("data recieved, time since last: " + daff);
+      if(counter % 500 == 0) {
+        counter = 0;
+        console.log("data recieved");
+      }
+      counter++;
       if(data === undefined) {
         throw "undefined data recieved"
       }
@@ -45,11 +47,7 @@ var external_server = net.createServer(function (socket) {
       }
 
       total_data_recieved += data.length;
-      var diff = performance.now() - start;
-      console.log("data ended with process time: " + diff);
-      last_time = performance.now();
-        //socket.write("pause\0")      
-      sendToChart('event-done');
+      //sendToChart('event-done');
     })
 
     socket.on('drain', function(error) {

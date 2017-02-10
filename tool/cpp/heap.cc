@@ -13,7 +13,7 @@ Heap::~Heap() {
 }
 
 void Heap::printContent() const {
-    std::cout << "printing content for heap " << id_ << "\n";
+    std::cout << "printing content for heap " << id_ << " of type: "<< type_.c_str() << "\n";
     for(auto it = cores_.begin(); it != cores_.end(); ++it) {
         it->second.printContent();
     }

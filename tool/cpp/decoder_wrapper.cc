@@ -15,12 +15,8 @@ NAN_MODULE_INIT(Decoder::Init) {
   Nan::SetPrototypeMethod(tpl, "unpackStream", UnpackStream);
   Nan::SetPrototypeMethod(tpl, "printas", Printas);
   Nan::SetPrototypeMethod(tpl, "getMemoryAsArray", GetMemoryAsArray);
-<<<<<<< HEAD
   Nan::SetPrototypeMethod(tpl, "getDeadHeaps", GetDeadHeaps);
-=======
-  Nan::SetPrototypeMethod(tpl, "getCurrentMemory", GetCurrentMemoryUsage);
   Nan::SetPrototypeMethod(tpl, "streamEnd", StreamEnd);
->>>>>>> 15d45ef500900d811750f6ec9fdbda8cc5e14e8b
   
   /*Debug - start*/
   /*Debug - end*/
@@ -80,13 +76,12 @@ NAN_METHOD(Decoder::Printas) {
 }
 
 NAN_METHOD(Decoder::GetMemoryAsArray) {
-    Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
 
   std::vector<Heap*> heaps = obj->getMemoryState();
  
   v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
 
-  int removed = 0;
   // /* ========= Moving Average filtering ========= */
   for(int j = 0; j < heaps.size(); ++j) {
     std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;

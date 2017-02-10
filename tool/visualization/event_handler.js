@@ -62,8 +62,10 @@ Visualization = new function() {
 	this.MaxHorizontal = 100;
 	this.latest_time = 0;
 	this.newDataset = function(arr) {
+
 		for(var i = 0; i < this.chart.data.datasets.length; ++i) {
-			var exists = _.findWhere(arr, {label: this.chart.data.datasets[i].label})
+			var dataset = this.chart.data.datasets[i];
+			var exists = _.findWhere(arr, {label: dataset.label})
 			
 			if(exists === undefined) {
 				//data does not already exist. Handle it below
@@ -72,17 +74,13 @@ Visualization = new function() {
 			var index = _.indexOf(arr,exists);
 			arr.splice(index,1);
 
-			this.chart.data.datasets[i].data = this.chart.data.datasets[i].data.concat(exists.data);
-			if(this.chart.data.datasets[i].data.length == 0) {
-				this.chart.data.datasets.splice(i,1);
-				console.log("removing items")
-			}
+			dataset.data = dataset.data.concat(exists.data);
+			var win_size = parseInt(document.getElementById('window_size').value)
+			dataset.data = _.filter(dataset.data, function(point) {
+				return (point.x > Visualization.chart.scales['x-axis-0'].end - win_size);
+			})
 		}
 		for(var i = 0; i < arr.length; ++i) {
-			if(arr[i].data.length == 0) {
-				console.log("removing items 2")
-				continue;
-			}
 			var dataset = {
 				label: arr[i].label,
 				allocatorType: arr[i].type,
@@ -97,6 +95,10 @@ Visualization = new function() {
 		}
 		this.updateScales();
 		this.chart.update();
+	}
+
+	this.calcTimeDiff = function(dataset) {
+		return _.last(dataset.data).x - _.first(dataset.data).x;
 	}
 
 	this.removeDatasets = function(arr) {
@@ -135,6 +137,5 @@ ipcRenderer.on('memory', function(event, data) {
 
 setInterval(function() {
 	Visualization.updateScales();
-	Visualization.chart.update();
 	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();	
 }, 2000);

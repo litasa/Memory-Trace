@@ -42,7 +42,7 @@ public:
     std::vector<Heap> dead_heaps;
 private:
     bool debug = false;
-    std::vector<Event::Event*> eventList;
+    //std::vector<Event::Event*> eventList;
     std::unordered_map<size_t, Heap> heaps_;
     std::string platform_;
     size_t stream_magic_;
