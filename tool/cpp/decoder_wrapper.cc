@@ -16,6 +16,7 @@ NAN_MODULE_INIT(Decoder::Init) {
   Nan::SetPrototypeMethod(tpl, "printas", Printas);
   Nan::SetPrototypeMethod(tpl, "getMemoryAsArray", GetMemoryAsArray);
   Nan::SetPrototypeMethod(tpl, "getDeadHeaps", GetDeadHeaps);
+  Nan::SetPrototypeMethod(tpl, "getFilteredMemorySnapshots", GetFilteredData);
   Nan::SetPrototypeMethod(tpl, "streamEnd", StreamEnd);
   
   /*Debug - start*/
@@ -76,74 +77,73 @@ NAN_METHOD(Decoder::Printas) {
 }
 
 NAN_METHOD(Decoder::GetMemoryAsArray) {
-  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  // Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
 
-  std::vector<Heap*> heaps = obj->getMemoryState();
+  // std::vector<Heap*> heaps = obj->getMemoryState();
  
-  v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
+  // v8::Local<v8::Array> list_of_heaps = Nan::New<v8::Array>((int)heaps.size());
 
-  // /* ========= Moving Average filtering ========= */
-  for(int j = 0; j < heaps.size(); ++j) {
-    std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
-    if(allocs->size() == 0) {
-      continue;
-    }
-    std::vector<v8::Local<v8::Object>> alloc_list;
-    size_t ma_sample_size = min(allocs->size(),800);
-    for(size_t current_sample = 0; current_sample < allocs->size(); current_sample += ma_sample_size) {
-        size_t sum_mem = 0;
-        size_t sum_pos = 0;
-        size_t samples = min(allocs->size() - current_sample, ma_sample_size);
-        for(size_t k = current_sample; k < current_sample + samples; ++k) {
-          sum_mem += (*allocs)[k].second;
-          sum_pos += (*allocs)[k].first;
-        }
-        double time = (double)(sum_pos)/(double)(samples);
-        time /= obj->memory_state_->frequency_;
-        double used_size = (double)(sum_mem)/(double)(samples);
-        v8::Local<v8::Object> object = Nan::New<v8::Object>();
-        Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
-        Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
-        alloc_list.push_back(object);        
-  }
-  allocs->clear();  
-
-  // /* ========= Filter on timesteps distance ========= */
+  // // /* ========= Moving Average filtering ========= */
   // for(int j = 0; j < heaps.size(); ++j) {
   //   std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
-  //   std::vector<v8::Local<v8::Object>> alloc_list;
-  //   for(int i = 0; i < allocs->size(); ++i) {
-  //     double time = (double)(*allocs)[i].first; //* obj->memory_state_->frequency_;
-  //     double used_size = (double)((*allocs)[i].second);
-  //     double timedistance = 0;
-  //     if(i != 0) {
-  //       timedistance = time - (double)(*allocs)[i-1].first;
-  //     }
-
-  //     if(timedistance > 50) {
-  //         v8::Local<v8::Object> object = Nan::New<v8::Object>();
-  //         Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
-  //         Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
-  //         //std::cout << "x: " << time << " y: " << used_size << "\n";
-  //         alloc_list.push_back(object);
-  //     }
+  //   if(allocs->size() == 0) {
+  //     continue;
   //   }
+  //   std::vector<v8::Local<v8::Object>> alloc_list;
+  //   size_t ma_sample_size = min(allocs->size(),800);
+  //   for(size_t current_sample = 0; current_sample < allocs->size(); current_sample += ma_sample_size) {
+  //       size_t sum_mem = 0;
+  //       size_t sum_pos = 0;
+  //       size_t samples = min(allocs->size() - current_sample, ma_sample_size);
+  //       for(size_t k = current_sample; k < current_sample + samples; ++k) {
+  //         sum_mem += (*allocs)[k].second;
+  //         sum_pos += (*allocs)[k].first;
+  //       }
+  //       double time = (double)(sum_pos)/(double)(samples);
+  //       time /= obj->memory_state_->frequency_;
+  //       double used_size = (double)(sum_mem)/(double)(samples);
+  //       v8::Local<v8::Object> object = Nan::New<v8::Object>();
+  //       Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
+  //       Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
+  //       alloc_list.push_back(object);        
+  // }
+  // allocs->clear();  
 
-    v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>((uint32_t)alloc_list.size());
-    for(int i = 0; i < alloc_list.size(); ++i) {
-      Nan::Set(allocation_list, i, alloc_list[i]);
-    }    
+  // // /* ========= Filter on timesteps distance ========= */
+  // // for(int j = 0; j < heaps.size(); ++j) {
+  // //   std::vector<std::pair<size_t,size_t>>* allocs = &heaps[j]->simple_allocation_events_;
+  // //   std::vector<v8::Local<v8::Object>> alloc_list;
+  // //   for(int i = 0; i < allocs->size(); ++i) {
+  // //     double time = (double)(*allocs)[i].first; //* obj->memory_state_->frequency_;
+  // //     double used_size = (double)((*allocs)[i].second);
+  // //     double timedistance = 0;
+  // //     if(i != 0) {
+  // //       timedistance = time - (double)(*allocs)[i-1].first;
+  // //     }
 
-    v8::Local<v8::Object> heap_obj = Nan::New<v8::Object>();
-    std::stringstream label;
-    label << "(" << heaps[j]->id_ << ")" << " " << heaps[j]->getName();
-    Nan::Set(heap_obj, Nan::New<v8::String>("label").ToLocalChecked(), Nan::New<v8::String>(label.str().c_str()).ToLocalChecked());
-    Nan::Set(heap_obj, Nan::New<v8::String>("data").ToLocalChecked(), allocation_list);
-    Nan::Set(heap_obj, Nan::New<v8::String>("type").ToLocalChecked(), Nan::New<v8::String>(heaps[j]->getType().c_str()).ToLocalChecked());
-    Nan::Set(list_of_heaps, j, heap_obj);
-  }
-  info.GetReturnValue().Set(list_of_heaps);
-  
+  // //     if(timedistance > 50) {
+  // //         v8::Local<v8::Object> object = Nan::New<v8::Object>();
+  // //         Nan::Set(object, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
+  // //         Nan::Set(object, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_size)); //allocation
+  // //         //std::cout << "x: " << time << " y: " << used_size << "\n";
+  // //         alloc_list.push_back(object);
+  // //     }
+  // //   }
+
+  //   v8::Local<v8::Array> allocation_list = Nan::New<v8::Array>((uint32_t)alloc_list.size());
+  //   for(int i = 0; i < alloc_list.size(); ++i) {
+  //     Nan::Set(allocation_list, i, alloc_list[i]);
+  //   }    
+
+  //   v8::Local<v8::Object> heap_obj = Nan::New<v8::Object>();
+  //   std::stringstream label;
+  //   label << "(" << heaps[j]->id_ << ")" << " " << heaps[j]->getName();
+  //   Nan::Set(heap_obj, Nan::New<v8::String>("label").ToLocalChecked(), Nan::New<v8::String>(label.str().c_str()).ToLocalChecked());
+  //   Nan::Set(heap_obj, Nan::New<v8::String>("data").ToLocalChecked(), allocation_list);
+  //   Nan::Set(heap_obj, Nan::New<v8::String>("type").ToLocalChecked(), Nan::New<v8::String>(heaps[j]->getType().c_str()).ToLocalChecked());
+  //   Nan::Set(list_of_heaps, j, heap_obj);
+  // }
+  // info.GetReturnValue().Set(list_of_heaps);
 }
 
 NAN_METHOD(Decoder::GetDeadHeaps) {
@@ -158,6 +158,82 @@ NAN_METHOD(Decoder::GetDeadHeaps) {
   }
   obj->memory_state_->dead_heaps.clear();
   info.GetReturnValue().Set(list_of_dead_heaps);
+}
+
+NAN_METHOD(Decoder::GetFilteredData) {
+  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  size_t window_size = info[0]->IntegerValue();
+  size_t from_sec = info[1]->IntegerValue();
+  size_t heap_number = info[2]->IntegerValue();
+  size_t max_samples_per_second = info[3]->IntegerValue();
+
+  //convert time to cpu ticks
+  size_t to_sec = (from_sec + window_size)*obj->memory_state_->frequency_;
+  from_sec *= obj->memory_state_->frequency_;
+  size_t skip_rate = (1/(double)max_samples_per_second)*obj->memory_state_->frequency_;
+
+  Heap* heap = obj->memory_state_->getHeap(heap_number);
+  if(heap == nullptr) {
+    info.GetReturnValue().Set(Nan::False());
+    return;
+  }
+  auto fromIter = heap->simple_allocation_events_.lower_bound(from_sec);
+  auto toIter = heap->simple_allocation_events_.upper_bound(to_sec);
+  std::vector<std::pair<size_t,heap_usage*>> temp;
+  //temp.reserve(5000); //reserving a large amount of space to minimize the amount of resizing
+  while(fromIter != heap->simple_allocation_events_.end() && fromIter != toIter) {
+    temp.push_back(std::make_pair(fromIter->first, &(fromIter->second)));
+    from_sec += skip_rate;
+    fromIter = heap->simple_allocation_events_.lower_bound(from_sec);
+  }
+
+  v8::Local<v8::Array> allocation_data = Nan::New<v8::Array>((int)temp.size());
+  v8::Local<v8::Array> managed_data = Nan::New<v8::Array>((int)temp.size());
+  for(size_t i = 0; i < temp.size(); ++i) {
+    double time = temp[i].first/obj->memory_state_->frequency_;
+    v8::Local<v8::Object> used_scatter = Nan::New<v8::Object>();
+    Nan::Set(used_scatter, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
+    Nan::Set(used_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(temp[i].second->used_memory));
+    
+    v8::Local<v8::Object> managed_scatter = Nan::New<v8::Object>();
+    Nan::Set(managed_scatter, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time));
+    Nan::Set(managed_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(temp[i].second->managed_memory));
+
+    Nan::Set(allocation_data, i, used_scatter);
+    Nan::Set(managed_data, i, managed_scatter);
+  }
+
+  v8::Local<v8::Object> used_dataset = Nan::New<v8::Object>();
+  v8::Local<v8::Object> managed_dataset = Nan::New<v8::Object>();
+  
+  Nan::Set(used_dataset, Nan::New<v8::String>("label").ToLocalChecked(), 
+                         Nan::New<v8::String>(heap->getName().c_str()).ToLocalChecked());
+  Nan::Set(used_dataset, Nan::New<v8::String>("allocatorType").ToLocalChecked(), 
+                         Nan::New<v8::String>(heap->getType().c_str()).ToLocalChecked());
+  Nan::Set(used_dataset, Nan::New<v8::String>("data").ToLocalChecked(), allocation_data);
+  
+  Nan::Set(used_dataset, Nan::New<v8::String>("spanGaps").ToLocalChecked(), Nan::True());
+  Nan::Set(used_dataset, Nan::New<v8::String>("borderWidth").ToLocalChecked(), Nan::New<v8::Number>(1));
+  Nan::Set(used_dataset, Nan::New<v8::String>("showLines").ToLocalChecked(), Nan::True());
+  Nan::Set(used_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(0));
+  Nan::Set(used_dataset, Nan::New<v8::String>("lineTension").ToLocalChecked(), Nan::New<v8::Number>(0));
+
+  Nan::Set(managed_dataset, Nan::New<v8::String>("label").ToLocalChecked(), 
+                         Nan::New<v8::String>(heap->getName().c_str()).ToLocalChecked());
+  Nan::Set(managed_dataset, Nan::New<v8::String>("allocatorType").ToLocalChecked(), 
+                         Nan::New<v8::String>(heap->getType().c_str()).ToLocalChecked());
+  Nan::Set(managed_dataset, Nan::New<v8::String>("data").ToLocalChecked(), managed_data);
+  
+  Nan::Set(managed_dataset, Nan::New<v8::String>("spanGaps").ToLocalChecked(), Nan::True());
+  Nan::Set(managed_dataset, Nan::New<v8::String>("borderWidth").ToLocalChecked(), Nan::New<v8::Number>(1));
+  Nan::Set(managed_dataset, Nan::New<v8::String>("showLines").ToLocalChecked(), Nan::True());
+  Nan::Set(managed_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(0));
+  Nan::Set(managed_dataset, Nan::New<v8::String>("lineTension").ToLocalChecked(), Nan::New<v8::Number>(0));
+
+  v8::Local<v8::Array> chartData = Nan::New<v8::Array>(2);
+  Nan::Set(chartData, 0, used_dataset);
+  Nan::Set(chartData, 1, managed_dataset);  
+  info.GetReturnValue().Set(chartData);  
 }
 
 NAN_METHOD(Decoder::StreamEnd) {

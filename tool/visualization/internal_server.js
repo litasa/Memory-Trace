@@ -1,7 +1,4 @@
 const net = require('net');
-var enc = require('..\\build\\Release\\Encryption');
-
-var decoder = enc.Decoder();
 var event_count = 0;
 
 var last_time = performance.now();
@@ -15,17 +12,27 @@ var server = net.createServer(function(socket) {
   
   console.log('internal_server connection recieved');
   sendToServer('connection-established');
-
+  var timer_started = false;
   socket.on('data', function(data) {
+    if(timer_started === false) {
+      timer_started = true;
+      Visualization.startTimer();
+    }
     total_data += data.length;
     var start = performance.now();
-      decoder.unpackStream(data);
-      if(!decoder.streamEnd()) {
-        var arr = decoder.getMemoryAsArray();
-        var removed_heaps = decoder.getDeadHeaps();
-        arr = _.compact(arr);
-        Visualization.newDataset(arr);
-        Visualization.removeDatasets(removed_heaps);
+      Window.decoder.unpackStream(data);
+      if(!Window.decoder.streamEnd()) {
+        var win_size = parseInt(document.getElementById('window_size').value)
+		var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
+		var heap_id = 5;
+    var max_samples_per_second = 10;
+    Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, 10);
+        //var heaps = decoder.getAliveHeaps();
+        //var arr = Window.decoder.getMemoryAsArray();
+        //var removed_heaps = Window.decoder.getDeadHeaps();
+        //arr = _.compact(arr);
+        //Visualization.newDataset(arr);
+        //Visualization.removeDatasets(removed_heaps);
       }
       else {
         console.log("The stream Ended correctly")

@@ -1,6 +1,9 @@
 connected = false;
 server = null;
 
+var enc = require('..\\build\\Release\\Encryption');
+Window.decoder = enc.Decoder();
+
 window.onload = function() {
   initChart();
     setTimeout(function() {

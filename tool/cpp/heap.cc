@@ -81,11 +81,11 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
             if(it->second.addAllocation(timestamp, pointer, size)) {
                 alloc_to_core.emplace(pointer,it->second.getPointer());
                 used_memory_ += size;
-                simple_allocation_events_.push_back(std::make_pair(timestamp, used_memory_));
+                simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
                 return true;
             }
         }
-        //does the allocation span over two cores FIX THIS SO IT CORRECTLY REGISTERS STUFFS
+        //does the allocation span over two cores?
         for(auto it = cores_.begin(); it != cores_.end(); ++it) {
             auto next = std::next(it);
             if(next != cores_.end()) {
@@ -93,7 +93,7 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
                     it->second.addAllocation(timestamp,pointer,size, true);
                     alloc_to_core.emplace(pointer,it->second.getPointer());
                     used_memory_ += size;
-                    simple_allocation_events_.push_back(std::make_pair(timestamp, used_memory_));
+                    simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
                     return true;                 
                 }
             }
@@ -111,7 +111,7 @@ bool Heap::removeAllocation(size_t timestamp, size_t pointer) {
     }
     size_t removed_memory = core->removeAllocation(timestamp, pointer);
     used_memory_ -= removed_memory;
-    simple_allocation_events_.push_back(std::make_pair(timestamp,used_memory_));
+    simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
     return true;
 }
 

@@ -1,5 +1,6 @@
 var _ = require('underscore')
 datasets = [];
+Visualization_time = 0;
 initChart = function () {
 		var ctx = document.getElementById("myChart");
 		
@@ -61,7 +62,19 @@ initChart = function () {
 Visualization = new function() {
 	this.MaxHorizontal = 100;
 	this.latest_time = 0;
+	this.startTimer = function() {
+		setInterval(function() {
+			Visualization_time++;
+		}, 1000);
+	}
+
 	this.newDataset = function(arr) {
+		var win_size = parseInt(document.getElementById('window_size').value)
+		var min_value = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
+		var heap_id = 1;
+		//console.log(Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id));
+
+		/*
 
 		for(var i = 0; i < this.chart.data.datasets.length; ++i) {
 			var dataset = this.chart.data.datasets[i];
@@ -93,6 +106,7 @@ Visualization = new function() {
 			}
 			this.chart.data.datasets.push(dataset);
 		}
+		*/
 		this.updateScales();
 		this.chart.update();
 	}
@@ -137,5 +151,6 @@ ipcRenderer.on('memory', function(event, data) {
 
 setInterval(function() {
 	Visualization.updateScales();
-	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();	
+	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();
+	Visualization.chart.update();
 }, 2000);

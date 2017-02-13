@@ -6,14 +6,20 @@
 #include "core.h"
 #include "memory_object.h"
 
+struct heap_usage {
+        heap_usage(size_t u = 0, size_t m = 0) : used_memory(u), managed_memory(m) {};
+        size_t used_memory;
+        size_t managed_memory;
+    };
+
 class Heap : public MemoryObject {
 public:
     Heap(size_t timestamp, size_t id, std::string type, std::string name);
     ~Heap();
-
+    
     std::map<size_t,Core> cores_;//pointer to core start, core
     std::unordered_map<size_t,size_t> alloc_to_core; // allocation pointer -> core pointer
-    std::vector<std::pair<size_t, size_t>> simple_allocation_events_; //timestamp, used_size;
+    std::map<size_t,heap_usage> simple_allocation_events_; //timestamp, used_size;
     Core* getCore(size_t pointer);
     Core* getCoreForAllocation(size_t pointer);
 

@@ -51,6 +51,7 @@ class Decoder : public Nan::ObjectWrap {
     static NAN_METHOD(Printas);
     static NAN_METHOD(GetMemoryAsArray);
     static NAN_METHOD(GetDeadHeaps);
+    static NAN_METHOD(GetFilteredData);    
     static NAN_METHOD(StreamEnd);
 
     /* Wrapper functions - end */
