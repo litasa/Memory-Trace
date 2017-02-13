@@ -206,6 +206,19 @@ NAN_METHOD(Decoder::GetFilteredData) {
   v8::Local<v8::Object> used_dataset = Nan::New<v8::Object>();
   v8::Local<v8::Object> managed_dataset = Nan::New<v8::Object>();
   
+  /*
+  * Creates the JavaScript object: (content can change from the following example)
+  {
+    label: heap->getName,
+    allocationType: heap->getAllocatorType,
+    data: [{x: time, y: used_data}, {x: .., y: ..}, ..],
+    spanGaps: true,
+    borderWidth: 1,
+    showLines: true,
+    pointRadius: 0,
+    lineTension: 0
+  }
+  */
   Nan::Set(used_dataset, Nan::New<v8::String>("label").ToLocalChecked(), 
                          Nan::New<v8::String>(heap->getName().c_str()).ToLocalChecked());
   Nan::Set(used_dataset, Nan::New<v8::String>("allocatorType").ToLocalChecked(), 
@@ -217,7 +230,20 @@ NAN_METHOD(Decoder::GetFilteredData) {
   Nan::Set(used_dataset, Nan::New<v8::String>("showLines").ToLocalChecked(), Nan::True());
   Nan::Set(used_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(0));
   Nan::Set(used_dataset, Nan::New<v8::String>("lineTension").ToLocalChecked(), Nan::New<v8::Number>(0));
-
+  
+  /*
+  * Creates the JavaScript object: (content can change from the following example)
+  {
+    label: heap->getName,
+    allocationType: heap->getAllocatorType,
+    data: [{x: time, y: used_data}, {x: .., y: }, ..],
+    spanGaps: true,
+    borderWidth: 1,
+    showLines: true,
+    pointRadius: 0,
+    lineTension: 0
+  }
+  */
   Nan::Set(managed_dataset, Nan::New<v8::String>("label").ToLocalChecked(), 
                          Nan::New<v8::String>(heap->getName().c_str()).ToLocalChecked());
   Nan::Set(managed_dataset, Nan::New<v8::String>("allocatorType").ToLocalChecked(), 
