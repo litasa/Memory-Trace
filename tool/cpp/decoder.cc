@@ -427,6 +427,17 @@ Event::Event* Decoder::oneStep(bool save_to_file) {
       return nullptr;
     break;
   } //switch(current code)
+
+  size_t code_check;
+  if(!decodeValue(code_check)) {
+    if(print_error()) { std::cout << "The value check failed to read\n"; }
+    return nullptr;
+  }
+
+  if(current_code != code_check) {
+    if(print_error()) { std::cout << "Current code " << current_code << " was not equal to check value " << code_check << "\n"; }
+    return nullptr;
+  }
   last_timestamp = time_stamp;
   registerd_events++;
   saveToFile(save_to_file, event);

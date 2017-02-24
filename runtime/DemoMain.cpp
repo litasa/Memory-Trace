@@ -112,7 +112,7 @@ static void TestCustomAllocator()
 	BlockAllocator b(32, size, "Allocator B");
 
 	MemTrace::StartRecordingEvent("while loop");
-	while(times) {
+	while(true) {
 		MemTrace::StartRecordingEvent("start one iteration");
 		std::vector<void*> pointer_a;
 		std::vector<void*> pointer_b;

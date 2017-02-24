@@ -153,4 +153,4 @@ setInterval(function() {
 	Visualization.updateScales();
 	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();
 	Visualization.chart.update();
-}, 2000);
+}, 500);
