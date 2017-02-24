@@ -23,10 +23,13 @@ var external_server = net.createServer(function (socket) {
 
     socket.on('close', function(data) {
       console.log("socket close")
+      sendToChart('connection-closed')
+      
     })
 
     socket.on('connect', function(data) {
       console.log("socket connected")
+      sentToChart('connection-established')   
     })
 
     var counter = 0;
@@ -40,14 +43,7 @@ var external_server = net.createServer(function (socket) {
         throw "undefined data recieved"
       }
 
-      if (first_connect) {
-        first_connect = false;
-        sendToChart('first-data-recieved');
-        //socket.write("pause\0")
-      }
-
       total_data_recieved += data.length;
-      //sendToChart('event-done');
     })
 
     socket.on('drain', function(error) {
@@ -57,9 +53,7 @@ var external_server = net.createServer(function (socket) {
     socket.on('end', function(data) {
       var diff = performance.now() - start_time;
       console.log("connection ended in: " + diff + ", with sent data: " + total_data_recieved);
-      var data = {};
-      data.channel = 'stream-end';
-      ipcRenderer.send('to-internal-server', data)
+      sendToChart('connection-closed')
     })
 
     socket.on('error', function(error) {
@@ -79,6 +73,7 @@ var external_server = net.createServer(function (socket) {
 
 external_server.on('close', function() {
   console.log("server closed at time: " + performance.now());
+  sendToChart('connection-closed')
 });
 
 external_server.on('connection', function(socket) {

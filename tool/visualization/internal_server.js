@@ -7,16 +7,15 @@ var total_data = 0;
 var list = '\\\\.\\pipe\\internal_server'
 
 var update_frequency = 800;
-
+first_data = true;
 var server = net.createServer(function(socket) {
   
   console.log('internal_server connection recieved');
   sendToServer('connection-established');
-  var timer_started = false;
   socket.on('data', function(data) {
-    if(timer_started === false) {
-      timer_started = true;
-      Visualization.startTimer();
+    if(first_data === true) {
+      Window.started = true;
+      first_data = false;
     }
     total_data += data.length;
     var start = performance.now();
@@ -24,7 +23,7 @@ var server = net.createServer(function(socket) {
       if(!Window.decoder.streamEnd()) {
         var win_size = parseInt(document.getElementById('window_size').value)
 		var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
-		var heap_id = 5;
+		var heap_id = 1;
     var max_samples_per_second = 10;
     Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, 10);
         //var heaps = decoder.getAliveHeaps();
@@ -36,11 +35,13 @@ var server = net.createServer(function(socket) {
       }
       else {
         console.log("The stream Ended correctly")
+        Window.started = false;
       }
   })
 
   socket.on('error', function(err) {
     console.log(err);
+    Window.started = false;
   });
 
 }).listen(list);

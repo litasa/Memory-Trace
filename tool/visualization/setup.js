@@ -19,8 +19,14 @@ ipcRenderer.on('server-init', function(event, serverData) {
   console.log('address: ' + server.address + ' port: ' + server.port);
 })
 
-ipcRenderer.once('connection-established', function() {
-  connected = true;
+ipcRenderer.on('connection-established', function() {
+  Window.started = true;
+  console.log("connection entered")
+})
+
+ipcRenderer.on('connection-closed', function() {
+  Window.started = false;
+  console.log("connection closed")
 })
 
 ipcRenderer.on('event-done', function(event, data) {

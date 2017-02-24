@@ -1,6 +1,8 @@
 var _ = require('underscore')
 datasets = [];
-Visualization_time = 0;
+update_time = 500;
+Window.started = false;
+current_time = 0;
 initChart = function () {
 		var ctx = document.getElementById("myChart");
 		
@@ -72,41 +74,6 @@ Visualization = new function() {
 		var win_size = parseInt(document.getElementById('window_size').value)
 		var min_value = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
 		var heap_id = 1;
-		//console.log(Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id));
-
-		/*
-
-		for(var i = 0; i < this.chart.data.datasets.length; ++i) {
-			var dataset = this.chart.data.datasets[i];
-			var exists = _.findWhere(arr, {label: dataset.label})
-			
-			if(exists === undefined) {
-				//data does not already exist. Handle it below
-				continue;
-			}
-			var index = _.indexOf(arr,exists);
-			arr.splice(index,1);
-
-			dataset.data = dataset.data.concat(exists.data);
-			var win_size = parseInt(document.getElementById('window_size').value)
-			dataset.data = _.filter(dataset.data, function(point) {
-				return (point.x > Visualization.chart.scales['x-axis-0'].end - win_size);
-			})
-		}
-		for(var i = 0; i < arr.length; ++i) {
-			var dataset = {
-				label: arr[i].label,
-				allocatorType: arr[i].type,
-				spanGaps: true,
-				borderWidth: 1,
-				showLines: true,
-				pointRadius: 0,
-				lineTension: 0,
-				data: arr[i].data
-			}
-			this.chart.data.datasets.push(dataset);
-		}
-		*/
 		this.updateScales();
 		this.chart.update();
 	}
@@ -127,30 +94,20 @@ Visualization = new function() {
 	}
 
 	this.updateScales = function() {
-		if(document.getElementById('follow_alloc').checked) {
+		if(document.getElementById('follow_alloc').checked && Window.started === true) {
 			var win_size = parseInt(document.getElementById('window_size').value)
 			if(isNaN(win_size)) {
 				win_size = 5;
 			}
-			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
+			current_time += update_time/1000;
+			this.chart.scales['x-axis-0'].options.ticks.max = Math.max(current_time, 1);			
+			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].max - win_size, 0);
 		}
 	}
 }
-
-ipcRenderer.on('allocation', function(event, data) {
-
-})
-
-ipcRenderer.on('heap-created', function(event, data) {
-
-})
-
-ipcRenderer.on('memory', function(event, data) {
-  //Visualization.chartDataUpdate(data.array);
-})
 
 setInterval(function() {
 	Visualization.updateScales();
 	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();
 	Visualization.chart.update();
-}, 500);
+}, update_time);
