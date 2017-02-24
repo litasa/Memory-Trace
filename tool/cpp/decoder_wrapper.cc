@@ -189,6 +189,8 @@ NAN_METHOD(Decoder::GetFilteredData) {
 
   v8::Local<v8::Array> allocation_data = Nan::New<v8::Array>((int)temp.size());
   v8::Local<v8::Array> managed_data = Nan::New<v8::Array>((int)temp.size());
+
+  double time = 0;
   for(size_t i = 0; i < temp.size(); ++i) {
     double time = temp[i].first/obj->memory_state_->frequency_;
     v8::Local<v8::Object> used_scatter = Nan::New<v8::Object>();
@@ -256,9 +258,10 @@ NAN_METHOD(Decoder::GetFilteredData) {
   Nan::Set(managed_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(0));
   Nan::Set(managed_dataset, Nan::New<v8::String>("lineTension").ToLocalChecked(), Nan::New<v8::Number>(0));
 
-  v8::Local<v8::Array> chartData = Nan::New<v8::Array>(2);
+  v8::Local<v8::Array> chartData = Nan::New<v8::Array>(3);
   Nan::Set(chartData, 0, used_dataset);
-  Nan::Set(chartData, 1, managed_dataset);  
+  Nan::Set(chartData, 1, managed_dataset);
+  Nan::Set(chartData, 2, Nan::New<v8::Number>(obj->memory_state_->last_update_ / obj->memory_state_->frequency_));
   info.GetReturnValue().Set(chartData);  
 }
 

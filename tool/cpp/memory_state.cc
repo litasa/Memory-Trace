@@ -241,5 +241,6 @@ void MemoryState::addEvent(Event::Event* event) {
             break;
         }
     }
+    last_update_ = event->timestamp;
     //eventList.push_back(event);
 }

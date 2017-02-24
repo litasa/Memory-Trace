@@ -40,8 +40,10 @@ document.getElementById('select-file').addEventListener('click',function(){
 
 document.getElementById('Pause').addEventListener('click',function() {
     sendToServer("pause");
+    Window.started = false;
 },false)
 
 document.getElementById('Resume').addEventListener('click',function() {
     sendToServer("resume");
+    Window.started = true;
 },false)

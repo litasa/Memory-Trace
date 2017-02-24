@@ -2,7 +2,7 @@ var _ = require('underscore')
 datasets = [];
 update_time = 500;
 Window.started = false;
-current_time = 0;
+Window.current_time = 0;
 initChart = function () {
 		var ctx = document.getElementById("myChart");
 		
@@ -99,8 +99,7 @@ Visualization = new function() {
 			if(isNaN(win_size)) {
 				win_size = 5;
 			}
-			current_time += update_time/1000;
-			this.chart.scales['x-axis-0'].options.ticks.max = Math.max(current_time, 1);			
+			this.chart.scales['x-axis-0'].options.ticks.max = Math.max(Window.current_time, 1);			
 			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].max - win_size, 0);
 		}
 	}
