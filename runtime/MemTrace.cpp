@@ -255,11 +255,12 @@ namespace MemTrace
 		{
 			EmitUnsigned(count);
 			EmitUnsigned(code);
-			uint64_t delta = EmitTimeStamp();
+			EmitTimeStamp();
 			EmitUnsigned(GetCurrentThreadId());
 		}
 		void EndEvent(EventCode code)
 		{
+			EmitUnsigned(code);
 			count++;
 		}
 
