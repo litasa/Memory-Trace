@@ -38,7 +38,7 @@ initChart = function () {
             		display: false,
         		},
 				tooltips: {
-					enabled: false,
+					enabled: true,
 				},
 				animation: {
 					duration: 0

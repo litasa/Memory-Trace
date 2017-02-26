@@ -96,21 +96,14 @@ size_t RingBuffer::populate(char* buff, size_t size) {
         if(write_pos_ == capacity_) {
             write_pos_ = 0;
         }
-       //std::cout << "\ncopied: " << bytes_to_write << " using method 1: capacity_: "<< capacity_ << "\n";
-        //std::cout << "read_pos_: " << read_pos_ << " write_pos_: " << write_pos_ << " unread_: " << unread_ <<" data at read_pos_" << (int)(uint8_t)data_[read_pos_] << "\n";
     }
     else {
-        //std::cout << "\ncopied: " << bytes_to_write << " using method 2: capacity_: "<< capacity_ << "\n";
-        //std::cout << "read_pos_: " << read_pos_ << " write_pos_: " << write_pos_ << " unread_: " << unread_ << "\n";
         size_t size_1 = capacity_ - write_pos_;
         memcpy(data_ + write_pos_, buff, size_1);
-        //std::cout << "copied size_1: " << size_1 << " from write_pos_: " << " data at read_pos_" << (int)(uint8_t)data_[read_pos_] << "\n";
         size_t size_2 = bytes_to_write - size_1;
         memcpy(data_, buff + size_1, size_2);
         write_pos_ = size_2;
-        //std::cout << "copied size_2: " << size_2 << " from 0" << " data at read_pos_" << (int)(uint8_t)data_[read_pos_] << "\n";
         if(bytes_to_write == capacity_) {
-        //std::cout << "memcomp: " << memcmp(data_,buff,capacity_);
         }
     }
     unread_ += bytes_to_write;

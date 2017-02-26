@@ -164,11 +164,12 @@ NAN_METHOD(Decoder::GetFilteredData) {
   Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
   size_t window_size = info[0]->IntegerValue();
   size_t from_sec = info[1]->IntegerValue();
+  size_t to_sec = from_sec + window_size;
   size_t heap_number = info[2]->IntegerValue();
   size_t max_samples_per_second = info[3]->IntegerValue();
 
   //convert time to cpu ticks
-  size_t to_sec = (from_sec + window_size)*obj->memory_state_->frequency_;
+  to_sec = to_sec*obj->memory_state_->frequency_;
   from_sec *= obj->memory_state_->frequency_;
   size_t skip_rate = (1/(double)max_samples_per_second)*obj->memory_state_->frequency_;
 
@@ -179,10 +180,20 @@ NAN_METHOD(Decoder::GetFilteredData) {
   }
   auto fromIter = heap->simple_allocation_events_.lower_bound(from_sec);
   auto toIter = heap->simple_allocation_events_.upper_bound(to_sec);
+  if(toIter == heap->simple_allocation_events_.end()) {
+    toIter--;
+  }
   std::vector<std::pair<size_t,heap_usage*>> temp;
   //temp.reserve(5000); //reserving a large amount of space to minimize the amount of resizing
-  while(fromIter != heap->simple_allocation_events_.end() && fromIter != toIter) {
-    temp.push_back(std::make_pair(fromIter->first, &(fromIter->second)));
+  heap_usage* lastMemory = &(fromIter->second);
+  while(fromIter != heap->simple_allocation_events_.end()) {
+    if(fromIter->first - from_sec > skip_rate) {
+      temp.push_back(std::make_pair(from_sec, lastMemory));
+    }
+    else {
+      lastMemory = &(fromIter->second);
+      temp.push_back(std::make_pair(fromIter->first, lastMemory));
+    }
     from_sec += skip_rate;
     fromIter = heap->simple_allocation_events_.lower_bound(from_sec);
   }
@@ -217,7 +228,7 @@ NAN_METHOD(Decoder::GetFilteredData) {
     spanGaps: true,
     borderWidth: 1,
     showLines: true,
-    pointRadius: 0,
+    pointRadius: 1,
     lineTension: 0
   }
   */
@@ -230,7 +241,7 @@ NAN_METHOD(Decoder::GetFilteredData) {
   Nan::Set(used_dataset, Nan::New<v8::String>("spanGaps").ToLocalChecked(), Nan::True());
   Nan::Set(used_dataset, Nan::New<v8::String>("borderWidth").ToLocalChecked(), Nan::New<v8::Number>(1));
   Nan::Set(used_dataset, Nan::New<v8::String>("showLines").ToLocalChecked(), Nan::True());
-  Nan::Set(used_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(0));
+  Nan::Set(used_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(1));
   Nan::Set(used_dataset, Nan::New<v8::String>("lineTension").ToLocalChecked(), Nan::New<v8::Number>(0));
   
   /*
@@ -242,7 +253,7 @@ NAN_METHOD(Decoder::GetFilteredData) {
     spanGaps: true,
     borderWidth: 1,
     showLines: true,
-    pointRadius: 0,
+    pointRadius: 1,
     lineTension: 0
   }
   */
@@ -255,7 +266,7 @@ NAN_METHOD(Decoder::GetFilteredData) {
   Nan::Set(managed_dataset, Nan::New<v8::String>("spanGaps").ToLocalChecked(), Nan::True());
   Nan::Set(managed_dataset, Nan::New<v8::String>("borderWidth").ToLocalChecked(), Nan::New<v8::Number>(1));
   Nan::Set(managed_dataset, Nan::New<v8::String>("showLines").ToLocalChecked(), Nan::True());
-  Nan::Set(managed_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(0));
+  Nan::Set(managed_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(1));
   Nan::Set(managed_dataset, Nan::New<v8::String>("lineTension").ToLocalChecked(), Nan::New<v8::Number>(0));
 
   v8::Local<v8::Array> chartData = Nan::New<v8::Array>(3);
