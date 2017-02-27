@@ -24,8 +24,8 @@ var server = net.createServer(function(socket) {
       var win_size = parseInt(document.getElementById('window_size').value)
       var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
       var heap_id = 1;
-      var max_samples_per_second = 10;
-      Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, 10);
+      var max_samples_per_second = parseInt(document.getElementById('samples_per_second').value);
+      Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, max_samples_per_second);
       Window.current_time = Visualization.chart.data.datasets[2];
       Visualization.chart.data.datasets.splice(2,1);
     }

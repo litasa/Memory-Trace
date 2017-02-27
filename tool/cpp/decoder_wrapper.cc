@@ -13,7 +13,7 @@ NAN_MODULE_INIT(Decoder::Init) {
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   Nan::SetPrototypeMethod(tpl, "unpackStream", UnpackStream);
-  Nan::SetPrototypeMethod(tpl, "printas", Printas);
+  //Nan::SetPrototypeMethod(tpl, "printas", Printas);
   Nan::SetPrototypeMethod(tpl, "getMemoryAsArray", GetMemoryAsArray);
   Nan::SetPrototypeMethod(tpl, "getDeadHeaps", GetDeadHeaps);
   Nan::SetPrototypeMethod(tpl, "getFilteredMemorySnapshots", GetFilteredData);
@@ -184,7 +184,6 @@ NAN_METHOD(Decoder::GetFilteredData) {
     toIter--;
   }
   std::vector<std::pair<size_t,heap_usage*>> temp;
-  //temp.reserve(5000); //reserving a large amount of space to minimize the amount of resizing
   heap_usage* lastMemory = &(fromIter->second);
   while(fromIter != heap->simple_allocation_events_.end()) {
     if(fromIter->first - from_sec > skip_rate) {
