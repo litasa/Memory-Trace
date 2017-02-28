@@ -66,7 +66,6 @@ bool Decoder::decodeBool(bool& ret) {
 }
 
 void Decoder::trySteps() {
-  ring_->saveRollback();
   size_t current_count = registerd_events;
   size_t current_time = last_timestamp;
   size_t num_throwaway = 0;
@@ -91,8 +90,8 @@ void Decoder::trySteps() {
     throw;
   }
 
-  ring_->loadRollback(); //go back to right before successful event
-  ring_->saveRollback(); //and save it
+  ring_->loadRollback();
+  ring_->saveRollback();
 
   registerd_events = current_count;
   last_timestamp = current_time;

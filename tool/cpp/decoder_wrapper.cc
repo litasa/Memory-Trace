@@ -13,14 +13,9 @@ NAN_MODULE_INIT(Decoder::Init) {
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   Nan::SetPrototypeMethod(tpl, "unpackStream", UnpackStream);
-  //Nan::SetPrototypeMethod(tpl, "printas", Printas);
   Nan::SetPrototypeMethod(tpl, "getMemoryAsArray", GetMemoryAsArray);
-  Nan::SetPrototypeMethod(tpl, "getDeadHeaps", GetDeadHeaps);
   Nan::SetPrototypeMethod(tpl, "getFilteredMemorySnapshots", GetFilteredData);
   Nan::SetPrototypeMethod(tpl, "streamEnd", StreamEnd);
-  
-  /*Debug - start*/
-  /*Debug - end*/
 
   constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
   Nan::Set(target, Nan::New("Decoder").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
@@ -70,10 +65,6 @@ NAN_METHOD(Decoder::UnpackStream) {
     }while(total_populated < size);
 
     ring->clearRollback();
-}
-
-NAN_METHOD(Decoder::Printas) {
-  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
 }
 
 NAN_METHOD(Decoder::GetMemoryAsArray) {
@@ -144,20 +135,6 @@ NAN_METHOD(Decoder::GetMemoryAsArray) {
   //   Nan::Set(list_of_heaps, j, heap_obj);
   // }
   // info.GetReturnValue().Set(list_of_heaps);
-}
-
-NAN_METHOD(Decoder::GetDeadHeaps) {
-  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
-  std::vector<Heap> dead_heaps = obj->memory_state_->dead_heaps;
-  v8::Local<v8::Array> list_of_dead_heaps = Nan::New<v8::Array>((int)dead_heaps.size());
-
-  for(size_t i = 0; i < dead_heaps.size(); ++i) {
-    std::stringstream label;
-    label << "(" << dead_heaps[i].id_ << ")" << " " << dead_heaps[i].getName();
-    Nan::Set(list_of_dead_heaps,(uint32_t)i,Nan::New<v8::String>(label.str().c_str()).ToLocalChecked());
-  }
-  obj->memory_state_->dead_heaps.clear();
-  info.GetReturnValue().Set(list_of_dead_heaps);
 }
 
 NAN_METHOD(Decoder::GetFilteredData) {
