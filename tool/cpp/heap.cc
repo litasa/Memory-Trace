@@ -79,7 +79,7 @@ bool Heap::shrinkCore(size_t timestamp, size_t pointer, size_t size) {
 bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
         for(auto it = cores_.begin(); it != cores_.end(); ++it) {
             if(it->second.addAllocation(timestamp, pointer, size)) {
-                alloc_to_core.emplace(pointer,it->second.getPointer());
+                alloc_to_core.emplace_hint(alloc_to_core.cend(), pointer,it->second.getPointer());
                 used_memory_ += size;
                 simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
                 return true;
@@ -91,7 +91,7 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
             if(next != cores_.end()) {
                 if(it->second.pointerInside(pointer) && next->second.pointerInside(pointer + size)) {
                     it->second.addAllocation(timestamp,pointer,size, true);
-                    alloc_to_core.emplace(pointer,it->second.getPointer());
+                    alloc_to_core.emplace_hint(alloc_to_core.cend(), pointer,it->second.getPointer());
                     used_memory_ += size;
                     simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
                     return true;                 
@@ -110,6 +110,7 @@ bool Heap::removeAllocation(size_t timestamp, size_t pointer) {
         return false;
     }
     size_t removed_memory = core->removeAllocation(timestamp, pointer);
+    alloc_to_core.erase(pointer);    
     used_memory_ -= removed_memory;
     simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
     return true;
