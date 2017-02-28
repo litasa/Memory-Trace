@@ -40,7 +40,6 @@ public:
     double frequency_;
     size_t last_update_ = 0;    
     std::vector<Heap*> getHeaps();
-    std::vector<Heap> dead_heaps;
 private:
     bool debug = false;
     //std::vector<Event::Event*> eventList;
