@@ -4,17 +4,18 @@ Todo:
 * better communication between visualizer and source.
 * A forced allocation should register for two blocks.
 * When removing core also check for forced allocations
-* Remove ugly std::cout code
+* ~~Remove ugly std::cout code~~
 
 # Features
 * Create memory internal view
-* Add the ability to only track one specific heap
+* ~~Add the ability to only track one specific heap~~
 * Overlay two different runs ontop of eachother
-* Add a timesampler (for example get the current status of the heap every 200 ms)
+* ~~Add a timesampler (for example get the current status of the heap every 200 ms)~~
 
 # UI
-* add slider(or number box) for how much to filter
+* ~~add slider(or number box) for how much to filter~~
 * Add view for number of allocations per time
+* Filter allocations with regards to Y value also
 
 # Other
 * (experiment) Create a fast and good database solution to stream from
