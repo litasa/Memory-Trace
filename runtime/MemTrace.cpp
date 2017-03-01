@@ -113,31 +113,26 @@ namespace MemTrace
 	//-----------------------------------------------------------------------------
 	// Encodes integers and strings using variable-length encoding and windowing
 	// to compress the outgoing data.
-	class Encoder
+	class encoder
 	{
-	public:
-		void RecieveMessage() {
-			m_ListenFn(m_Buffers[m_CurBuffer ^ 1], kBufferSize);
-		}
 	private:
-		size_t                        m_WriteOffset;                    // Write offset within current buffer
-		TransmitBlockFn*              m_TransmitFn;                     // Function to transmit (partially) filled blocks
-		ListeningFn*			      m_ListenFn;
-		uint64_t                      m_StartTime;                      // System timer for initial event. We use a delta to generate smaller numbers.
+		size_t                        _write_offset;                    // Write offset within current buffer
+		TransmitBlockFn*              _transmit_function;                     // Function to transmit (partially) filled blocks
+		ListeningFn*			      _listen_function;
+		uint64_t                      _start_time;                      // System timer for initial event. We use a delta to generate smaller numbers.
 
-		int                           m_CurBuffer;                      // Index of current encoding buffer
-		uint8_t                       m_Buffers[2][kBufferSize];        // Raw encoding buffers
+		int                           _current_buffer;                      // Index of current encoding buffer
+		uint8_t                       _buffers[2][kBufferSize];        // Raw encoding buffers
 
-	private:
-		//-----------------------------------------------------------------------------
-		// Flush current buffer and flip buffers.
+																	   //-----------------------------------------------------------------------------
+																	   // Flush current buffer and flip buffers.
 		void TransmitCurrentBuffer()
 		{
-			(*m_TransmitFn)(m_Buffers[m_CurBuffer], m_WriteOffset);
+			(*_transmit_function)(_buffers[_current_buffer], _write_offset);
 
 			// Flip buffers.
-			m_WriteOffset = 0;
-			m_CurBuffer ^= 1;
+			_write_offset = 0;
+			_current_buffer ^= 1;
 			RecieveMessage();
 		}
 
@@ -146,23 +141,23 @@ namespace MemTrace
 		uint8_t* Reserve(size_t size)
 		{
 			ASSERT_FATAL(size < kBufferSize, "Block size too small for reservation");
-			uint8_t *base = m_Buffers[m_CurBuffer];
+			uint8_t *base = _buffers[_current_buffer];
 
-			if (size + m_WriteOffset > kBufferSize)
+			if (size + _write_offset > kBufferSize)
 			{
 				TransmitCurrentBuffer();
 
-				base = m_Buffers[m_CurBuffer];
+				base = _buffers[_current_buffer];
 			}
 
-			return base + m_WriteOffset;
+			return base + _write_offset;
 		}
 
 		//-----------------------------------------------------------------------------
 		// Commit <size> bytes. At least <size> bytes must have been previously reserved via Reserve()
 		void Commit(size_t size)
 		{
-			m_WriteOffset += size;
+			_write_offset += size;
 		}
 
 		//-----------------------------------------------------------------------------
@@ -170,28 +165,31 @@ namespace MemTrace
 		uint64_t EmitTimeStamp()
 		{
 			uint64_t t = TimerGetSystemCounter();
-			uint64_t delta = t - m_StartTime;
+			uint64_t delta = t - _start_time;
 			EmitUnsigned(delta);
 			return delta;
 		}
 
 	public:
+		void RecieveMessage() {
+			_listen_function(_buffers[_current_buffer ^ 1], kBufferSize);
+		}
 		//-----------------------------------------------------------------------------
 		// Initialize the encoder with a function that writes encoded blocks to some output device.
 		void Init(TransmitBlockFn *transmit_fn, ListeningFn* listen_fn)
 		{
-			m_WriteOffset = 0;
-			m_TransmitFn = transmit_fn;
-			m_ListenFn = listen_fn;
-			m_StartTime = TimerGetSystemCounter();
+			_write_offset = 0;
+			_transmit_function = transmit_fn;
+			_listen_function = listen_fn;
+			_start_time = TimerGetSystemCounter();
 		}
 
 		//-----------------------------------------------------------------------------
 		// Swap out the transmit function (for file->socket switcharoo)
-		void SetTransmitFn(TransmitBlockFn* fn, ListeningFn* listen_fn)
+		void Settransmit_function(TransmitBlockFn* fn, ListeningFn* listen_fn)
 		{
-			m_TransmitFn = fn;
-			m_ListenFn = listen_fn;
+			_transmit_function = fn;
+			_listen_function = listen_fn;
 		}
 
 		//-----------------------------------------------------------------------------
@@ -200,10 +198,9 @@ namespace MemTrace
 		{
 			TransmitCurrentBuffer();
 			// Immediately sync async write.
-			(*m_TransmitFn)(NULL, 0);
+			(*_transmit_function)(NULL, 0);
 		}
 
-	public:
 		//-----------------------------------------------------------------------------
 		// Encode a 64-bit integer to the output stream using an encoding that favors small numbers.
 		//
@@ -270,16 +267,16 @@ namespace MemTrace
 	// Subsystem global state
 	struct
 	{
-		bool            m_Active;                     // Non-zero if the system is active
-		Encoder         m_Encoder;                    // Encoder
-		uint32_t        m_NextHeapId;                 // Next free heap ID
-		CriticalSection m_Lock;                       // Synchronizes access to encoder/stream
+		bool            _active;                     // Non-zero if the system is active
+		encoder         _encoder;                    // encoder
+		uint32_t        _next_heap_id;                 // Next free heap ID
+		CriticalSection _lock;                       // Synchronizes access to encoder/stream
 
-		FileHandle      m_BootFile;
-		SOCKET          m_Socket;                     // Output socket during normal operation
-		char            m_BootFileName[128];
+		FileHandle      _boot_file;
+		SOCKET          _socket;                     // Output socket during normal operation
+		char            _boot_fileName[128];
 
-		bool			m_Paused = false;
+		bool			_paused = false;
 
 	} State;
 }
@@ -295,7 +292,7 @@ void MemTrace::DummyInitFunction(char)
 
 static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn, ListeningFn* listening_fn)
 {
-	if (State.m_Active)
+	if (State._active)
 	{
 #if defined(MEMTRACE_WINDOWS)
 		DebugBreak();
@@ -304,11 +301,11 @@ static void MemTrace::InitCommon(TransmitBlockFn* write_block_fn, ListeningFn* l
 #endif
 	}
 
-	State.m_Active = true;
-	State.m_Socket = INVALID_SOCKET;
+	State._active = true;
+	State._socket = INVALID_SOCKET;
 
-	State.m_Lock.Init();
-	State.m_Encoder.Init(write_block_fn, listening_fn);
+	State._lock.Init();
+	State._encoder.Init(write_block_fn, listening_fn);
 
 	BeginStream();
 }
@@ -325,14 +322,14 @@ void MemTrace::InitFile(const char* trace_temp_file)
 	}
 
 	// Stash the boot filename so we can delete it later.
-	Strcpy(State.m_BootFileName, ARRAY_SIZE(State.m_BootFileName), trace_temp_file);
+	Strcpy(State._boot_fileName, ARRAY_SIZE(State._boot_fileName), trace_temp_file);
 
-	State.m_BootFile = hf;
+	State._boot_file = hf;
 
 	// Callback that dumps event buffer data using async writes to our socket.
 	auto write_block_fn = [](const void* block, size_t size) -> void
 	{
-		FileWrite(State.m_BootFile, block, size);
+		FileWrite(State._boot_file, block, size);
 	};
 
 	InitCommon(write_block_fn, nullptr);
@@ -345,11 +342,11 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 
 	// Remember if we were already active; if we were we need to protect against memory allocations
 	// on other threads trying to trace while we're switching protocols.
-	const bool was_active = State.m_Active;
+	const bool was_active = State._active;
 
 	if (was_active)
 	{
-		State.m_Lock.Enter();
+		State._lock.Enter();
 	}
 
 #if defined(MEMTRACE_WINDOWS)
@@ -400,16 +397,17 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 	auto write_block_fn = [](const void* block, size_t size) -> void
 	{
 		// If we don't have a socket, we drop everything on the floor.
-		if (INVALID_SOCKET == State.m_Socket)
+		if (INVALID_SOCKET == State._socket)
 			return;
 		size_t sent = 0;
 		while (true)
 		{
-			sent = send(State.m_Socket, (const char*)block, (int)size, 0);
+			sent = send(State._socket, (const char*)block, (int)size, 0);
 			if (sent != -1) {
 				break;
 			}
 		}
+
 		if (size != sent)
 		{
 			MemTracePrint("MemTrace: send() failed - shutting down\n");
@@ -420,11 +418,11 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 
 	auto listen_fn = [](const void* block, size_t size) -> void
 	{
-		if (INVALID_SOCKET == State.m_Socket)
+		if (INVALID_SOCKET == State._socket)
 			return;
 		while (true)
 		{
-			size_t recieved = recv(State.m_Socket, (char *)block, (int)size, 0);
+			size_t recieved = recv(State._socket, (char *)block, (int)size, 0);
 			int error = WSAGetLastError();
 			if (error == WSAEWOULDBLOCK) //if no data is there to be read to read
 			{
@@ -440,12 +438,12 @@ void MemTrace::InitSocket(const char *server_ip_address, int server_port)
 	if (!was_active)
 	{
 		InitCommon(write_block_fn, listen_fn);
-		State.m_Socket = sock;
+		State._socket = sock;
 	}
 
 	if (was_active)
 	{
-		State.m_Lock.Leave();
+		State._lock.Leave();
 	}
 
 	if (error)
@@ -460,12 +458,12 @@ void MemTrace::HandleMessage(char* block, size_t size)
 	memcpy(str, block, size);
 	if (strcmp(str, "pause") == 0)
 	{
-		State.m_Paused = true;
+		State._paused = true;
 		MemTrace::Pause();
 	}
 	if (strcmp(str, "resume") == 0)
 	{
-		State.m_Paused = false;
+		State._paused = false;
 	}
 	//MemTracePrint("Message recieved, contained %s\n",str);
 }
@@ -473,247 +471,247 @@ void MemTrace::HandleMessage(char* block, size_t size)
 void MemTrace::Pause()
 {
 	//Insert own pause function here. Current implementation is only single threaded
-	while (State.m_Paused)
+	while (State._paused)
 	{
-		State.m_Encoder.RecieveMessage();
+		State._encoder.RecieveMessage();
 	}
 }
 
 void MemTrace::ErrorShutdown()
 {
-	bool was_active = State.m_Active;
+	bool was_active = State._active;
 
 	if (was_active)
-		State.m_Lock.Enter();
+		State._lock.Enter();
 
-	if (State.m_BootFile != kInvalidFileHandle)
+	if (State._boot_file != kInvalidFileHandle)
 	{
-		FileClose(State.m_BootFile);
-		State.m_BootFile = kInvalidFileHandle;
+		FileClose(State._boot_file);
+		State._boot_file = kInvalidFileHandle;
 
 #if defined(MEMTRACE_WINDOWS)
-		if (State.m_BootFileName[0])
+		if (State._boot_fileName[0])
 		{
-			DeleteFileA(State.m_BootFileName);
+			DeleteFileA(State._boot_fileName);
 		}
 #endif
 	}
 
-	if (State.m_Socket != INVALID_SOCKET)
+	if (State._socket != INVALID_SOCKET)
 	{
-		closesocket(State.m_Socket);
-		State.m_Socket = INVALID_SOCKET;
+		closesocket(State._socket);
+		State._socket = INVALID_SOCKET;
 	}
 
-	State.m_Active = false;
+	State._active = false;
 
 	if (was_active)
-		State.m_Lock.Leave();
+		State._lock.Leave();
 }
 
 void MemTrace::Flush()
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.Flush();
+	State._encoder.Flush();
 }
 
 void MemTrace::Shutdown()
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	State.m_Lock.Enter();
+	State._lock.Enter();
 
-	State.m_Encoder.BeginEvent(kEndStream);
-	State.m_Encoder.EndEvent(kEndStream);
+	State._encoder.BeginEvent(kEndStream);
+	State._encoder.EndEvent(kEndStream);
 
 	MemTracePrint("MemTrace: Shutting down.. ");
 
 	// There's a tiny chance of a race on shutdown here, but it's small enough
 	// that it shouldn't be a real problem. The race is:
-	// 1. Thread checks m_Active, finds 1, is timesliced before taking the lock
+	// 1. Thread checks _active, finds 1, is timesliced before taking the lock
 	// 2. Main thread calls Shutdown(), destroying everything
 	// 3. Thread resumes
-	State.m_Active = false;
+	State._active = false;
 
 	// Flush and shut down writer.
-	State.m_Encoder.Flush();
+	State._encoder.Flush();
 	MemTracePrint("Sent: %i Bytes\n", total_sent);
-	closesocket(State.m_Socket);
+	closesocket(State._socket);
 
-	State.m_Lock.Leave();
-	State.m_Lock.Destroy();
+	State._lock.Leave();
+	State._lock.Destroy();
 }
 
 void MemTrace::BeginStream() {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kBeginStream);
-	State.m_Encoder.EmitUnsigned(kStreamMagic);
-	State.m_Encoder.EmitString(kPlatformName);
-	State.m_Encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
-	State.m_Encoder.EndEvent(kBeginStream);
+	State._encoder.BeginEvent(kBeginStream);
+	State._encoder.EmitUnsigned(kStreamMagic);
+	State._encoder.EmitString(kPlatformName);
+	State._encoder.EmitUnsigned(TimerGetSystemFrequencyInt());
+	State._encoder.EndEvent(kBeginStream);
 }
 
 MemTrace::HeapId MemTrace::HeapCreate(const char* type, const char* name)
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return ~0u;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	HeapId id = State.m_NextHeapId++;
+	HeapId id = State._next_heap_id++;
 
-	State.m_Encoder.BeginEvent(kHeapCreate);
-	State.m_Encoder.EmitUnsigned(id);
-	State.m_Encoder.EmitString(type);
-	State.m_Encoder.EmitString(name);
-	State.m_Encoder.EndEvent(kHeapCreate);
+	State._encoder.BeginEvent(kHeapCreate);
+	State._encoder.EmitUnsigned(id);
+	State._encoder.EmitString(type);
+	State._encoder.EmitString(name);
+	State._encoder.EndEvent(kHeapCreate);
 	return id;
 }
 
 void MemTrace::HeapDestroy(HeapId heap_id)
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kHeapDestroy);
-	State.m_Encoder.EmitUnsigned(heap_id);
-	State.m_Encoder.EndEvent(kHeapDestroy);
+	State._encoder.BeginEvent(kHeapDestroy);
+	State._encoder.EmitUnsigned(heap_id);
+	State._encoder.EndEvent(kHeapDestroy);
 }
 
 void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kHeapAddCore);
-	State.m_Encoder.EmitUnsigned(heap_id);
-	State.m_Encoder.EmitPointer(base);
-	State.m_Encoder.EmitUnsigned(size_bytes);
-	State.m_Encoder.EndEvent(kHeapAddCore);
+	State._encoder.BeginEvent(kHeapAddCore);
+	State._encoder.EmitUnsigned(heap_id);
+	State._encoder.EmitPointer(base);
+	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EndEvent(kHeapAddCore);
 }
 
 void MemTrace::HeapGrowCore(HeapId heap_id, const void * base, size_t size_bytes)
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kHeapGrowCore);
-	State.m_Encoder.EmitUnsigned(heap_id);
-	State.m_Encoder.EmitPointer(base);
-	State.m_Encoder.EmitUnsigned(size_bytes);
-	State.m_Encoder.EndEvent(kHeapGrowCore);
+	State._encoder.BeginEvent(kHeapGrowCore);
+	State._encoder.EmitUnsigned(heap_id);
+	State._encoder.EmitPointer(base);
+	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EndEvent(kHeapGrowCore);
 }
 
 void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes)
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kHeapRemoveCore);
-	State.m_Encoder.EmitUnsigned(heap_id);
-	State.m_Encoder.EmitPointer(base);
-	State.m_Encoder.EmitUnsigned(size_bytes);
-	State.m_Encoder.EndEvent(kHeapRemoveCore);
+	State._encoder.BeginEvent(kHeapRemoveCore);
+	State._encoder.EmitUnsigned(heap_id);
+	State._encoder.EmitPointer(base);
+	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EndEvent(kHeapRemoveCore);
 }
 
 void MemTrace::HeapShrinkCore(HeapId heap_id, const void * base, size_t size_bytes)
 {
-	State.m_Encoder.BeginEvent(kHeapShrinkCore);
-	State.m_Encoder.EmitUnsigned(heap_id);
-	State.m_Encoder.EmitPointer(base);
-	State.m_Encoder.EmitUnsigned(size_bytes);
-	State.m_Encoder.EndEvent(kHeapShrinkCore);
+	State._encoder.BeginEvent(kHeapShrinkCore);
+	State._encoder.EmitUnsigned(heap_id);
+	State._encoder.EmitPointer(base);
+	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EndEvent(kHeapShrinkCore);
 }
 
 void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kHeapAllocate);
-	State.m_Encoder.EmitUnsigned(id);
-	State.m_Encoder.EmitPointer(ptr);
-	State.m_Encoder.EmitUnsigned(size_bytes);
-	State.m_Encoder.EndEvent(kHeapAllocate);
+	State._encoder.BeginEvent(kHeapAllocate);
+	State._encoder.EmitUnsigned(id);
+	State._encoder.EmitPointer(ptr);
+	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EndEvent(kHeapAllocate);
 }
 
 void MemTrace::HeapFree(HeapId id, const void* ptr)
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kHeapFree);
-	State.m_Encoder.EmitUnsigned(id);
-	State.m_Encoder.EmitPointer(ptr);
-	State.m_Encoder.EndEvent(kHeapFree);
+	State._encoder.BeginEvent(kHeapFree);
+	State._encoder.EmitUnsigned(id);
+	State._encoder.EmitPointer(ptr);
+	State._encoder.EndEvent(kHeapFree);
 }
 
 void MemTrace::HeapFreeAll(HeapId heap_id)
 {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kHeapFreeAll);
-	State.m_Encoder.EmitUnsigned(heap_id);
-	State.m_Encoder.EndEvent(kHeapFreeAll);
+	State._encoder.BeginEvent(kHeapFreeAll);
+	State._encoder.EmitUnsigned(heap_id);
+	State._encoder.EndEvent(kHeapFreeAll);
 }
 
 /* Starts a new new event recording. */
 void MemTrace::StartRecordingEvent(const char* eventName) {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kEventStart);
-	State.m_Encoder.EmitString(eventName);
-	State.m_Encoder.EndEvent(kEventStart);
+	State._encoder.BeginEvent(kEventStart);
+	State._encoder.EmitString(eventName);
+	State._encoder.EndEvent(kEventStart);
 }
 
 void MemTrace::StopRecordingEvent(const char* eventName) {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kEventEnd);
-	State.m_Encoder.EmitString(eventName);
-	State.m_Encoder.EndEvent(kEventEnd);
+	State._encoder.BeginEvent(kEventEnd);
+	State._encoder.EmitString(eventName);
+	State._encoder.EndEvent(kEventEnd);
 }
 
 void MemTrace::HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap) {
-	if (!State.m_Active)
+	if (!State._active)
 		return;
 
-	CSAutoLock lock(State.m_Lock);
+	CSAutoLock lock(State._lock);
 
-	State.m_Encoder.BeginEvent(kSetBackingAllocator);
-	State.m_Encoder.EmitUnsigned(for_heap);
-	State.m_Encoder.EmitUnsigned(set_to_heap);
-	State.m_Encoder.EndEvent(kSetBackingAllocator);
+	State._encoder.BeginEvent(kSetBackingAllocator);
+	State._encoder.EmitUnsigned(for_heap);
+	State._encoder.EmitUnsigned(set_to_heap);
+	State._encoder.EndEvent(kSetBackingAllocator);
 }
 
 #endif // MEMTRACE_ENABLE
