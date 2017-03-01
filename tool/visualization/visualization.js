@@ -105,7 +105,10 @@ Visualization = new function() {
 setInterval(function() {
 	var win_size = Visualization.chart.scales['x-axis-0'].max - Visualization.chart.scales['x-axis-0'].min
     var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
-    var heap_id = 1;
+    var heap_id = parseInt(document.getElementById('heap_id').value);
+	if(isNaN(heap_id)) {
+		heap_id = 0;
+	}
     var max_samples_per_second = parseInt(document.getElementById('samples_per_second').value);
 	if(isNaN(max_samples_per_second)) {
 		max_samples_per_second = 1;
