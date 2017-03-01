@@ -62,6 +62,7 @@ bool Heap::growCore(size_t timestamp, size_t pointer, size_t size) {
     Core* core = getCore(pointer);
     if(core != nullptr) {
         core->grow(size);
+        managed_memory_ += size;
         return true;    
     }
     return false;
@@ -71,6 +72,7 @@ bool Heap::shrinkCore(size_t timestamp, size_t pointer, size_t size) {
     Core* core = getCore(pointer);
     if(core != nullptr) {
         core->shrink(size);
+        managed_memory_ -= size;
         return true;    
     }
     return false;
