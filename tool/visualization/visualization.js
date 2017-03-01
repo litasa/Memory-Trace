@@ -107,6 +107,9 @@ setInterval(function() {
     var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
     var heap_id = 1;
     var max_samples_per_second = parseInt(document.getElementById('samples_per_second').value);
+	if(isNaN(max_samples_per_second)) {
+		max_samples_per_second = 1;
+	}
 	var byte_conversion = parseInt(document.getElementById("byte_conversion").value);
     Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, max_samples_per_second, byte_conversion);
 	if(Visualization.chart.data.datasets !== false) {
