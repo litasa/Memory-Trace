@@ -13,7 +13,7 @@ function readFile(filepath){
             console.log('No server to connect to')            
         }
         else {
-            client.connect(server.port, server.address, function() {
+            client.connect(Window.server.port, Window.server.address, function() {
 		        client.end(data);
 		    });
         }

@@ -15,7 +15,8 @@ ipcRenderer.on('server-init', function(event, serverData) {
   server = {};
   server.address = serverData.address;
   server.port = serverData.port;
-
+  Window.server = server;
+  console.log("recieved from server.js")
   console.log('address: ' + server.address + ' port: ' + server.port);
 })
 
