@@ -1,7 +1,7 @@
 var _ = require('underscore')
 datasets = [];
 update_time = 500;
-Window.started = false;
+Window.collecting = false;
 Window.current_time = 0;
 initChart = function () {
 		var ctx = document.getElementById("myChart");
@@ -94,11 +94,8 @@ Visualization = new function() {
 	}
 
 	this.updateScales = function() {
-		if(document.getElementById('follow_alloc').checked && Window.started === true) {
-			var win_size = parseInt(document.getElementById('window_size').value)
-			if(isNaN(win_size)) {
-				win_size = 5;
-			}
+		if(document.getElementById('follow_alloc').checked && Window.collecting === true) {
+			var win_size = this.chart.scales['x-axis-0'].max - this.chart.scales['x-axis-0'].min;
 			this.chart.scales['x-axis-0'].options.ticks.max = Math.max(Window.current_time, 1);			
 			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].max - win_size, 0);
 		}
@@ -106,6 +103,17 @@ Visualization = new function() {
 }
 
 setInterval(function() {
+	var win_size = Visualization.chart.scales['x-axis-0'].max - Visualization.chart.scales['x-axis-0'].min
+    var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
+    var heap_id = 1;
+    var max_samples_per_second = parseInt(document.getElementById('samples_per_second').value);
+	var byte_conversion = parseInt(document.getElementById("byte_conversion").value);
+    Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, max_samples_per_second, byte_conversion);
+	if(Visualization.chart.data.datasets !== false) {
+		Window.current_time = Visualization.chart.data.datasets[2];
+     	Visualization.chart.data.datasets.splice(2,1);
+	}
+      
 	Visualization.updateScales();
 	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();
 	Visualization.chart.update();

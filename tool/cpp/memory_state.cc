@@ -126,12 +126,7 @@ bool MemoryState::removeHeap(size_t timestamp, const uint64_t id) {
         return false;
     }
     heap->death_ = timestamp;
-    size_t items_removed = heaps_.erase(id);
-    if(items_removed == 1) {
-        return true;
-    }
-    if(debug) {std::cout << "removing heap failed" << std::endl;}
-    return false;
+    return true;
 }
 
 Heap* MemoryState::getHeap(const uint64_t id) {

@@ -20,7 +20,12 @@
     <input type="button" value="Resume" id="Resume"/>
 
     <script src="file_load.js"></script>
-    Display window size in seconds: <input type="number" id="window_size" value="5" min="1">
+    <select id="byte_conversion">
+      <option value="0">B</option>
+      <option value="1">KiB</option>
+      <option value="2">MB</option>
+      <option value="3">GB</option>
+    </select>
     </br>
     Left position <input type="number" id="chart_left" value="-1" min="-5">
     Right position <input type="number" id="chart_right" value="" min="1">

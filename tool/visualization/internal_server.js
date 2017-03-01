@@ -14,30 +14,24 @@ var server = net.createServer(function(socket) {
   sendToServer('connection-established');
   socket.on('data', function(data) {
     if(first_data === true) {
-      Window.started = true;
+      Window.collecting = true;
       first_data = false;
     }
     total_data += data.length;
     var start = performance.now();
     Window.decoder.unpackStream(data);
     if(!Window.decoder.streamEnd()) {
-      var win_size = parseInt(document.getElementById('window_size').value)
-      var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
-      var heap_id = 1;
-      var max_samples_per_second = parseInt(document.getElementById('samples_per_second').value);
-      Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, max_samples_per_second);
-      Window.current_time = Visualization.chart.data.datasets[2];
-      Visualization.chart.data.datasets.splice(2,1);
+      
     }
     else {
       console.log("The stream Ended correctly")
-      Window.started = false;
+      Window.collecting = false;
     }
   })
 
   socket.on('error', function(err) {
     console.log(err);
-    Window.started = false;
+    Window.collecting = false;
   });
 
 }).listen(list);

@@ -144,6 +144,7 @@ NAN_METHOD(Decoder::GetFilteredData) {
   size_t to_sec = from_sec + window_size;
   size_t heap_number = info[2]->IntegerValue();
   size_t max_samples_per_second = info[3]->IntegerValue();
+  size_t byte_conversion = info[4]->IntegerValue();
 
   //convert time to cpu ticks
   to_sec = to_sec*obj->memory_state_->frequency_;
@@ -180,13 +181,21 @@ NAN_METHOD(Decoder::GetFilteredData) {
   double time = 0;
   for(size_t i = 0; i < temp.size(); ++i) {
     double time = temp[i].first/obj->memory_state_->frequency_;
+    size_t used_memory = temp[i].second->used_memory;
+    size_t managed_memory = temp[i].second->managed_memory;
+
+    for(int j = 0; j < byte_conversion; ++j) {
+      used_memory >>= 10;
+      managed_memory >>= 10;
+    }
+
     v8::Local<v8::Object> used_scatter = Nan::New<v8::Object>();
     Nan::Set(used_scatter, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
-    Nan::Set(used_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(temp[i].second->used_memory));
+    Nan::Set(used_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_memory));
     
     v8::Local<v8::Object> managed_scatter = Nan::New<v8::Object>();
     Nan::Set(managed_scatter, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time));
-    Nan::Set(managed_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(temp[i].second->managed_memory));
+    Nan::Set(managed_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(managed_memory));
 
     Nan::Set(allocation_data, i, used_scatter);
     Nan::Set(managed_data, i, managed_scatter);
