@@ -63,10 +63,7 @@ namespace MemTrace
 {
 	//-----------------------------------------------------------------------------
 	// Various limits
-	enum
-	{
-		kBufferSize = 17520
-	};
+	const int kBufferSize = 17520;
 
 	// Start of stream protocol value - to handle version changes without crashing decoder.
 	static const uint32_t kStreamMagic = 0xbfaf0003;
@@ -124,6 +121,8 @@ namespace MemTrace
 		int                           _current_buffer;                      // Index of current encoding buffer
 		uint8_t                       _buffers[2][kBufferSize];        // Raw encoding buffers
 
+
+
 																	   //-----------------------------------------------------------------------------
 																	   // Flush current buffer and flip buffers.
 		void TransmitCurrentBuffer()
@@ -171,6 +170,8 @@ namespace MemTrace
 		}
 
 	public:
+		bool						 _callstack = false;
+
 		void RecieveMessage() {
 			_listen_function(_buffers[_current_buffer ^ 1], kBufferSize);
 		}
@@ -254,6 +255,12 @@ namespace MemTrace
 			EmitUnsigned(code);
 			EmitTimeStamp();
 			EmitUnsigned(GetCurrentThreadId());
+			if (_callstack)
+			{
+				uintptr_t trace[30];
+				DWORD hash;
+				RtlCaptureStackBackTrace(0, 30, (void**)trace, &hash);
+			}
 		}
 		void EndEvent(EventCode code)
 		{
@@ -277,6 +284,7 @@ namespace MemTrace
 		char            _boot_fileName[128];
 
 		bool			_paused = false;
+		bool			_callstack = false;
 
 	} State;
 }
@@ -465,7 +473,10 @@ void MemTrace::HandleMessage(char* block, size_t size)
 	{
 		State._paused = false;
 	}
-	//MemTracePrint("Message recieved, contained %s\n",str);
+	if (strcmp(str, "callstack") == 0)
+	{
+		State._encoder._callstack = !State._encoder._callstack;
+	}
 }
 
 void MemTrace::Pause()

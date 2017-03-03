@@ -47,3 +47,7 @@ document.getElementById('Resume').addEventListener('click',function() {
     sendToServer("resume");
     Window.started = true;
 },false)
+
+document.getElementById('Callstack').addEventListener('click',function() {
+    sendToServer("callstack");
+},false)

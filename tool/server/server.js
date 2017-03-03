@@ -101,3 +101,7 @@ ipcRenderer.on('pause', function(event, data) {
 ipcRenderer.on('resume', function(event, data) {
   external_socket.write('resume\0');
 })
+
+ipcRenderer.on('callstack', function(event, data) {
+  external_socket.write('callstack\0');
+})

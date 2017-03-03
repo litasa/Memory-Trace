@@ -100,6 +100,9 @@ Visualization = new function() {
 			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].max - win_size, 0);
 		}
 	}
+	this.updateYScale = function(choice) {
+		this.chart.scales['y-axis-0'].options.ticks.max = this.chart.scales['y-axis-0'].max + 1;
+	}
 }
 
 setInterval(function() {
