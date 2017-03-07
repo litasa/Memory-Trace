@@ -1,4 +1,5 @@
 const electron = require('electron')
+const fs = require('fs')
 //const test = require('./build/Release/Encryption')
 
 const ipc = electron.ipcMain
@@ -18,6 +19,10 @@ let internalServerWindow
 let testWindow
 
 function createWindow () {
+  var dir = "./previous_traces"
+  if (!fs.existsSync(dir)){
+    fs.mkdirSync(dir);
+  }
   // Create the browser window.
   //internalServerWindow = new BrowserWindow({width: 800, height: 600, title: "InternalServer"})
   if(testing) {
@@ -46,7 +51,7 @@ function createWindow () {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     chartWindow = null
-    serverWindow = null
+    serverWindow.close();
     //internalServerWindow = null
   })
   }

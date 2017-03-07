@@ -95,9 +95,10 @@ Visualization = new function() {
 
 	this.updateScales = function() {
 		if(document.getElementById('follow_alloc').checked && Window.collecting === true) {
-			var win_size = this.chart.scales['x-axis-0'].max - this.chart.scales['x-axis-0'].min;
+			var wanted_win_size = parseInt(document.getElementById('max_view_window').value);
+			var win_size = Math.min(this.chart.scales['x-axis-0'].max - this.chart.scales['x-axis-0'].min, wanted_win_size);
 			this.chart.scales['x-axis-0'].options.ticks.max = Math.max(Window.current_time, 1);			
-			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].max - win_size, 0);
+			this.chart.scales['x-axis-0'].options.ticks.min = Math.max(this.chart.scales['x-axis-0'].end - win_size, 0);
 		}
 	}
 	this.updateYScale = function(choice) {

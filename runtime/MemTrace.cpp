@@ -476,6 +476,7 @@ void MemTrace::HandleMessage(char* block, size_t size)
 	if (strcmp(str, "callstack") == 0)
 	{
 		State._encoder._callstack = !State._encoder._callstack;
+		MemTracePrint("Message recieved, contained %s\n", str);
 	}
 }
 

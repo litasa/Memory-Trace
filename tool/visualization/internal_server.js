@@ -36,10 +36,6 @@ var server = net.createServer(function(socket) {
 
 }).listen(list);
 
-server.on('listening', function(data) {
-  console.log("listening to: " + server.address())
-})
-
 ipcRenderer.on('stream-end', function(event, data) {
   console.log('finished recieving data: ' + total_data);
 })

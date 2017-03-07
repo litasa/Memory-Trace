@@ -14,7 +14,7 @@ var external_server = net.createServer(function (socket) {
 
   var date = new Date();
   var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
-  var name =  "./database/test_" + time + ".db";
+  var name =  "./previous_traces/test_" + time + ".db";
   var unmodified_stream = fs.createWriteStream(name);
 
     //write input data to file
