@@ -63,7 +63,10 @@ namespace MemTrace
 {
 	//-----------------------------------------------------------------------------
 	// Various limits
-	const int kBufferSize = 17520;
+	enum
+	{
+		kBufferSize = 17520
+	};
 
 	// Start of stream protocol value - to handle version changes without crashing decoder.
 	static const uint32_t kStreamMagic = 0xbfaf0003;
@@ -92,6 +95,8 @@ namespace MemTrace
 
 		//Stingray specifics from here on
 		kSetBackingAllocator = 30,
+		kTrackHeapAllocation,
+		kTrackHeapFree,
 	};
 
 	//-----------------------------------------------------------------------------
@@ -121,10 +126,8 @@ namespace MemTrace
 		int                           _current_buffer;                      // Index of current encoding buffer
 		uint8_t                       _buffers[2][kBufferSize];        // Raw encoding buffers
 
-
-
-																	   //-----------------------------------------------------------------------------
-																	   // Flush current buffer and flip buffers.
+		//-----------------------------------------------------------------------------
+		// Flush current buffer and flip buffers.
 		void TransmitCurrentBuffer()
 		{
 			(*_transmit_function)(_buffers[_current_buffer], _write_offset);
@@ -170,8 +173,6 @@ namespace MemTrace
 		}
 
 	public:
-		bool						 _callstack = false;
-
 		void RecieveMessage() {
 			_listen_function(_buffers[_current_buffer ^ 1], kBufferSize);
 		}
@@ -255,12 +256,6 @@ namespace MemTrace
 			EmitUnsigned(code);
 			EmitTimeStamp();
 			EmitUnsigned(GetCurrentThreadId());
-			if (_callstack)
-			{
-				uintptr_t trace[30];
-				DWORD hash;
-				RtlCaptureStackBackTrace(0, 30, (void**)trace, &hash);
-			}
 		}
 		void EndEvent(EventCode code)
 		{
@@ -284,7 +279,6 @@ namespace MemTrace
 		char            _boot_fileName[128];
 
 		bool			_paused = false;
-		bool			_callstack = false;
 
 	} State;
 }
@@ -473,11 +467,7 @@ void MemTrace::HandleMessage(char* block, size_t size)
 	{
 		State._paused = false;
 	}
-	if (strcmp(str, "callstack") == 0)
-	{
-		State._encoder._callstack = !State._encoder._callstack;
-		MemTracePrint("Message recieved, contained %s\n", str);
-	}
+	//MemTracePrint("Message recieved, contained %s\n",str);
 }
 
 void MemTrace::Pause()
@@ -692,7 +682,8 @@ void MemTrace::HeapFreeAll(HeapId heap_id)
 }
 
 /* Starts a new new event recording. */
-void MemTrace::StartRecordingEvent(const char* eventName) {
+void MemTrace::StartRecordingEvent(const char* eventName)
+{
 	if (!State._active)
 		return;
 
@@ -703,7 +694,8 @@ void MemTrace::StartRecordingEvent(const char* eventName) {
 	State._encoder.EndEvent(kEventStart);
 }
 
-void MemTrace::StopRecordingEvent(const char* eventName) {
+void MemTrace::StopRecordingEvent(const char* eventName)
+{
 	if (!State._active)
 		return;
 
@@ -714,7 +706,8 @@ void MemTrace::StopRecordingEvent(const char* eventName) {
 	State._encoder.EndEvent(kEventEnd);
 }
 
-void MemTrace::HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap) {
+void MemTrace::HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap)
+{
 	if (!State._active)
 		return;
 
@@ -724,6 +717,33 @@ void MemTrace::HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap) {
 	State._encoder.EmitUnsigned(for_heap);
 	State._encoder.EmitUnsigned(set_to_heap);
 	State._encoder.EndEvent(kSetBackingAllocator);
+}
+
+void MemTrace::HeapTrackAllocation(HeapId id, const void* ptr, const size_t size_bytes)
+{
+	if (!State._active)
+		return;
+
+	CSAutoLock lock(State._lock);
+
+	State._encoder.BeginEvent(kTrackHeapAllocation);
+	State._encoder.EmitUnsigned(id);
+	State._encoder.EmitPointer(ptr);
+	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EndEvent(kTrackHeapAllocation);
+}
+
+void MemTrace::HeapTrackFree(HeapId id, const void* ptr)
+{
+	if (!State._active)
+		return;
+
+	CSAutoLock lock(State._lock);
+
+	State._encoder.BeginEvent(kTrackHeapFree);
+	State._encoder.EmitUnsigned(id);
+	State._encoder.EmitPointer(ptr);
+	State._encoder.EndEvent(kTrackHeapFree);
 }
 
 #endif // MEMTRACE_ENABLE
