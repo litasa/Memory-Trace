@@ -30,6 +30,10 @@ public:
     bool removeAllocation(size_t timestamp, const size_t id, const size_t pointer);
     bool removeAllAllocations(size_t timestamp, const size_t id);
 
+    bool trackFree(size_t timestamp, const size_t id, const size_t pointer);
+    bool trackAllocation(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
+    
+
     void print(size_t timestamp, size_t id = -1) const;
     void printAll() const;
 

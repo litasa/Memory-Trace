@@ -225,6 +225,21 @@ void MemoryState::addEvent(Event::Event* event) {
             //std::cout << "Event: " << ((Event::EndEvent*)event)->name << " ended" << std::endl;            
             break;
         }
+
+        case Event::Code::TrackHeapAllocation :
+        {
+            Event::TrackAllocation* data = (Event::TrackAllocation*)event;
+            //trackAllocation(data->timestamp, data->id, data->pointer, data->size);
+            //std::cout << "track allocation" << std::endl;
+            break;
+        }
+        case Event::Code::TrackHeapFree :
+        {
+            Event::TrackFree* data = (Event::TrackFree*)event;
+            //trackFree(data->timestamp, data->id, data->pointer);
+            //std::cout << "track free" << std::endl;
+            break;
+        }
         default :
         {
             std::cout << "event not handled by memory: " << event->eventType << std::endl;

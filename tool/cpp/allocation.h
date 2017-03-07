@@ -5,8 +5,8 @@
 #include <vector>
 class Allocation : public MemoryObject{
 public:
-    Allocation::Allocation(size_t pointer, size_t size, size_t timestamp)
-    : MemoryObject(timestamp, pointer, size, 0)
+    Allocation::Allocation(size_t pointer, size_t size, size_t timestamp, bool real = false)
+    : MemoryObject(timestamp, pointer, size, 0), real_(real)
     {
         //std::cout << "allocation " << std::hex << pointer_ << std::dec << " with size: " << size << " at: " << timestamp << std::endl;
     }
@@ -15,5 +15,6 @@ public:
     }
 
     std::vector<size_t> inside_cores_;
+    bool real_;
 };
 #endif //ALLOCATION_H

@@ -38,6 +38,29 @@ document.getElementById('select-file').addEventListener('click',function(){
     });
 },false);
 
+document.getElementById('Unpack').addEventListener('click',function(){
+    dialog.showOpenDialog(function (fileNames) {
+        if(fileNames === undefined){
+            console.log("No file selected");
+        }
+        else {
+            
+            fs.readFile(fileNames[0], function (err, data) {
+                if(err){
+                    alert("An error ocurred reading the file :" + err.message);
+                    return;
+                }
+                if(server === null) {
+                    console.log('No server to connect to')            
+                }
+                else {
+                    Window.decoder.unpackStreamToDisk(data, "hii");
+                }
+            });
+        }
+    });
+},false);
+
 document.getElementById('Pause').addEventListener('click',function() {
     sendToServer("pause");
     Window.started = false;

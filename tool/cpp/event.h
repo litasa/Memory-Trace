@@ -28,6 +28,8 @@ namespace Event
 
             /*Stingray specifics from here on*/
             SetBackingAllocator = 30,
+            TrackHeapAllocation,
+		    TrackHeapFree,
         };
 
     struct Event {
@@ -341,6 +343,50 @@ namespace Event
 
         size_t for_heap;
         size_t set_to_heap;
+    };
+
+    struct TrackAllocation : public Event {
+        TrackAllocation(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes)
+        : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
+        ~TrackAllocation();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << pointer << "," << size << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "TrackAllocation " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n\tsize: " << size;
+            ss << "\n";
+        }
+
+        uint64_t id;
+        uint64_t pointer;
+        uint64_t size;
+    };
+
+    struct TrackFree : public Event {
+        TrackFree(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer)
+        : Event(eventNumber, eventType, time), id(id), pointer(pointer) { };
+        ~TrackFree();
+
+        virtual void getAsCSV(std::stringstream& ss) override {
+		    Event::getAsCSV(ss);
+		    ss << "," << id << "," << pointer << "\n";
+	    }
+
+        virtual void getAsVerbose(std::stringstream& ss) override {
+            ss << "(" << eventNumber << ")" << "TrackFree " << "at time: " << timestamp;
+            ss << "\n\tid: " << id;
+            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n";
+        }
+
+        uint64_t id;
+        uint64_t pointer;
     };
 }
 #endif //EVENT_H

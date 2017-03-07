@@ -18,6 +18,7 @@ public:
     ~Heap();
     
     std::map<size_t,Core> cores_;//pointer to core start, core
+    std::map<size_t,Allocation> allocations_;
     std::unordered_map<size_t,size_t> alloc_to_core; // allocation pointer -> core pointer
     std::map<size_t,heap_usage> simple_allocation_events_; //timestamp, used_size;
     Core* getCore(size_t pointer);
