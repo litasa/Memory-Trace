@@ -74,3 +74,28 @@ document.getElementById('Resume').addEventListener('click',function() {
 document.getElementById('Callstack').addEventListener('click',function() {
     sendToServer("callstack");
 },false)
+
+document.getElementById('ShouldVisualize').addEventListener('click', function() {
+    Window.visualization_enabled = !Window.visualization_enabled;
+    if(Window.visualization_enabled) {
+        alert("Visualization is now enabled");
+        var canvas = document.createElement('canvas');
+        canvas.id     = "myChart";
+        canvas.width  = 400;
+        canvas.height = 400;
+        document.getElementById('chart-goes-here').appendChild(canvas);
+        var legend = document.createElement('div');
+        legend.className = "chart-legend";
+        legend.id = "js-legend";
+        document.getElementById('legend-goes-here').appendChild(legend);
+        initChart();
+
+    }
+    else {
+        alert("Visualization is now disabled")
+        var elem = document.getElementById("myChart");
+        elem.remove();
+        elem = document.getElementById("js-legend");
+        elem.remove();
+    }
+},false)

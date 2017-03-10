@@ -3,6 +3,7 @@ server = null;
 
 var enc = require('..\\build\\Release\\Encryption');
 Window.decoder = enc.Decoder();
+Window.visualization_enabled = true;
 
 window.onload = function() {
   initChart();

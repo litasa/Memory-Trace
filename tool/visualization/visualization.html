@@ -14,7 +14,10 @@
 	<script src="../node_modules/chartjs-plugin-zoom/chartjs-plugin-zoom.js"></script>
 </head>
 <body>
-  <canvas id="myChart" width ="400" height="400"></canvas>
+  <input type="button" value="Disable/Enable Visualization" id="ShouldVisualize"/>
+    <div id="chart-goes-here">
+      <canvas id="myChart" width ="400" height="400"></canvas>
+    </div>
     <input type="button" value="Choose a file" id="select-file"/>
     <input type="button" value="Pause" id="Pause"/>
     <input type="button" value="Resume" id="Resume"/>
@@ -34,7 +37,8 @@
     </br>
     <input type="number" id="samples_per_second" value="10" min="1"> samples per sec
     <input type="number" id="max_view_window" value="30" min="0"> max view window
-    <div id="js-legend" class="chart-legend"></div>
-     
+    <div id="legend-goes-here">
+        <div id="js-legend" class="chart-legend"></div>
+    </div>
 </body>
 </html>

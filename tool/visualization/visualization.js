@@ -107,24 +107,26 @@ Visualization = new function() {
 }
 
 setInterval(function() {
-	var win_size = Visualization.chart.scales['x-axis-0'].max - Visualization.chart.scales['x-axis-0'].min
-    var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
-    var heap_id = parseInt(document.getElementById('heap_id').value);
-	if(isNaN(heap_id)) {
-		heap_id = 0;
+	if(Window.visualization_enabled) {
+		var win_size = Visualization.chart.scales['x-axis-0'].max - Visualization.chart.scales['x-axis-0'].min
+		var min_value = Math.max(Visualization.chart.scales['x-axis-0'].end - win_size, 0);
+		var heap_id = parseInt(document.getElementById('heap_id').value);
+		if(isNaN(heap_id)) {
+			heap_id = 0;
+		}
+		var max_samples_per_second = parseInt(document.getElementById('samples_per_second').value);
+		if(isNaN(max_samples_per_second)) {
+			max_samples_per_second = 1;
+		}
+		var byte_conversion = parseInt(document.getElementById("byte_conversion").value);
+		Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, max_samples_per_second, byte_conversion);
+		if(Visualization.chart.data.datasets !== false) {
+			Window.current_time = Visualization.chart.data.datasets[2];
+			Visualization.chart.data.datasets.splice(2,1);
+		}
+		
+		Visualization.updateScales();
+		document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();
 	}
-    var max_samples_per_second = parseInt(document.getElementById('samples_per_second').value);
-	if(isNaN(max_samples_per_second)) {
-		max_samples_per_second = 1;
-	}
-	var byte_conversion = parseInt(document.getElementById("byte_conversion").value);
-    Visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, max_samples_per_second, byte_conversion);
-	if(Visualization.chart.data.datasets !== false) {
-		Window.current_time = Visualization.chart.data.datasets[2];
-     	Visualization.chart.data.datasets.splice(2,1);
-	}
-      
-	Visualization.updateScales();
-	document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();
 	Visualization.chart.update();
 }, update_time);
