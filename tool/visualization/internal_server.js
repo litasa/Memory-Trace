@@ -7,19 +7,24 @@ var total_data = 0;
 var list = '\\\\.\\pipe\\internal_server'
 
 var update_frequency = 800;
-first_data = true;
-var server = net.createServer(function(socket) {
+Window.first_data = true;
+var server = newServer().listen(list);
+
+var newServer = function() {
+  return net.createServer(function(socket) {
   
   console.log('internal_server connection received');
   sendToServer('connection-established');
   socket.on('data', function(data) {
-    if(first_data === true) {
+    if(Window.first_data === true) {
       Window.collecting = true;
-      first_data = false;
+      Window.first_data = false;
     }
     total_data += data.length;
     var start = performance.now();
-    Window.decoder.unpackStream(data);
+    if(Window.visualization_enabled) {
+       Window.decoder.unpackStream(data);      
+    }
     if(!Window.decoder.streamEnd()) {
       
     }
@@ -34,7 +39,8 @@ var server = net.createServer(function(socket) {
     Window.collecting = false;
   });
 
-}).listen(list);
+})
+}
 
 ipcRenderer.on('stream-end', function(event, data) {
   console.log('finished recieving data: ' + total_data);
