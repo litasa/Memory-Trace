@@ -1,5 +1,6 @@
 Todo:
-
+# Ideas
+* Let heap_id 0 be reserved for systems that does not care about multiple heaps
 # Fixes
 * better communication between visualizer and source.
 * A forced allocation should register for two blocks.
