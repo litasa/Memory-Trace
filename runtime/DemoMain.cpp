@@ -119,17 +119,20 @@ static void TestCustomAllocator()
 		for(int j = 0; j < size - 1 ; ++j)
 		{
 			void* ap = a.Alloc();
+			Sleep(1);
 			void* bp = b.Alloc();
-			
+			Sleep(1);
 			pointer_a.push_back(ap);
 			pointer_b.push_back(bp);
 		}
 		for(int j = 0; j < size - 1; ++j)
 		{
 			a.Free(pointer_a[j]);
+			Sleep(1);
 		}
 		for(int j = 0; j < size - 1; ++j) {
 			b.Free(pointer_b[j]);
+			Sleep(1);
 		}
 		times--;
 		MemTrace::StopRecordingEvent("start one iteration");
