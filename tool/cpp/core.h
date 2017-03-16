@@ -7,22 +7,31 @@
 
 class Core : public MemoryObject {
     public:
-    Core(size_t pointer, size_t size, size_t timestamp);
+    Core(size_t timestamp, size_t pointer, size_t size);
+
+    //~Core();
 
     bool pointerInside(size_t pointer);
     bool allocationInside(size_t pointer, size_t size);
-    size_t removeAllocation(size_t pointer, size_t timestamp);
-    size_t addAllocation(size_t pointer, size_t size, size_t timestamp);
+    size_t removeAllocation(size_t timestamp, size_t pointer);
+    bool addAllocation(size_t timestamp, size_t pointer, size_t size, bool force = false);
     Allocation* getAllocation(size_t pointer);
 
     size_t getManagedSize() { return managed_memory_; }
+    size_t getNumberOfAllocations() { return allocations_.size(); }
+    bool removeAllAllocations();
 
-    private:
+    void printContent() const;
+
+    void grow(size_t size);
+    void shrink(size_t size);
+
     size_t end_;
-    size_t managed_memory_;
-    size_t used_memory_;
-
     std::unordered_map<size_t,Allocation> allocations_;//pointer to allocation start, allocation
+    private:
+    
+
+    
 };
 
 #endif //CORE_H

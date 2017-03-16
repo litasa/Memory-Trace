@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace MemTrace
 {
-  typedef uint32_t HeapId;
+  typedef uint64_t HeapId;
 
 #if MEMTRACE_ENABLE
 
@@ -51,17 +51,30 @@ namespace MemTrace
 
   void	  BeginStream();
 
-  HeapId  HeapCreate(const char* name);
+  HeapId  HeapCreate(const char* type, const char* name);
   void    HeapDestroy(HeapId heap_id);
 
   void    HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
+  void	  HeapGrowCore(HeapId heap_id, const void* base, size_t size_bytes);
   void    HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes);
+  void	  HeapShrinkCore(HeapId heap_id, const void* base, size_t size_bytes);
 
   void    HeapAllocate(HeapId heap_id, const void* ptr, size_t size_bytes);
+  void	  HeapTrackAllocation(HeapId heap_id, const void* ptr, size_t size_bytes);
   void    HeapFree(HeapId heap_id, const void* ptr);
+  void	  HeapTrackFree(HeapId heap_id, const void* ptr);
+  void	  HeapFreeAll(HeapId heap_id);
 
+  void	  StartRecordingEvent(const char* eventName);
+  void    StopRecordingEvent(const char* eventName);
+
+	void    HandleMessage(char* msg, size_t size);
+	void	  Pause();
 
   void DummyInitFunction(char dummy);
+
+  /* Stingray Engine Specifics */
+  void	  HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap);
 
 #endif
 

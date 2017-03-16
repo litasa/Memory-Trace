@@ -2,75 +2,129 @@
 
 #include <iostream>
 
-Heap::Heap(int id,
-    std::string name,
-    size_t timestamp)
-    : 
-    MemoryObject(0, timestamp, 0, 0), 
-    id_(id),
-    name_(name)
-    { }
+Heap::Heap(size_t timestamp, size_t id, std::string type, std::string name)
+    : MemoryObject(timestamp, 0, 0, 0), id_(id), type_(type), name_(name)
+{
+        
+}
+
+Heap::~Heap() {
+    //maps manages themselves
+}
+
+void Heap::printContent() const {
+    std::cout << "printing content for heap " << id_ << " of type: "<< type_.c_str() << "\n";
+    for(auto it = cores_.begin(); it != cores_.end(); ++it) {
+        it->second.printContent();
+    }
+}
 
 Core* Heap::getCore(size_t pointer) {
     auto found = cores_.find(pointer);
     if(found == cores_.end()) {
-        std::cout << "No core found" << std::endl;
         return nullptr;
     }
-    return &(found->second);
+    return (&found->second);
 }
 
 Core* Heap::getCoreForAllocation(size_t pointer) {
     auto found = alloc_to_core.find(pointer);
     if(found == alloc_to_core.end()) {
-        std::cout << "No core mapper Found" << std::endl;
         return nullptr;
     }
     return getCore(found->second);
 }
 
-size_t Heap::removeCore(size_t pointer, size_t timestamp) {
-    Core core = cores_.at(pointer);
-    size_t managed = core.getManagedSize();
-    size_t items_removed = cores_.erase(core.getPointer());
-    if(items_removed == 1) {
-        managed_memory_ -= managed;
-        return managed;
+bool Heap::removeCore(size_t timestamp, size_t pointer) {
+    auto it = cores_.find(pointer);
+    if(it == cores_.end()) {
+        std::cout << "remove Core failed in heap " << id_ << std::endl;
+        return false;
     }
-    return 0;
+    size_t managed = it->second.getManagedSize();
+    managed_memory_ -= managed;
+    cores_.erase(it);
+    return true;
 }
 
-size_t Heap::addCore(size_t pointer, size_t timestamp, size_t managed_size) {
-    Core c(pointer,timestamp,managed_size);
+bool Heap::addCore(size_t timestamp, size_t pointer, size_t managed_size) {
+    Core c(timestamp, pointer, managed_size);
     auto emp = cores_.insert(std::make_pair(pointer, c));
     if(!emp.second) {
-        //std::cout << "Adding Core failed: " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " timestamp: " << timestamp  << "\n";
-        return 0;
+        std::cout << "tryint to add already existing core: " << std::hex << pointer << std::dec << std::endl;
+        return false;
     }
     managed_memory_ += managed_size;
-    return managed_size;
+    return true;
 }
 
-size_t Heap::addAllocation(size_t pointer, size_t size, size_t timestamp) {
-    for(auto it = cores_.begin(); it != cores_.end(); ++it) {
-        if(it->second.addAllocation(pointer, size, timestamp)) {
-            alloc_to_core.emplace(pointer,it->second.getPointer());
-            used_memory_ += size;
-            simple_allocation_events_.push_back(std::make_pair(timestamp, used_memory_));
-            return size;
-        }
+bool Heap::growCore(size_t timestamp, size_t pointer, size_t size) {
+    Core* core = getCore(pointer);
+    if(core != nullptr) {
+        core->grow(size);
+        managed_memory_ += size;
+        return true;    
     }
-    std::cout << "Did not find core for: " << std::hex << pointer << std::dec << " in heap: " << id_;
-    return 0;
+    return false;
 }
 
-size_t Heap::removeAllocation(size_t pointer, size_t timestamp) {
+bool Heap::shrinkCore(size_t timestamp, size_t pointer, size_t size) {
+    Core* core = getCore(pointer);
+    if(core != nullptr) {
+        core->shrink(size);
+        managed_memory_ -= size;
+        return true;    
+    }
+    return false;
+}
+
+bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
+        for(auto it = cores_.begin(); it != cores_.end(); ++it) {
+            if(it->second.addAllocation(timestamp, pointer, size)) {
+                alloc_to_core.emplace_hint(alloc_to_core.cend(), pointer,it->second.getPointer());
+                used_memory_ += size;
+                simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
+                return true;
+            }
+        }
+        //does the allocation span over two cores?
+        for(auto it = cores_.begin(); it != cores_.end(); ++it) {
+            auto next = std::next(it);
+            if(next != cores_.end()) {
+                if(it->second.pointerInside(pointer) && next->second.pointerInside(pointer + size)) {
+                    it->second.addAllocation(timestamp,pointer,size, true);
+                    alloc_to_core.emplace_hint(alloc_to_core.cend(), pointer,it->second.getPointer());
+                    used_memory_ += size;
+                    simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
+                    return true;                 
+                }
+            }
+        }
+        std::cout << "did not find a core for allocation in heap: " << id_ << " pointer: " << std::hex << pointer << std::dec << " size: " << size << " at timestamp " << timestamp << "\n";
+    return false;
+}
+
+bool Heap::removeAllocation(size_t timestamp, size_t pointer) {
     Core* core = getCoreForAllocation(pointer);
     if(core == nullptr) {
-        return 0;
+        std::cout << "core was null for: " << std::hex << pointer << std::dec << "at " << timestamp << std::endl;
+        printContent();
+        return false;
     }
-    size_t removed_memory = core->removeAllocation(pointer,timestamp);
+    size_t removed_memory = core->removeAllocation(timestamp, pointer);
+    alloc_to_core.erase(pointer);    
     used_memory_ -= removed_memory;
-    simple_allocation_events_.push_back(std::make_pair(timestamp,used_memory_));
-    return removed_memory;
+    simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
+    return true;
+}
+
+bool Heap::setBackingAllocator(size_t alloc) {
+    backing_allocator_ids.push_back(alloc);
+    return true;
+}
+
+void Heap::printBacking() {
+    for(int i = 0; i < backing_allocator_ids.size(); ++i) {
+        std::cout << " " << backing_allocator_ids[i];
+    }
 }

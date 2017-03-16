@@ -1,10 +1,17 @@
 #include "core.h"
 #include <iostream>
 
-Core::Core(size_t pointer, size_t size, size_t timestamp) 
-        : MemoryObject(pointer, timestamp, 0, size)
+Core::Core(size_t timestamp, size_t pointer, size_t size) 
+        : MemoryObject(timestamp, pointer, 0, size)
 {
-    end_ = pointer + managed_memory_;
+    end_ = pointer + size;
+}
+
+void Core::printContent() const {
+    std::cout << "\tcore: " << std::hex << getPointer() << " end: " << end_ << std::dec << " managed: " <<  getManagedMemory() << " size: " <<  getUsedMemory() << " at timestmap: " << getBirth() << "\n";
+    for(auto it = allocations_.begin(); it != allocations_.end(); ++it) {
+        it->second.printContent();
+    }
 }
 
 bool Core::pointerInside(size_t pointer) {
@@ -12,41 +19,67 @@ bool Core::pointerInside(size_t pointer) {
 }
 
 bool Core::allocationInside(size_t pointer, size_t size) {
-    return (getPointer() <= pointer) && (end_ >= pointer + size);
+    return (getPointer() <= pointer) && (end_ >= (pointer + size));
 }
 
 Allocation* Core::getAllocation(size_t pointer) {
     auto found = allocations_.find(pointer);
     if(found == allocations_.end()) {
-        std::cout << "No allocation Found" << std::endl;
         return nullptr;
     }
     return &(found->second);
 }
 
-size_t Core::removeAllocation(size_t pointer, size_t timestamp) {
-    size_t bytes = allocations_.at(pointer).getUsedMemory();
-    size_t num_removed = allocations_.erase(pointer);
-    if(num_removed == 1) {
-        used_memory_ -= bytes;
-        setLastUpdate(timestamp);
-        return bytes;
+size_t Core::removeAllocation(size_t timestamp, size_t pointer) {
+    auto it = allocations_.find(pointer);
+    if(it == allocations_.end()) {
+        return 0;
     }
-    return 0;
+    size_t bytes = it->second.getUsedMemory();
+    allocations_.erase(it);
+    used_memory_ -= bytes;
+    setLastUpdate(timestamp);
+    return bytes;
 }
 
-size_t Core::addAllocation(size_t pointer, size_t size, size_t timestamp) {
+bool Core::addAllocation(size_t timestamp, size_t pointer, size_t size, bool force) {
     if(allocationInside(pointer,size)) {
         Allocation a(pointer, size, timestamp);
         auto emp = allocations_.insert(std::make_pair(pointer,a));
         if(!emp.second) {
-            //std::cout << "Adding Allocation failed (already exists): " << "Id: " << id << ", pointer: " << std::hex << pointer << std::dec << " size: " << size << " created: " << timestamp << "\n";
-            //std::cout << "had values: " << emp.first->second.allocator_id << " pointer: " << std::hex << emp.first->second.pointer << std::dec << " size: " << emp.first->second.size << " created: " << emp.first->second.birth << "\n";
-            return 0;
+            return false;
         }
         used_memory_ += size;
         setLastUpdate(timestamp);
-        return size;
+        return true;
     }
-    return 0;
+    if(force) {
+        Allocation a(pointer, size, timestamp);
+        auto emp = allocations_.insert(std::make_pair(pointer,a));
+        if(!emp.second) {
+            return false;
+        }
+        used_memory_ += size;
+        setLastUpdate(timestamp);
+        return true;
+    }
+    return false;
+}
+
+bool Core::removeAllAllocations() {
+    allocations_.clear();
+    return true;
+}
+
+void Core::shrink(size_t size) {
+    managed_memory_ -= size;
+    end_ -= size;
+    if(managed_memory_ < used_memory_) {
+        std::cout << "shrunk the managed memory below used memory" << std::endl;
+    }
+}
+
+void Core::grow(size_t size) {
+    managed_memory_ += size;
+    end_ += size;
 }

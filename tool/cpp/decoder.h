@@ -13,21 +13,29 @@ class Decoder : public Nan::ObjectWrap {
 
     RingBuffer* getRingbuffer();
     bool decodeValue(uint64_t& ret);
-    bool decodeValue(int& ret);
     bool decodeString(std::string& ret);
+    bool decodeBool(bool& ret);
+    bool decodeHeader(std::stringstream& ss,uint64_t& count, uint64_t& current_code, uint64_t& time_stamp, uint64_t& thread_id);
 
-    bool oneStep();
+    Event::Event* oneStep(bool save_to_file = true);
 
-    bool trySteps(unsigned int number);
+    bool print_ok();
+    bool print_error();
+
+    void saveToFile(bool save, Event::Event* event);
+
+    void trySteps();
 
     MemoryState* memory_state_;
     
     std::vector<Heap*> getMemoryState();
   private:
-    explicit Decoder(); //128 * 1024, 0x20000
+    explicit Decoder();
     ~Decoder();
-
-    bool recording_ = true;
+    std::ofstream outfile;
+    const char* filename = "test.csv";
+    bool _stream_end = false;
+    //bool print_ok = false;
     size_t last_timestamp = 0;
     RingBuffer* ring_;
     
@@ -40,24 +48,9 @@ class Decoder : public Nan::ObjectWrap {
 
     static NAN_METHOD(New);
     static NAN_METHOD(UnpackStream);
-    static NAN_METHOD(Printas);
     static NAN_METHOD(GetMemoryAsArray);
-    static NAN_METHOD(GetNewEvents);
-
-    enum EventCode
-    {
-      BeginStream     = 1,
-      EndStream,
-
-      HeapCreate = 18,
-      HeapDestroy,
-
-      HeapAddCore,
-      HeapRemoveCore,
-
-      HeapAllocate,
-      HeapFree,
-    };
+    static NAN_METHOD(GetFilteredData);    
+    static NAN_METHOD(StreamEnd);
 
     /* Wrapper functions - end */
 };

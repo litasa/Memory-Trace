@@ -63,7 +63,7 @@ public:
     m_ElemSize = elem_size;
     m_ElemCount = elem_count;
 
-    m_HeapId = MemTrace::HeapCreate(name);
+    m_HeapId = MemTrace::HeapCreate("BlockAllocator",name);
     MemTrace::HeapAddCore(m_HeapId, m_MemRange, mem_size);
 
     for (size_t i = 0; i < elem_count - 1; ++i)
@@ -111,8 +111,9 @@ static void TestCustomAllocator()
 	BlockAllocator a(16, size, "Allocator A");
 	BlockAllocator b(32, size, "Allocator B");
 
-	
+	MemTrace::StartRecordingEvent("while loop");
 	while(true) {
+		MemTrace::StartRecordingEvent("start one iteration");
 		std::vector<void*> pointer_a;
 		std::vector<void*> pointer_b;
 		for(int j = 0; j < size - 1 ; ++j)
@@ -120,29 +121,31 @@ static void TestCustomAllocator()
 			void* ap = a.Alloc();
 			Sleep(1);
 			void* bp = b.Alloc();
-			
+			Sleep(1);
 			pointer_a.push_back(ap);
 			pointer_b.push_back(bp);
 		}
-		Sleep(1);
 		for(int j = 0; j < size - 1; ++j)
 		{
 			a.Free(pointer_a[j]);
+			Sleep(1);
 		}
 		for(int j = 0; j < size - 1; ++j) {
 			b.Free(pointer_b[j]);
-			if (j % 5 == 0) {
-				Sleep(1);
-			}
+			Sleep(1);
 		}
+		times--;
+		MemTrace::StopRecordingEvent("start one iteration");
 	}
+	MemTrace::StopRecordingEvent("while loop");
 }
 
 #define PRINT 0
 
 int main(int argc, char* argv[])
 {
-	MemTrace::InitSocket("192.168.1.123",8181);
+	//MemTrace::InitSocket("192.168.1.123",8181);
+	MemTrace::InitSocket("10.150.44.215",8181);
 	//MemTrace::InitFile("nasdnas.bin");
 	TestCustomAllocator();
 	MemTrace::Flush();

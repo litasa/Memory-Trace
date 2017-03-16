@@ -3,7 +3,7 @@
 
 class MemoryObject {
 public:
-    MemoryObject(size_t pointer, size_t timestamp, size_t used_size, size_t managed_size) 
+    MemoryObject(size_t timestamp, size_t pointer, size_t used_size, size_t managed_size) 
     : pointer_(pointer), birth_(timestamp), death_(-1), last_update_(timestamp), used_memory_(used_size), managed_memory_(managed_size)
     { }
     
@@ -24,13 +24,14 @@ public:
     size_t getLastUpdate() const { return last_update_; }
     void   setLastUpdate(size_t time) { last_update_ = time;}
 
-protected:
     size_t pointer_;
-    const size_t birth_;
+    size_t birth_;
     size_t death_;
     size_t last_update_;
     size_t used_memory_;
     size_t managed_memory_;
+protected:
+   
 private:
 
 };
