@@ -605,7 +605,7 @@ void MemTrace::HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes)
 	State._encoder.EndEvent(kHeapAddCore);
 }
 
-void MemTrace::HeapGrowCore(HeapId heap_id, const void * base, size_t size_bytes)
+void MemTrace::HeapGrowCore(HeapId heap_id, const void * base, size_t new_size_bytes)
 {
 	if (!State._active)
 		return;
@@ -615,7 +615,7 @@ void MemTrace::HeapGrowCore(HeapId heap_id, const void * base, size_t size_bytes
 	State._encoder.BeginEvent(kHeapGrowCore);
 	State._encoder.EmitUnsigned(heap_id);
 	State._encoder.EmitPointer(base);
-	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EmitUnsigned(new_size_bytes);
 	State._encoder.EndEvent(kHeapGrowCore);
 }
 
@@ -633,16 +633,16 @@ void MemTrace::HeapRemoveCore(HeapId heap_id, const void* base, size_t size_byte
 	State._encoder.EndEvent(kHeapRemoveCore);
 }
 
-void MemTrace::HeapShrinkCore(HeapId heap_id, const void * base, size_t size_bytes)
+void MemTrace::HeapShrinkCore(HeapId heap_id, const void * base, size_t new_size_bytes)
 {
 	State._encoder.BeginEvent(kHeapShrinkCore);
 	State._encoder.EmitUnsigned(heap_id);
 	State._encoder.EmitPointer(base);
-	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EmitUnsigned(new_size_bytes);
 	State._encoder.EndEvent(kHeapShrinkCore);
 }
 
-void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
+void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes, bool allocated_by_heap)
 {
 	if (!State._active)
 		return;
@@ -653,10 +653,11 @@ void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes)
 	State._encoder.EmitUnsigned(id);
 	State._encoder.EmitPointer(ptr);
 	State._encoder.EmitUnsigned(size_bytes);
+	State._encoder.EmitUnsigned((uint64_t)(allocated_by_heap));
 	State._encoder.EndEvent(kHeapAllocate);
 }
 
-void MemTrace::HeapFree(HeapId id, const void* ptr)
+void MemTrace::HeapFree(HeapId id, const void* ptr, bool allocated_by_heap)
 {
 	if (!State._active)
 		return;
@@ -666,6 +667,7 @@ void MemTrace::HeapFree(HeapId id, const void* ptr)
 	State._encoder.BeginEvent(kHeapFree);
 	State._encoder.EmitUnsigned(id);
 	State._encoder.EmitPointer(ptr);
+	State._encoder.EmitUnsigned((uint64_t)(allocated_by_heap));	
 	State._encoder.EndEvent(kHeapFree);
 }
 
