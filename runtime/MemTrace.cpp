@@ -94,9 +94,7 @@ namespace MemTrace
 		kEventEnd,
 
 		//Stingray specifics from here on
-		kSetBackingAllocator = 30,
-		kTrackHeapAllocation,
-		kTrackHeapFree,
+		kSetBackingAllocator = 30
 	};
 
 	//-----------------------------------------------------------------------------
@@ -212,20 +210,23 @@ namespace MemTrace
 		void EmitUnsigned(uint64_t val)
 		{
 			uint8_t* out = Reserve(10);
-			uint8_t byte;
+			uint8_t  byte;
 			size_t   i = 0;
 
 			do
 			{
-				uint64_t var = (val & 0x7f);
-				byte = (uint8_t)(var);
-				out[i++] = byte;
+				out[i++] = (uint8_t)(val & 0x7f);
 				val >>= 7;
 			} while (val);
-			uint8_t temp = byte | 0x80;
-			out[i - 1] = temp;
-
+			out[i - 1] |= 0x80;
 			Commit(i);
+		}
+
+		void EmitBool(bool val)
+		{
+			uint8_t* out = Reserve(1);
+			out[0] = (uint8_t(val) & 0x7f) | 0x80;
+			Commit(1);
 		}
 
 		//-----------------------------------------------------------------------------
@@ -281,12 +282,6 @@ namespace MemTrace
 		bool			_paused = false;
 
 	} State;
-}
-
-//-----------------------------------------------------------------------------
-// Dummy to force initialization object to exist in top-level executable
-void MemTrace::DummyInitFunction(char)
-{
 }
 
 //-----------------------------------------------------------------------------
@@ -653,7 +648,7 @@ void MemTrace::HeapAllocate(HeapId id, const void* ptr, size_t size_bytes, bool 
 	State._encoder.EmitUnsigned(id);
 	State._encoder.EmitPointer(ptr);
 	State._encoder.EmitUnsigned(size_bytes);
-	State._encoder.EmitUnsigned((uint64_t)(allocated_by_heap));
+	State._encoder.EmitBool(allocated_by_heap);
 	State._encoder.EndEvent(kHeapAllocate);
 }
 
@@ -667,7 +662,7 @@ void MemTrace::HeapFree(HeapId id, const void* ptr, bool allocated_by_heap)
 	State._encoder.BeginEvent(kHeapFree);
 	State._encoder.EmitUnsigned(id);
 	State._encoder.EmitPointer(ptr);
-	State._encoder.EmitUnsigned((uint64_t)(allocated_by_heap));	
+	State._encoder.EmitBool(allocated_by_heap);	
 	State._encoder.EndEvent(kHeapFree);
 }
 
@@ -721,31 +716,31 @@ void MemTrace::HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap)
 	State._encoder.EndEvent(kSetBackingAllocator);
 }
 
-void MemTrace::HeapTrackAllocation(HeapId id, const void* ptr, const size_t size_bytes)
-{
-	if (!State._active)
-		return;
-
-	CSAutoLock lock(State._lock);
-
-	State._encoder.BeginEvent(kTrackHeapAllocation);
-	State._encoder.EmitUnsigned(id);
-	State._encoder.EmitPointer(ptr);
-	State._encoder.EmitUnsigned(size_bytes);
-	State._encoder.EndEvent(kTrackHeapAllocation);
-}
-
-void MemTrace::HeapTrackFree(HeapId id, const void* ptr)
-{
-	if (!State._active)
-		return;
-
-	CSAutoLock lock(State._lock);
-
-	State._encoder.BeginEvent(kTrackHeapFree);
-	State._encoder.EmitUnsigned(id);
-	State._encoder.EmitPointer(ptr);
-	State._encoder.EndEvent(kTrackHeapFree);
-}
+//void MemTrace::HeapTrackAllocation(HeapId id, const void* ptr, const size_t size_bytes)
+//{
+//	if (!State._active)
+//		return;
+//
+//	CSAutoLock lock(State._lock);
+//
+//	State._encoder.BeginEvent(kTrackHeapAllocation);
+//	State._encoder.EmitUnsigned(id);
+//	State._encoder.EmitPointer(ptr);
+//	State._encoder.EmitUnsigned(size_bytes);
+//	State._encoder.EndEvent(kTrackHeapAllocation);
+//}
+//
+//void MemTrace::HeapTrackFree(HeapId id, const void* ptr)
+//{
+//	if (!State._active)
+//		return;
+//
+//	CSAutoLock lock(State._lock);
+//
+//	State._encoder.BeginEvent(kTrackHeapFree);
+//	State._encoder.EmitUnsigned(id);
+//	State._encoder.EmitPointer(ptr);
+//	State._encoder.EndEvent(kTrackHeapFree);
+//}
 
 #endif // MEMTRACE_ENABLE
