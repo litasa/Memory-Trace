@@ -5,6 +5,13 @@
     height: 250px;
     border: 3px solid #73AD21;
     padding: 10px;
+    overflow-y: scroll;
+}
+#connect-message {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  border: 3px solid purple;
 }
 
 .num_box {
@@ -13,7 +20,7 @@
 
 .legend {
   position: absolute;
-  bottom: 90px;
+  bottom: 110px;
   right: 0px;
   width: 325px;
   height: 80px;
@@ -40,10 +47,9 @@
 }
 
 .container {
-    position: relative;
-    border: 3px solid red;    
-    height: 96vh;
-    width: 96vw;
+    position: relative;  
+    height: 100%;
+    width: 100%;
 }
 
 .bottomleft {

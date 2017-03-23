@@ -54,7 +54,7 @@ document.getElementById('Unpack').addEventListener('click',function(){
                     console.log('No server to connect to')            
                 }
                 else {
-                    Window.decoder.unpackStreamToDisk(data, "hii");
+                    Window.decoder.unpackStream(data, fileNames[0] + ".test");
                 }
             });
         }
@@ -71,9 +71,9 @@ document.getElementById('Resume').addEventListener('click',function() {
     Window.started = true;
 },false)
 
-document.getElementById('Callstack').addEventListener('click',function() {
-    sendToServer("callstack");
-},false)
+// document.getElementById('Callstack').addEventListener('click',function() {
+//     sendToServer("callstack");
+// },false)
 
 document.getElementById('Reset').addEventListener('click',function() {
     Window.decoder = enc.Decoder();

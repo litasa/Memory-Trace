@@ -32,7 +32,8 @@ function createWindow () {
   }
   else {
       chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
-      serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server", show: true})
+      chartWindow.setMenuBarVisibility(false);
+      serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server", show: false})
   //serverWindow.hide();
   //
   // and load the index.html of the app.
@@ -89,10 +90,6 @@ ipc.on('to-chart', function(event, data) {
 ipc.on('to-server', function(event, data) {
   serverWindow.webContents.send(data.channel, data);
 })
-
-// ipc.on('to-internal-server', function(event, data) {
-//   internalServerWindow.webContents.send(data.channel, data);
-// })
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

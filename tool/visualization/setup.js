@@ -19,6 +19,8 @@ ipcRenderer.on('server-init', function(event, serverData) {
   Window.server = server;
   console.log("recieved from server.js")
   console.log('address: ' + server.address + ' port: ' + server.port);
+  var text = document.createTextNode('address: ' + server.address + ' port: ' + server.port);
+  document.getElementById("connect-message").appendChild(text);
 })
 
 ipcRenderer.on('connection-established', function() {
