@@ -32,7 +32,7 @@ function createWindow () {
   }
   else {
       chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
-      serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server", show: false})
+      serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server", show: true})
   //serverWindow.hide();
   //
   // and load the index.html of the app.

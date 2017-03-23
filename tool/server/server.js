@@ -5,7 +5,6 @@ const stream = require('stream');
 var internal_socket;
 var external_socket;
 // external_server
-var external_server = newServer().listen(8181);
 
 var newServer = function() {
   return net.createServer(function (socket) {
@@ -73,6 +72,8 @@ var newServer = function() {
 
 })
 }
+
+var external_server = newServer().listen(8181);
 
 external_server.on('close', function() {
   console.log("server closed at time: " + performance.now());

@@ -15,7 +15,7 @@ initChart = function () {
 					var text = [];
 					text.push('<ul class="' + chart.id + '-legend">');
 					for (var i = 0; i < chart.data.datasets.length; i++) {
-						text.push('<li><span style="background-color:' + chart.data.datasets[i].backgroundColor + '"></span>');
+						text.push('<li><span style="background-color:' + chart.data.datasets[i].htmlColor + '"></span>');
 						if (chart.data.datasets[i].label) {
 							if(chart.data.datasets[i].allocatorType) {
 								text.push(chart.data.datasets[i].label + " - " + chart.data.datasets[i].allocatorType);

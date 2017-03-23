@@ -8,7 +8,6 @@ var list = '\\\\.\\pipe\\internal_server'
 
 var update_frequency = 800;
 Window.first_data = true;
-var server = newServer().listen(list);
 
 var newServer = function() {
   return net.createServer(function(socket) {
@@ -41,6 +40,7 @@ var newServer = function() {
 
 })
 }
+var server = newServer().listen(list);
 
 ipcRenderer.on('stream-end', function(event, data) {
   console.log('finished recieving data: ' + total_data);

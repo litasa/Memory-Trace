@@ -207,7 +207,7 @@ NAN_METHOD(Decoder::GetFilteredData) {
   /*
   * Creates the JavaScript object: (content can change from the following example)
   {
-    label: heap->getName,
+    label: "(used) " heap->getName,
     allocationType: heap->getAllocatorType,
     data: [{x: time, y: used_data}, {x: .., y: ..}, ..],
     spanGaps: true,
@@ -218,7 +218,7 @@ NAN_METHOD(Decoder::GetFilteredData) {
   }
   */
   Nan::Set(used_dataset, Nan::New<v8::String>("label").ToLocalChecked(), 
-                         Nan::New<v8::String>(heap->getName().c_str()).ToLocalChecked());
+                         Nan::New<v8::String>(("(used) " + heap->getName()).c_str()).ToLocalChecked());
   Nan::Set(used_dataset, Nan::New<v8::String>("allocatorType").ToLocalChecked(), 
                          Nan::New<v8::String>(heap->getType().c_str()).ToLocalChecked());
   Nan::Set(used_dataset, Nan::New<v8::String>("data").ToLocalChecked(), allocation_data);
@@ -226,13 +226,15 @@ NAN_METHOD(Decoder::GetFilteredData) {
   Nan::Set(used_dataset, Nan::New<v8::String>("spanGaps").ToLocalChecked(), Nan::True());
   Nan::Set(used_dataset, Nan::New<v8::String>("borderWidth").ToLocalChecked(), Nan::New<v8::Number>(1));
   Nan::Set(used_dataset, Nan::New<v8::String>("showLines").ToLocalChecked(), Nan::True());
+  Nan::Set(used_dataset, Nan::New<v8::String>("backgroundColor").ToLocalChecked(), Nan::New<v8::String>("rgba(200, 255, 200, 1)").ToLocalChecked());
+  Nan::Set(used_dataset, Nan::New<v8::String>("htmlColor").ToLocalChecked(), Nan::New<v8::String>("rgb(200,255,200)").ToLocalChecked());  
   Nan::Set(used_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(1));
   Nan::Set(used_dataset, Nan::New<v8::String>("lineTension").ToLocalChecked(), Nan::New<v8::Number>(0));
   
   /*
   * Creates the JavaScript object: (content can change from the following example)
   {
-    label: heap->getName,
+    label: "(managed) " heap->getName,
     allocationType: heap->getAllocatorType,
     data: [{x: time, y: used_data}, {x: .., y: }, ..],
     spanGaps: true,
@@ -243,13 +245,15 @@ NAN_METHOD(Decoder::GetFilteredData) {
   }
   */
   Nan::Set(managed_dataset, Nan::New<v8::String>("label").ToLocalChecked(), 
-                         Nan::New<v8::String>(heap->getName().c_str()).ToLocalChecked());
+                         Nan::New<v8::String>(("(managed) " + heap->getName()).c_str()).ToLocalChecked());
   Nan::Set(managed_dataset, Nan::New<v8::String>("allocatorType").ToLocalChecked(), 
                          Nan::New<v8::String>(heap->getType().c_str()).ToLocalChecked());
   Nan::Set(managed_dataset, Nan::New<v8::String>("data").ToLocalChecked(), managed_data);
   
   Nan::Set(managed_dataset, Nan::New<v8::String>("spanGaps").ToLocalChecked(), Nan::True());
   Nan::Set(managed_dataset, Nan::New<v8::String>("borderWidth").ToLocalChecked(), Nan::New<v8::Number>(1));
+  Nan::Set(managed_dataset, Nan::New<v8::String>("backgroundColor").ToLocalChecked(), Nan::New<v8::String>("rgba(200, 200, 200, 1)").ToLocalChecked());
+  Nan::Set(managed_dataset, Nan::New<v8::String>("htmlColor").ToLocalChecked(), Nan::New<v8::String>("rgb(200,200,200)").ToLocalChecked());
   Nan::Set(managed_dataset, Nan::New<v8::String>("showLines").ToLocalChecked(), Nan::True());
   Nan::Set(managed_dataset, Nan::New<v8::String>("pointRadius").ToLocalChecked(), Nan::New<v8::Number>(1));
   Nan::Set(managed_dataset, Nan::New<v8::String>("lineTension").ToLocalChecked(), Nan::New<v8::Number>(0));
