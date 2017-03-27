@@ -2,6 +2,7 @@ Todo:
 
 # Ideas
 * Let heap_id 0 be reserved for systems that does not care about multiple heaps
+* Enable change of recieve and send buffer size during initialization
 
 # Fixes
 * better communication between visualizer and source.
