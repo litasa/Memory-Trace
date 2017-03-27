@@ -108,6 +108,10 @@ Visualization = new function() {
 	}
 }
 
+var updateStatus = function() {
+	document.getElementById('status').innerHTML = Window.Status;
+}
+
 setInterval(function() {
 	if(Window.visualization_enabled) {
 		var win_size = Visualization.chart.scales['x-axis-0'].max - Visualization.chart.scales['x-axis-0'].min
@@ -131,4 +135,6 @@ setInterval(function() {
 		document.getElementById('js-legend').innerHTML = Visualization.chart.generateLegend();
 	}
 	Visualization.chart.update();
+
+	updateStatus();
 }, update_time);
