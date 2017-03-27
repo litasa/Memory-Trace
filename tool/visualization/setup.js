@@ -2,14 +2,16 @@ connected = false;
 server = null;
 
 var enc = require('..\\build\\Release\\Encryption');
+var Visualization = require("./visualization.js")
 Window.decoder = enc.Decoder();
 Window.visualization_enabled = true;
 
 window.onload = function() {
-  initChart();
-    setTimeout(function() {
+  Visualization.initChart();
+  setTimeout(function() {
     sendToServer('please-connect', {addr: list});
   },2000);
+  setInterval(Visualization.setUpdate,500, Visualization);
 }
 
 ipcRenderer.on('server-init', function(event, serverData) {
