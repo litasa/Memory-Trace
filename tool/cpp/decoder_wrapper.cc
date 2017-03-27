@@ -147,8 +147,8 @@ NAN_METHOD(Decoder::GetFilteredData) {
   size_t byte_conversion = info[4]->IntegerValue();
 
   //convert time to cpu ticks
+  from_sec *= obj->memory_state_->frequency_;  
   to_sec = to_sec*obj->memory_state_->frequency_;
-  from_sec *= obj->memory_state_->frequency_;
   size_t skip_rate = (1/(double)max_samples_per_second)*obj->memory_state_->frequency_;
 
   Heap* heap = obj->memory_state_->getHeap(heap_number);
@@ -156,49 +156,55 @@ NAN_METHOD(Decoder::GetFilteredData) {
     info.GetReturnValue().Set(Nan::False());
     return;
   }
-  auto fromIter = heap->simple_allocation_events_.lower_bound(from_sec);
+  auto from_iter = heap->simple_allocation_events_.lower_bound(from_sec);
   auto toIter = heap->simple_allocation_events_.upper_bound(to_sec);
   if(toIter == heap->simple_allocation_events_.end()) {
     toIter--;
   }
   std::vector<std::pair<size_t,heap_usage*>> temp;
-  heap_usage* lastMemory = &(fromIter->second);
-  while(fromIter != heap->simple_allocation_events_.end()) {
-    if(fromIter->first - from_sec > skip_rate) {
-      temp.push_back(std::make_pair(from_sec, lastMemory));
-    }
-    else {
-      lastMemory = &(fromIter->second);
-      temp.push_back(std::make_pair(fromIter->first, lastMemory));
-    }
+  heap_usage* first_memory = &(from_iter->second);
+
+  //sample the allocator and put into temp
+  while(from_iter != heap->simple_allocation_events_.end()) {
+    first_memory = &(from_iter->second);
+    temp.push_back(std::make_pair(from_iter->first, first_memory));
     from_sec += skip_rate;
-    fromIter = heap->simple_allocation_events_.lower_bound(from_sec);
+    from_iter = heap->simple_allocation_events_.lower_bound(from_sec);
   }
 
   v8::Local<v8::Array> allocation_data = Nan::New<v8::Array>((int)temp.size());
   v8::Local<v8::Array> managed_data = Nan::New<v8::Array>((int)temp.size());
 
   double time = 0;
+  size_t last_used_memory = -1;
+  size_t last_managed_memory = -1;
   for(size_t i = 0; i < temp.size(); ++i) {
     double time = temp[i].first/obj->memory_state_->frequency_;
     size_t used_memory = temp[i].second->used_memory;
     size_t managed_memory = temp[i].second->managed_memory;
-
     for(int j = 0; j < byte_conversion; ++j) {
       used_memory >>= 10;
       managed_memory >>= 10;
     }
 
-    v8::Local<v8::Object> used_scatter = Nan::New<v8::Object>();
-    Nan::Set(used_scatter, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
-    Nan::Set(used_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_memory));
+    if(last_used_memory != used_memory)
+    {
+      v8::Local<v8::Object> used_scatter = Nan::New<v8::Object>();
+      Nan::Set(used_scatter, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time)); //time
+      Nan::Set(used_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(used_memory));
+      Nan::Set(allocation_data, i, used_scatter);
+      last_used_memory = used_memory;
+    }
     
-    v8::Local<v8::Object> managed_scatter = Nan::New<v8::Object>();
-    Nan::Set(managed_scatter, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time));
-    Nan::Set(managed_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(managed_memory));
-
-    Nan::Set(allocation_data, i, used_scatter);
-    Nan::Set(managed_data, i, managed_scatter);
+    if(last_managed_memory != managed_memory)
+    {
+      v8::Local<v8::Object> managed_scatter = Nan::New<v8::Object>();
+      Nan::Set(managed_scatter, Nan::New<v8::String>("x").ToLocalChecked(), Nan::New<v8::Number>(time));
+      Nan::Set(managed_scatter, Nan::New<v8::String>("y").ToLocalChecked(), Nan::New<v8::Number>(managed_memory));
+      Nan::Set(managed_data, i, managed_scatter);
+      last_managed_memory = managed_memory;
+    }
+    
   }
 
   v8::Local<v8::Object> used_dataset = Nan::New<v8::Object>();
