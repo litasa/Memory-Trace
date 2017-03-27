@@ -1,13 +1,9 @@
 const net = require('net');
-var event_count = 0;
-
-var last_time = performance.now();
-var total_data = 0;
 
 var list = '\\\\.\\pipe\\internal_server'
 
-var update_frequency = 800;
 Window.first_data = true;
+Window.Status = "Waiting for connection";
 
 var newServer = function() {
   return net.createServer(function(socket) {
@@ -18,18 +14,11 @@ var newServer = function() {
     if(Window.first_data === true) {
       Window.collecting = true;
       Window.first_data = false;
+      Window.Status ="Collecting data";
     }
-    total_data += data.length;
     var start = performance.now();
     if(Window.visualization_enabled) {
        Window.decoder.unpackStream(data);      
-    }
-    if(!Window.decoder.streamEnd()) {
-      
-    }
-    else {
-      console.log("The stream Ended correctly")
-      Window.collecting = false;
     }
   })
 
@@ -38,6 +27,17 @@ var newServer = function() {
     Window.collecting = false;
   });
 
+  socket.on('close', function(err) {
+    if(!Window.decoder.streamEnd()) {
+      console.log("Stream ended incorrectly")
+      Window.Status = "Connection ended incorrectly"
+    }
+    else {
+      console.log("The stream Ended correctly")
+      Window.collecting = false;
+      Window.Status = "Connection ended correctly"
+    }
+  })
 })
 }
 var server = newServer().listen(list);
