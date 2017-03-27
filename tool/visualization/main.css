@@ -3,7 +3,7 @@
     right: 3px;
     top: 30px;
     width: 325px;
-    height: 250px;
+    height: calc(100% - 250px);
     border: 3px solid red;
     padding-top: 10px;
     overflow-y: scroll;
@@ -17,7 +17,8 @@
 
 .commands {
   position: absolute;
-  top: 0px;
+  top: 3px;
+  left: 3px;
   width: calc(100% - 350px);
   border: 3px solid orange;
 }

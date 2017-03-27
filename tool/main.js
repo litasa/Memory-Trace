@@ -31,7 +31,7 @@ function createWindow () {
     testWindow.webContents.openDevTools()
   }
   else {
-      chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart"})
+      chartWindow = new BrowserWindow({width: 800, height: 600, title: "Chart", minHeight: 490, minWidth: 760})
       chartWindow.setMenuBarVisibility(false);
       serverWindow = new BrowserWindow({width: 800, height: 600, title: "Server", show: false})
   //serverWindow.hide();

@@ -3,6 +3,7 @@ datasets = [];
 update_time = 500;
 Window.collecting = false;
 Window.current_time = 0;
+
 initChart = function () {
 		var ctx = document.getElementById("myChart");
 		
@@ -43,7 +44,8 @@ initChart = function () {
 				animation: {
 					duration: 0
 				},
-				responsive: false,
+				responsive: true,
+				maintainAspectRatio: false,
 				pan: {
 						enabled: true,
 						mode: 'xy'
