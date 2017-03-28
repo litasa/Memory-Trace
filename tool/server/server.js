@@ -1,6 +1,7 @@
 const net = require('net');
 const fs = require('fs');
 const stream = require('stream');
+const ipcRenderer = require('electron').ipcRenderer
 const sendTo = require('../util/sendTo.js')
 
 var internal_socket;
@@ -10,10 +11,6 @@ var external_socket;
 var newServer = function() {
   return net.createServer(function (socket) {
   external_socket = socket;
-  var total_data_recieved = 0;
-  var first_connect = true;
-  var start_time = 0;
-  var last_time = 0;
 
   var date = new Date();
   var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
@@ -25,52 +22,20 @@ var newServer = function() {
     socket.pipe(unmodified_stream);
 
     socket.on('close', function(data) {
-      console.log("socket close")
       sendTo.Chart('connection-closed')
-      
     })
 
     socket.on('connect', function(data) {
-      console.log("socket connected")
       sentTo.Chart('connection-established')   
     })
 
-    var counter = 0;
     socket.on('data', function (data) {
-      if(counter % 500 == 0) {
-        counter = 0;
-        console.log("data recieved");
-      }
-      counter++;
-      if(data === undefined) {
-        throw "undefined data recieved"
-      }
-
-      total_data_recieved += data.length;
-    })
-
-    socket.on('drain', function(error) {
-      console.log("socket drain")
+      //could add a counter on data.length to get recieved data
     })
 
     socket.on('end', function(data) {
-      var diff = performance.now() - start_time;
-      console.log("connection ended in: " + diff + ", with sent data: " + total_data_recieved);
       sendTo.Chart('connection-closed')
     })
-
-    socket.on('error', function(error) {
-      console.log("External socket error: " + error.name + " with message: " + error.message);
-    })
-
-    socket.on('lookup', function(error) {
-      console.log("socket lookup")
-    })
-
-    socket.on('timeout', function(error) {
-      console.log("socket timeout")
-    })
-
 })
 }
 
