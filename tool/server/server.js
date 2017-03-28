@@ -7,24 +7,30 @@ const sendTo = require('../util/sendTo.js')
 var internal_socket;
 // external_server
 var sockets = [];
+var pipe = true;
 
 var external_server = net.createServer(function(socket) {
   sockets.push(socket);
-
+  sendTo.Chart('connection-established')
+  console.log("connectin established")
   var date = new Date();
   var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
-  var unmodified_stream = fs.createWriteStream("./previous_traces/test_" + time + ".db");
+  //var unmodified_stream = fs.createWriteStream("./previous_traces/test_" + time + ".db");
+  var unmodified_stream = fs.createWriteStream("./previous_traces/scoobidoo.db");
 
     //write input data to file
-    socket.pipe(internal_socket);
+    if(pipe){
+      socket.pipe(internal_socket);
+    }
     socket.pipe(unmodified_stream);
 
     socket.on('close', function(data) {
       sendTo.Chart('connection-closed')
+      console.log("closed connection")
     })
-
-    socket.on('connect', function(data) {
-      sentTo.Chart('connection-established')   
+    
+    socket.on('connection', function(data) {
+      
     })
 
     socket.on('data', function (data) {
@@ -65,4 +71,20 @@ ipcRenderer.on('resume', function(event, data) {
 
 ipcRenderer.on('callstack', function(event, data) {
   external_socket.write('callstack\0');
+})
+
+ipcRenderer.on('disable-pipe', function(event, data) {
+  if(sockets.length > 0) {
+    sockets[0].unpipe(internal_socket)
+  }
+  pipe=false;
+  console.log("unpiped");
+})
+
+ipcRenderer.on('enable-pipe', function(event,data) {
+  if(sockets.length > 0) {
+    sockets[0].pipe(internal_socket)
+  }
+  pipe=true;
+  console.log("piped");
 })

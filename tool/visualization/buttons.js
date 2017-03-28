@@ -47,18 +47,14 @@ document.getElementById('Unpack').addEventListener('click',function(){
             console.log("No file selected");
         }
         else {
-            
             fs.readFile(fileNames[0], function (err, data) {
                 if(err){
                     alert("An error ocurred reading the file :" + err.message);
                     return;
                 }
-                if(server === null) {
-                    console.log('No server to connect to')            
-                }
-                else {
-                    Window.decoder.unpackStream(data, fileNames[0] + ".test");
-                }
+                currentStatus.SetMessage("Converting " + fileNames[0] + " to *.CSV")
+                Window.decoder.saveAsCSV(data, fileNames[0] + ".csv");
+                currentStatus.SetMessage("Converted " + fileNames[0] + " successfully to CSV")
             });
         }
     });
@@ -95,6 +91,7 @@ document.getElementById('ShouldVisualize').addEventListener('click', function() 
     else {
         currentStatus.visualization_enabled = !status.visualization_enabled;
         if(status.visualization_enabled) {
+                sendTo.Server('enable-pipe');            
                 var canvas = document.createElement('canvas');
                 canvas.id     = "myChart";
                 canvas.width  = 400;
@@ -107,6 +104,7 @@ document.getElementById('ShouldVisualize').addEventListener('click', function() 
                 visualization.initChart();
             }
             else {
+                sendTo.Server('disable-pipe');
                 var elem = document.getElementById("myChart");
                 elem.remove();
                 elem = document.getElementById("js-legend");

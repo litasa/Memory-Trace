@@ -48,7 +48,7 @@ class Decoder : public Nan::ObjectWrap {
 
     static NAN_METHOD(New);
     static NAN_METHOD(UnpackStream);
-    static NAN_METHOD(GetMemoryAsArray);
+    static NAN_METHOD(SaveAsCSV);
     static NAN_METHOD(GetFilteredData);    
     static NAN_METHOD(StreamEnd);
 

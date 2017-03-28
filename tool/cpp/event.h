@@ -74,7 +74,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << stream_magic << "," << platform << "," << system_frequency << "\n";
+		    ss << "," << std::showbase << std::hex << stream_magic << std::dec << "," << platform << "," << system_frequency << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -98,11 +98,11 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-            ss << ", #stream ended";
+            ss << ", #stream ended\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
-            ss << "(" << eventNumber << ")" << "StopStream " << "at time: " << timestamp;
+            ss << "(" << eventNumber << ")" << "StopStream " << "at time: " << timestamp << "\n";
         }
     };
 
@@ -158,7 +158,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -181,7 +181,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -204,7 +204,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -227,7 +227,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -250,7 +250,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "," << owned <<"\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "," << owned <<"\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -275,7 +275,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << owned << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << owned << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
