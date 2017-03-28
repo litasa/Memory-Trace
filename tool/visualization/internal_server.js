@@ -1,46 +1,43 @@
 const net = require('net');
+const status = require("./status.js");
 
 var list = '\\\\.\\pipe\\internal_server'
 
-Window.first_data = true;
-Window.Status = "Waiting for connection";
-
 var newServer = function() {
   return net.createServer(function(socket) {
-  
-  console.log('internal_server connection received');
+  var first_data = true;
   sendToServer('connection-established');
+
   socket.on('data', function(data) {
-    if(Window.first_data === true) {
-      Window.collecting = true;
-      Window.first_data = false;
-      Window.Status ="Collecting data";
-    }
-    var start = performance.now();
-    if(Window.visualization_enabled) {
-       Window.decoder.unpackStream(data);      
-    }
+    
+    var string = "Collecting data"
+    Window.decoder.unpackStream(data);
+    status.collecting = true;    
   })
 
   socket.on('error', function(err) {
     console.log(err);
-    Window.collecting = false;
+    status.collecting = false;
   });
 
   socket.on('close', function(err) {
     if(!Window.decoder.streamEnd()) {
       console.log("Stream ended incorrectly")
-      Window.Status = "Connection ended incorrectly"
+      status.SetMessage("Connection ended incorrectly");
     }
     else {
       console.log("The stream Ended correctly")
-      Window.collecting = false;
-      Window.Status = "Connection ended correctly"
+      status.collecting = false;
+      status.SetMessage("Connection ended correctly");
     }
   })
 })
 }
 var server = newServer().listen(list);
+
+ipcRenderer.on('stream-start', function(event, data) {
+  status.SetMessage("Collecting data");
+})
 
 ipcRenderer.on('stream-end', function(event, data) {
   console.log('finished recieving data: ' + total_data);

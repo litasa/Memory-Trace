@@ -1,6 +1,8 @@
 var rem = require('electron').remote;
 var dialog = rem.dialog;
 var fs = require('fs');
+var currentStatus = require("./status.js")
+var visualization = require("./visualization.js")
 
 function readFile(filepath){
     var client = new net.Socket();
@@ -76,19 +78,26 @@ document.getElementById('Resume').addEventListener('click',function() {
 // },false)
 
 document.getElementById('Reset').addEventListener('click',function() {
-    Window.decoder = enc.Decoder();
-    Window.first_data = true;
+    if(currentStatus.collecting) {
+        currentStatus.SetWarningMessage("Cannot reset application while collecting data")
+        console.log("collecting") 
+    }
+    else {
+        Window.decoder = enc.Decoder();
+        Window.first_data = true;
+        console.log("reset") 
+        
+    }
 },false)
 
 document.getElementById('ShouldVisualize').addEventListener('click', function() {
-    
-    if(Window.collecting) {
-        //alert("Can not change visualization during runtime")
+    if(currentStatus.collecting) {
+        currentStatus.SetWarningMessage("Cannot enable visualization during runtime")        
         return;
     }
     else {
-        Window.visualization_enabled = !Window.visualization_enabled;
-        if(Window.visualization_enabled) {
+        currentStatus.visualization_enabled = !status.visualization_enabled;
+        if(status.visualization_enabled) {
                 var canvas = document.createElement('canvas');
                 canvas.id     = "myChart";
                 canvas.width  = 400;
@@ -98,7 +107,7 @@ document.getElementById('ShouldVisualize').addEventListener('click', function() 
                 legend.className = "chart-legend";
                 legend.id = "js-legend";
                 document.getElementById('legend-goes-here').appendChild(legend);
-                initChart();
+                visualization.initChart();
             }
             else {
                 var elem = document.getElementById("myChart");

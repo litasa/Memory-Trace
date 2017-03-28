@@ -3,6 +3,7 @@ server = null;
 
 var enc = require('..\\build\\Release\\Encryption');
 var Visualization = require("./visualization.js")
+var status = require("./status.js")
 Window.decoder = enc.Decoder();
 Window.visualization_enabled = true;
 
@@ -14,15 +15,8 @@ window.onload = function() {
   setInterval(Visualization.setUpdate,500, Visualization);
 }
 
-ipcRenderer.on('server-init', function(event, serverData) {
-  server = {};
-  server.address = serverData.address;
-  server.port = serverData.port;
-  Window.server = server;
-  console.log("recieved from server.js")
-  console.log('address: ' + server.address + ' port: ' + server.port);
-  var text = document.createTextNode('address: ' + server.address + ' port: ' + server.port);
-  document.getElementById("connect-message").appendChild(text);
+ipcRenderer.on('server-init', function(event, server) {
+  status.SetIpAddress(server.address,server.port);
 })
 
 ipcRenderer.on('connection-established', function() {
