@@ -3,6 +3,7 @@ var dialog = rem.dialog;
 var fs = require('fs');
 var currentStatus = require("./status.js")
 var visualization = require("./visualization.js")
+var sendTo = require("../util/sendTo.js")
 
 function readFile(filepath){
     var client = new net.Socket();
@@ -64,12 +65,12 @@ document.getElementById('Unpack').addEventListener('click',function(){
 },false);
 
 document.getElementById('Pause').addEventListener('click',function() {
-    sendToServer("pause");
+    sendTo.Server("pause");
     Window.started = false;
 },false)
 
 document.getElementById('Resume').addEventListener('click',function() {
-    sendToServer("resume");
+    sendTo.Server("resume");
     Window.started = true;
 },false)
 

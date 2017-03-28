@@ -1,12 +1,13 @@
 const net = require('net');
 const status = require("./status.js");
+var sendTo = require("../util/sendTo.js")
 
 var list = '\\\\.\\pipe\\internal_server'
 
 var newServer = function() {
   return net.createServer(function(socket) {
   var first_data = true;
-  sendToServer('connection-established');
+  sendTo.Server('connection-established');
 
   socket.on('data', function(data) {
     
@@ -34,11 +35,3 @@ var newServer = function() {
 })
 }
 var server = newServer().listen(list);
-
-ipcRenderer.on('stream-start', function(event, data) {
-  status.SetMessage("Collecting data");
-})
-
-ipcRenderer.on('stream-end', function(event, data) {
-  console.log('finished recieving data: ' + total_data);
-})

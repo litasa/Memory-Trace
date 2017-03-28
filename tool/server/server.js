@@ -1,6 +1,7 @@
 const net = require('net');
 const fs = require('fs');
 const stream = require('stream');
+const sendTo = require('../util/sendTo.js')
 
 var internal_socket;
 var external_socket;
@@ -25,13 +26,13 @@ var newServer = function() {
 
     socket.on('close', function(data) {
       console.log("socket close")
-      sendToChart('connection-closed')
+      sendTo.Chart('connection-closed')
       
     })
 
     socket.on('connect', function(data) {
       console.log("socket connected")
-      sentToChart('connection-established')   
+      sentTo.Chart('connection-established')   
     })
 
     var counter = 0;
@@ -55,7 +56,7 @@ var newServer = function() {
     socket.on('end', function(data) {
       var diff = performance.now() - start_time;
       console.log("connection ended in: " + diff + ", with sent data: " + total_data_recieved);
-      sendToChart('connection-closed')
+      sendTo.Chart('connection-closed')
     })
 
     socket.on('error', function(error) {
@@ -77,7 +78,7 @@ var external_server = newServer().listen(8181);
 
 external_server.on('close', function() {
   console.log("server closed at time: " + performance.now());
-  sendToChart('connection-closed')
+  sendTo.Chart('connection-closed')
 });
 
 external_server.on('connection', function(socket) {
@@ -86,7 +87,7 @@ external_server.on('connection', function(socket) {
 
 external_server.on('listening', function() {
   require('dns').lookup(require('os').hostname(), function (err, add, fam) {
-    sendToChart('server-init', {address: add, port: external_server.address().port})
+    sendTo.Chart('server-init', {address: add, port: external_server.address().port})
   });
 })
 
