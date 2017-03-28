@@ -66,12 +66,10 @@ document.getElementById('Unpack').addEventListener('click',function(){
 
 document.getElementById('Pause').addEventListener('click',function() {
     sendTo.Server("pause");
-    Window.started = false;
 },false)
 
 document.getElementById('Resume').addEventListener('click',function() {
     sendTo.Server("resume");
-    Window.started = true;
 },false)
 
 // document.getElementById('Callstack').addEventListener('click',function() {
@@ -85,9 +83,7 @@ document.getElementById('Reset').addEventListener('click',function() {
     }
     else {
         Window.decoder = enc.Decoder();
-        Window.first_data = true;
         console.log("reset") 
-        
     }
 },false)
 

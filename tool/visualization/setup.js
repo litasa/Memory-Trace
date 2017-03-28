@@ -8,8 +8,6 @@ Window.visualization_enabled = true;
 
 window.onload = function() {
   Visualization.initChart();
-  setTimeout(function() {
-    sendTo.Server('please-connect', {addr: list});
-  },2000);
+  sendTo.Server('internal-server-address', {addr: list});
   setInterval(Visualization.setUpdate,500, Visualization);
 }

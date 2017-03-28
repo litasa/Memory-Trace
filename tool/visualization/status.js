@@ -30,6 +30,16 @@ exports.SetWarningMessage = function(message) {
     },3000)
 }
 
+exports.SetErrorMessage = function(message) {
+    var node = document.getElementById('status');
+    if(node.firstChild ){
+    node.removeChild(node.firstChild);
+    }
+    var msg = document.createTextNode(message);
+    node.style.backgroundColor = "red"
+    node.appendChild(msg);
+}
+
 exports.collecting = false;
 
 exports.visualization_enabled = true;

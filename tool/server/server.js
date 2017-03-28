@@ -5,17 +5,15 @@ const ipcRenderer = require('electron').ipcRenderer
 const sendTo = require('../util/sendTo.js')
 
 var internal_socket;
-var external_socket;
 // external_server
+var sockets = [];
 
-var newServer = function() {
-  return net.createServer(function (socket) {
-  external_socket = socket;
+var external_server = net.createServer(function(socket) {
+  sockets.push(socket);
 
   var date = new Date();
   var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
-  var name =  "./previous_traces/test_" + time + ".db";
-  var unmodified_stream = fs.createWriteStream(name);
+  var unmodified_stream = fs.createWriteStream("./previous_traces/test_" + time + ".db");
 
     //write input data to file
     socket.pipe(internal_socket);
@@ -30,25 +28,16 @@ var newServer = function() {
     })
 
     socket.on('data', function (data) {
-      //could add a counter on data.length to get recieved data
+      //needs the event to collect data
     })
 
-    socket.on('end', function(data) {
-      sendTo.Chart('connection-closed')
+    socket.on('error', function(error) {
+      var msg = error.name + " " + error.message;
+      data = { msg: msg}
+      sendTo.Chart('external-error', data);
     })
-})
-}
 
-var external_server = newServer().listen(8181);
-
-external_server.on('close', function() {
-  console.log("server closed at time: " + performance.now());
-  sendTo.Chart('connection-closed')
-});
-
-external_server.on('connection', function(socket) {
-  console.log('connection to Memtrace::InitSocket (or open file) done');
-});
+}).listen(8181);
 
 external_server.on('listening', function() {
   require('dns').lookup(require('os').hostname(), function (err, add, fam) {
@@ -57,10 +46,12 @@ external_server.on('listening', function() {
 })
 
 external_server.on('error', function(error) {
-  console.log("server error: " + error)
+  var msg = error.name + " " + error.message;
+  data = { msg: msg}
+  sendTo.Chart('external-error', data);
 })
 
-ipcRenderer.on('please-connect', function(event, data) {
+ipcRenderer.on('internal-server-address', function(event, data) {
   internal_socket = net.createConnection(data.addr);
 })
 
