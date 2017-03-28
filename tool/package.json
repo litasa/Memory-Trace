@@ -11,7 +11,7 @@
     "chartjs": "^0.3.24",
     "chartjs-plugin-zoom": "^0.4.3",
     "collections": "^5.0.5",
-    "electron": "^1.4.8",
+    "electron": "=1.6.2",
     "hammerjs": "^2.0.8",
     "level": "^1.5.0",
     "nan": "^2.0.5",
