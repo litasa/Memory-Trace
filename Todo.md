@@ -17,6 +17,7 @@ Todo:
 # UI
 * Add view for number of allocations per time
 * Filter allocations with regards to Y value also
+* Listening to: IP, should change to Connected to: IP, when connection happened
 
 # Other
 * (experiment) Create a fast and good database solution to stream from
