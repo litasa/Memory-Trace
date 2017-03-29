@@ -3,6 +3,7 @@ const fs = require('fs');
 const stream = require('stream');
 const ipcRenderer = require('electron').ipcRenderer
 const sendTo = require('../util/sendTo.js')
+const moment = require('moment');
 
 var internal_socket;
 // external_server
@@ -13,10 +14,8 @@ var external_server = net.createServer(function(socket) {
   sockets.push(socket);
   sendTo.Chart('connection-established')
   console.log("connectin established")
-  var date = new Date();
-  var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
   //var unmodified_stream = fs.createWriteStream("./previous_traces/test_" + time + ".db");
-  var unmodified_stream = fs.createWriteStream("./previous_traces/scoobidoo.db");
+  var unmodified_stream = fs.createWriteStream("./previous_traces/" + moment().format('YYYY-MM-DD_HH-mm-ss') + ".mtrace");
 
     //write input data to file
     if(pipe){

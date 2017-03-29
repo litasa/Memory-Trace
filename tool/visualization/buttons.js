@@ -84,8 +84,10 @@ document.getElementById('Reset').addEventListener('click',function() {
 },false)
 
 document.getElementById('ShouldVisualize').addEventListener('click', function() {
+    console.log("should visualize")
     if(currentStatus.collecting) {
-        currentStatus.SetWarningMessage("Cannot enable visualization during runtime")        
+        console.log("status is collecting do nothing")
+        currentStatus.SetWarningMessage("Cannot enable visualization during runtime")
         return;
     }
     else {

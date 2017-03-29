@@ -8,6 +8,7 @@ ipcRenderer.on('server-init', function(event, server) {
 ipcRenderer.on('connection-established', function(event, data) {
     console.log("opened connection")
   status.SetMessage("Collecting data");
+  status.collecting = true;
 })
 
 ipcRenderer.on('connection-closed', function(event, data) {
