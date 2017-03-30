@@ -76,15 +76,17 @@ exports.setUpdate = function(visualization) {
 		}
 		var byte_conversion = parseInt(document.getElementById("byte_conversion").value);
 		visualization.chart.data.datasets = Window.decoder.getFilteredMemorySnapshots(win_size, min_value, heap_id, max_samples_per_second, byte_conversion);
+
+		var current_time;
 		if(visualization.chart.data.datasets !== false) {
-			Window.current_time = visualization.chart.data.datasets[2];
+			current_time = visualization.chart.data.datasets[2];
 			visualization.chart.data.datasets.splice(2,1);
 		}
 		
 		if(document.getElementById('follow_alloc').checked && status.collecting === true) {
 			var wanted_win_size = parseInt(document.getElementById('max_view_window').value);
 			var win_size = Math.min(visualization.chart.scales['x-axis-0'].max - visualization.chart.scales['x-axis-0'].min, wanted_win_size);
-			visualization.chart.scales['x-axis-0'].options.ticks.max = Math.max(Window.current_time, 1);			
+			visualization.chart.scales['x-axis-0'].options.ticks.max = Math.max(current_time, 1);			
 			visualization.chart.scales['x-axis-0'].options.ticks.min = Math.max(visualization.chart.scales['x-axis-0'].end - win_size, 0);
 		}
 		document.getElementById('js-legend').innerHTML = visualization.chart.generateLegend();
