@@ -127,6 +127,7 @@ NAN_METHOD(Decoder::GetFilteredData) {
 
   Heap* heap = obj->memory_state_->getHeap(heap_number);
   if(heap == nullptr) {
+    //if no heap exists, return false so chart.js can handle it properly
     info.GetReturnValue().Set(Nan::False());
     return;
   }
