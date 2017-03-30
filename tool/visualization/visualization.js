@@ -95,7 +95,6 @@ exports.setUpdate = function(visualization) {
 exports.shiftYScale = function(shift) {
 	var current_val = visualization.chart.scales['y-axis-0'].max
 	var maxval = current_val;
-	console.log(maxval + "before")
 	for(var i = 0; i < Math.abs(shift); ++i) {
 		if(shift > 0) {
 			maxval = maxval >> 10;
@@ -105,8 +104,7 @@ exports.shiftYScale = function(shift) {
 		}
 	}
 	if(maxval === 0) {
-		maxval = 0.1;
+		maxval = 1;
 	}
-	console.log(maxval + "after")
 	visualization.chart.scales['y-axis-0'].options.ticks.suggestedMax = maxval;
 }
