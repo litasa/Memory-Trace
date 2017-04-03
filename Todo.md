@@ -4,6 +4,7 @@ Todo:
 * Let heap_id 0 be reserved for systems that does not care about multiple heaps
 * Enable change of recieve and send buffer size during initialization
 * Unpack to disk only heaps of interest
+* All memory are absolute. Look at a specific page and you can track all memory from that page upwards. That is instead of going from allocators down, go from addresses up
 
 # Fixes
 * better communication between visualizer and source.
