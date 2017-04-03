@@ -10,7 +10,8 @@ Todo:
 * better communication between visualizer and source.
 * A forced allocation should register for two blocks.
 * When removing core also check for forced allocations
-* Regestring a allocation to a heap should not require a core
+* ~~Regestring a allocation to a heap should not require a core~~
+* Show whole stack of backing allocators
 
 # Features
 * Create memory internal view
