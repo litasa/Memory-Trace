@@ -8,6 +8,8 @@
 
 Nan::Persistent<v8::Function> Decoder::constructor;
 
+
+
 NAN_MODULE_INIT(Decoder::Init) {
   v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
   tpl->SetClassName(Nan::New("Decoder").ToLocalChecked());
@@ -17,6 +19,7 @@ NAN_MODULE_INIT(Decoder::Init) {
   Nan::SetPrototypeMethod(tpl, "saveAsCSV", SaveAsCSV);
   Nan::SetPrototypeMethod(tpl, "getFilteredMemorySnapshots", GetFilteredData);
   Nan::SetPrototypeMethod(tpl, "streamEnd", StreamEnd);
+  Nan::SetPrototypeMethod(tpl, "getHeapInformation", GetHeapInformation);
 
   constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
   Nan::Set(target, Nan::New("Decoder").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
@@ -247,4 +250,33 @@ NAN_METHOD(Decoder::StreamEnd) {
     return;
   }
   info.GetReturnValue().Set(Nan::False());
+}
+
+NAN_METHOD(Decoder::GetHeapInformation) {
+  Decoder* obj = Nan::ObjectWrap::Unwrap<Decoder>(info.This());
+  size_t heap_number = info[0]->IntegerValue();
+  double frequency = obj->memory_state_->frequency_;
+  Heap* heap = obj->memory_state_->getHeap(heap_number);
+  if(heap != nullptr) {
+    v8::Local<v8::Object> heap_stats = Nan::New<v8::Object>();
+
+    Nan::Set(heap_stats, Nan::New<v8::String>("name").ToLocalChecked(),  Nan::New<v8::String>((heap->getName()).c_str()).ToLocalChecked());
+    Nan::Set(heap_stats, Nan::New<v8::String>("type").ToLocalChecked(),  Nan::New<v8::String>((heap->getType()).c_str()).ToLocalChecked());    
+    Nan::Set(heap_stats, Nan::New<v8::String>("birth").ToLocalChecked(), Nan::New<v8::Number>(heap->birth_/frequency));
+    Nan::Set(heap_stats, Nan::New<v8::String>("death").ToLocalChecked(), Nan::New<v8::Number>(heap->death_/frequency));
+
+    v8::Local<v8::Array> backing_allocators = Nan::New<v8::Array>(heap->backing_allocator_ids.size());
+    
+    for(int i = 0; i <  heap->backing_allocator_ids.size(); ++i)
+    {
+        v8::Local<v8::Object> info = Nan::New<v8::Object>();
+        Nan::Set(info, Nan::New<v8::String>("id").ToLocalChecked(), Nan::New<v8::Number>(heap->backing_allocator_ids[i]));
+        Heap* temp = obj->memory_state_->getHeap(heap->backing_allocator_ids[i]);  
+        Nan::Set(info, Nan::New<v8::String>("name").ToLocalChecked(), Nan::New<v8::String>((temp->getName()).c_str()).ToLocalChecked());
+        Nan::Set(info, Nan::New<v8::String>("type").ToLocalChecked(), Nan::New<v8::String>((temp->getType()).c_str()).ToLocalChecked());        
+        Nan::Set(backing_allocators,i,info);
+    }
+    Nan::Set(heap_stats, Nan::New<v8::String>("backing").ToLocalChecked(), backing_allocators);    
+    info.GetReturnValue().Set(heap_stats);  
+  }
 }

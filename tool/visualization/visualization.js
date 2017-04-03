@@ -91,6 +91,7 @@ exports.setUpdate = function(visualization) {
 		}
 		document.getElementById('js-legend').innerHTML = visualization.chart.generateLegend();
 		visualization.chart.update();
+		visualization.updateStats(Window.decoder.getHeapInformation(heap_id));
 	}
 }
 
@@ -109,4 +110,28 @@ exports.shiftYScale = function(shift) {
 		maxval = 1;
 	}
 	visualization.chart.scales['y-axis-0'].options.ticks.suggestedMax = maxval;
+}
+
+exports.updateStats = function(stats) {
+	var node = document.getElementById('info_box');
+	var html = "<ul>";
+	if(stats !== undefined) {
+		html += "<li>Name: " + stats.name + "</li>";
+		html += "<li>Type: " + stats.type + "</li>";
+		html += "<li>Birth: " + stats.birth + " s</li>";
+		if(stats.death != 0) {
+			html += "<li>Death: " + stats.death + " s</li>";			
+		}
+		for(var i = 0; i < stats.backing.length; ++i) {
+			html += "<li>" + "Backing Allocator" + "</li>";
+			html += "<ul>";
+				html += "<li>Id: " + stats.backing[i].id + "</li>";
+				html += "<li>Name: " + stats.backing[i].name + "</li>";
+				html += "<li>Type: " + stats.backing[i].type + "</li>";
+			html += "</ul>";
+		}
+		html += "</ul>";
+
+		node.innerHTML = html;
+	}
 }

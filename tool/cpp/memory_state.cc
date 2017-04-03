@@ -4,11 +4,6 @@ MemoryState::MemoryState() {
 };
 
 MemoryState::~MemoryState() {
-    // for(auto &it:eventList)
-    // {
-    //     delete it;
-    // }
-    // eventList.clear();
 };
 
 void MemoryState::setInits(size_t stream_magic, std::string platform, size_t frequency) {
@@ -151,24 +146,28 @@ std::vector<Heap*> MemoryState::getHeaps() {
 
 void MemoryState::addEvent(Event::Event* event) {
     switch(event->eventType) {
+
         case Event::Code::HeapAllocate :
         {
             Event::AddAllocation* data = (Event::AddAllocation*)event;
             addAllocation(data->timestamp, data->id, data->pointer, data->size, data->owned);
             break;
         }
+
         case Event::Code::HeapFree :
         {
             Event::RemoveAllocation* data = (Event::RemoveAllocation*)event;
             removeAllocation(data->timestamp, data->id, data->pointer, data->owned);
             break;
         }
+
         case Event::Code::HeapAddCore :
         {
             Event::AddCore* data = (Event::AddCore*)event;
             addCore(data->timestamp, data->id,data->pointer,data->size);
             break;
         }
+
         case Event::Code::HeapRemoveCore :
         {
             Event::RemoveCore* data = (Event::RemoveCore*)event;
@@ -226,20 +225,11 @@ void MemoryState::addEvent(Event::Event* event) {
             break;
         }
 
-        // case Event::Code::TrackHeapAllocation :
-        // {
-        //     Event::TrackAllocation* data = (Event::TrackAllocation*)event;
-        //     //trackAllocation(data->timestamp, data->id, data->pointer, data->size);
-        //     //std::cout << "track allocation" << std::endl;
-        //     break;
-        // }
-        // case Event::Code::TrackHeapFree :
-        // {
-        //     Event::TrackFree* data = (Event::TrackFree*)event;
-        //     //trackFree(data->timestamp, data->id, data->pointer);
-        //     //std::cout << "track free" << std::endl;
-        //     break;
-        // }
+        case Event::Code::EndStream :
+        {
+            break;
+        }
+
         default :
         {
             std::cout << "event not handled by memory: " << event->eventType << std::endl;

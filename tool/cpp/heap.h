@@ -41,12 +41,13 @@ public:
 
     std::vector<size_t> backing_allocator_ids;
     std::map<size_t,Core> recently_dead_;
-    bool dead = false;
     const size_t id_;
     const std::string type_;
     const std::string name_;
+    //statistics
+    size_t max_managed_memory;
+    size_t max_used_memory;
 private:
-    
 };
 
 #endif //HEAP_H

@@ -84,7 +84,7 @@ void Decoder::trySteps() {
       delete success;      
       break;
     }
-  }while(ring_->getNumUnread() > 0);
+  } while(ring_->getNumUnread() > 0);
 
   if(current_count + 1 != registerd_events && last_timestamp < current_time) {
     throw;
@@ -128,7 +128,7 @@ bool Decoder::decodeHeader(std::stringstream& ss,uint64_t& count, uint64_t& curr
 }
 
 bool Decoder::print_ok() {
-  return false; //registerd_events > 133965; //registerd_events > 20686300;
+  return false;
 }
 
 bool Decoder::print_error() {
@@ -249,7 +249,7 @@ Event::Event* Decoder::oneStep(bool save_to_file) {
       }
  
       event = new Event::AddCore(count, current_code, time_stamp, id, pointer, size_bytes);
-      if(print_ok()){event->getAsVerbose(ss);}
+      if(print_ok()) {event->getAsVerbose(ss);}
 
       break;
     }
@@ -432,48 +432,6 @@ Event::Event* Decoder::oneStep(bool save_to_file) {
       break;
     }
 
-    // case Event::Code::TrackHeapAllocation:
-    // {
-    //   size_t id;
-    //   size_t pointer;
-    //   size_t size_bytes;
-    //   if(!decodeValue(id)) {
-    //     if(print_error()) { std::cout << "decode TrackHeapAllocation id failed\n";}
-    //     return nullptr;
-    //   }
-    //   if(!decodeValue(pointer)) {
-    //     if(print_error()) { std::cout << "decode TrackHeapAllocation pointer failed\n";}
-    //     return nullptr;
-    //   }
-    //   if(!decodeValue(size_bytes)) {
-    //     if(print_error()) { std::cout << "decode TrackHeapAllocation size failed\n";}
-    //     return nullptr;
-    //   }
-
-    //   event = new Event::TrackAllocation(count, current_code, time_stamp, id, pointer, size_bytes);
-    //   if(print_ok()) {event->getAsVerbose(ss);}
-
-    //   break;
-    // }
-
-    // case Event::Code::TrackHeapFree:
-    // { 
-    //   size_t id;
-    //   size_t pointer;
-    //   if(!decodeValue(id)) {
-    //     if(print_error()) { std::cout << "decode TrackHeapFree id failed\n";}
-    //     return nullptr;
-    //   }
-    //   if(!decodeValue(pointer)) {
-    //     if(print_error()) { std::cout << "decode TrackHeapFree pointer failed\n";}
-    //     return nullptr;
-    //   }
-
-    //   event = new Event::TrackFree(count, current_code, time_stamp, id, pointer);
-    //   if(print_ok()){event->getAsVerbose(ss);}
-
-    //   break;
-    // }
     default:
       std::cout << "Unhandled Event " << current_code << ", time_stamp: " << time_stamp << " num unread: " << ring_->getNumUnread() << "\n";
       return nullptr;
@@ -495,9 +453,5 @@ Event::Event* Decoder::oneStep(bool save_to_file) {
   saveToFile(save_to_file, event);
   std::cout << ss.str();
   return event;
-}
-
-std::vector<Heap*> Decoder::getMemoryState() {
-  return memory_state_->getHeaps();
 }
 

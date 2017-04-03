@@ -39,8 +39,6 @@ public:
 
     Heap* getHeap(const size_t id);
 
-    void printStats();
-
     double frequency_;
     size_t last_update_ = 0;    
     std::vector<Heap*> getHeaps();
