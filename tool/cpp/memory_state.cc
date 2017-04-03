@@ -44,14 +44,14 @@ bool MemoryState::addCore(size_t timestamp, const uint64_t id, const size_t poin
     return false;
 }
 
-bool MemoryState::addAllocation(size_t timestamp, const uint64_t id, const size_t pointer, const size_t size) {
+bool MemoryState::addAllocation(size_t timestamp, const uint64_t id, const size_t pointer, const size_t size, bool core_exist) {
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         if(debug) {std::cout << "Heap: " << id << " not found for core: " << std::hex << pointer << std::dec << " trying to allocate" <<"\n";}
         return false;
     }
 
-    if(heap->addAllocation(timestamp, pointer, size)) {
+    if(heap->addAllocation(timestamp, pointer, size, core_exist)) {
         heap->setLastUpdate(timestamp);
         last_update_ = timestamp;
         return true;
@@ -69,13 +69,13 @@ bool MemoryState::growCore(size_t timestamp, const size_t id, const size_t point
     return true;
 }
 
-bool MemoryState::removeAllocation(size_t timestamp, const uint64_t id, const size_t pointer) {
+bool MemoryState::removeAllocation(size_t timestamp, const uint64_t id, const size_t pointer, bool core_exist) {
     Heap* heap = getHeap(id);
     if(heap == nullptr) {
         if(debug) {std::cout << "Heap: " << id << " not found for core: " << std::hex << pointer << std::dec << " at time: " << timestamp << " trying to remove allocation" << "\n";}
         return false;
     }
-    if(heap->removeAllocation(timestamp, pointer)) {
+    if(heap->removeAllocation(timestamp, pointer, core_exist)) {
         heap->setLastUpdate(timestamp);
         last_update_ = timestamp;
         return true;
@@ -154,13 +154,13 @@ void MemoryState::addEvent(Event::Event* event) {
         case Event::Code::HeapAllocate :
         {
             Event::AddAllocation* data = (Event::AddAllocation*)event;
-            addAllocation(data->timestamp, data->id, data->pointer, data->size);
+            addAllocation(data->timestamp, data->id, data->pointer, data->size, data->owned);
             break;
         }
         case Event::Code::HeapFree :
         {
             Event::RemoveAllocation* data = (Event::RemoveAllocation*)event;
-            removeAllocation(data->timestamp, data->id, data->pointer);
+            removeAllocation(data->timestamp, data->id, data->pointer, data->owned);
             break;
         }
         case Event::Code::HeapAddCore :

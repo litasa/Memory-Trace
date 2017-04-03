@@ -78,7 +78,9 @@ bool Heap::shrinkCore(size_t timestamp, size_t pointer, size_t size) {
     return false;
 }
 
-bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
+bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size, bool core_exist) {
+    if(core_exist)
+    {
         for(auto it = cores_.begin(); it != cores_.end(); ++it) {
             if(it->second.addAllocation(timestamp, pointer, size)) {
                 alloc_to_core.emplace_hint(alloc_to_core.cend(), pointer,it->second.getPointer());
@@ -100,19 +102,42 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size) {
                 }
             }
         }
-        std::cout << "did not find a core for allocation in heap: " << id_ << " pointer: " << std::hex << pointer << std::dec << " size: " << size << " at timestamp " << timestamp << "\n";
+    }
+    else
+    {
+        Allocation a(pointer, size, timestamp);
+        auto emp = allocations_.insert(std::make_pair(pointer,a));
+        used_memory_ += size;
+        simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
+        return true;
+    }
+    std::cout << "did not find a core for allocation in heap: " << id_ << " pointer: " << std::hex << pointer << std::dec << " size: " << size << " at timestamp " << timestamp << "\n";
     return false;
 }
 
-bool Heap::removeAllocation(size_t timestamp, size_t pointer) {
-    Core* core = getCoreForAllocation(pointer);
-    if(core == nullptr) {
-        std::cout << "core was null for: " << std::hex << pointer << std::dec << "at " << timestamp << std::endl;
-        printContent();
-        return false;
+bool Heap::removeAllocation(size_t timestamp, size_t pointer, bool core_exist) {
+    size_t removed_memory;
+    
+    if(core_exist)
+    {
+        Core* core = getCoreForAllocation(pointer);
+        if(core == nullptr) {
+            std::cout << "core was null for: " << std::hex << pointer << std::dec << "at " << timestamp << std::endl;
+            printContent();
+            return false;
+        }
+        removed_memory = core->removeAllocation(timestamp, pointer);
+        alloc_to_core.erase(pointer);  
     }
-    size_t removed_memory = core->removeAllocation(timestamp, pointer);
-    alloc_to_core.erase(pointer);    
+    else
+    {
+        auto it = allocations_.find(pointer);
+        if(it == allocations_.end()) {
+            return false;
+        }
+        removed_memory = it->second.getUsedMemory();
+    }
+      
     used_memory_ -= removed_memory;
     simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
     return true;

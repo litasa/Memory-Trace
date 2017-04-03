@@ -29,8 +29,8 @@ public:
     bool addCore(size_t timestamp, size_t pointer, size_t managed_size);
     bool growCore(size_t timestamp, size_t pointer, size_t size);
 
-    bool removeAllocation(size_t timestamp, size_t pointer);
-    bool addAllocation(size_t timestamp, size_t pointer, size_t size);
+    bool removeAllocation(size_t timestamp, size_t pointer, bool core_exist);
+    bool addAllocation(size_t timestamp, size_t pointer, size_t size, bool core_exist);
 
     bool setBackingAllocator(size_t alloc);
     std::string getName() const { return name_; }

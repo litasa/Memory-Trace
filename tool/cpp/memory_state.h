@@ -22,12 +22,12 @@ public:
     bool addHeap(size_t timestamp, const size_t id, const std::string& type, const std::string& name);
     bool addCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
     bool growCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
-    bool addAllocation(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
+    bool addAllocation(size_t timestamp, const size_t id, const size_t pointer, const size_t size, bool core_exist);
 
     bool removeHeap(size_t timestamp, const size_t id);
     bool removeCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);
     bool shrinkCore(size_t timestamp, const size_t id, const size_t pointer, const size_t size);    
-    bool removeAllocation(size_t timestamp, const size_t id, const size_t pointer);
+    bool removeAllocation(size_t timestamp, const size_t id, const size_t pointer, bool core_exist);
     bool removeAllAllocations(size_t timestamp, const size_t id);
 
     bool trackFree(size_t timestamp, const size_t id, const size_t pointer);
