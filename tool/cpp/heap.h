@@ -48,6 +48,7 @@ public:
     size_t max_managed_memory;
     size_t max_used_memory;
 private:
+    void update_stats();
 };
 
 #endif //HEAP_H

@@ -119,8 +119,10 @@ exports.updateStats = function(stats) {
 		html += "<li>Name: " + stats.name + "</li>";
 		html += "<li>Type: " + stats.type + "</li>";
 		html += "<li>Birth: " + stats.birth + " s</li>";
+		html += "<li>Max managed: " + stats.max_managed +"</li>";
+		html += "<li>Max used: " + stats.max_used +"</li>";		
 		if(stats.death != 0) {
-			html += "<li>Death: " + stats.death + " s</li>";			
+		html += "<li>Death: " + stats.death + " s</li>";			
 		}
 		for(var i = 0; i < stats.backing.length; ++i) {
 			html += "<li>" + "Backing Allocator" + "</li>";

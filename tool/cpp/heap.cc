@@ -1,6 +1,7 @@
 #include "heap.h"
 
 #include <iostream>
+#include <algorithm>
 
 Heap::Heap(size_t timestamp, size_t id, std::string type, std::string name)
     : MemoryObject(timestamp, 0, 0, 0), id_(id), type_(type), name_(name)
@@ -55,6 +56,7 @@ bool Heap::addCore(size_t timestamp, size_t pointer, size_t managed_size) {
         return false;
     }
     managed_memory_ += managed_size;
+    max_managed_memory = std::max(max_managed_memory,managed_memory_);
     return true;
 }
 
@@ -63,6 +65,7 @@ bool Heap::growCore(size_t timestamp, size_t pointer, size_t size) {
     if(core != nullptr) {
         core->grow(size);
         managed_memory_ += size;
+        max_managed_memory = std::max(max_managed_memory,managed_memory_);
         return true;    
     }
     return false;
@@ -85,6 +88,7 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size, bool cor
             if(it->second.addAllocation(timestamp, pointer, size)) {
                 alloc_to_core.emplace_hint(alloc_to_core.cend(), pointer,it->second.getPointer());
                 used_memory_ += size;
+                max_used_memory = std::max(max_used_memory,used_memory_);
                 simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
                 return true;
             }
@@ -97,6 +101,7 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size, bool cor
                     it->second.addAllocation(timestamp,pointer,size, true);
                     alloc_to_core.emplace_hint(alloc_to_core.cend(), pointer,it->second.getPointer());
                     used_memory_ += size;
+                    max_used_memory = std::max(max_used_memory,used_memory_);
                     simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
                     return true;                 
                 }
@@ -108,6 +113,7 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size, bool cor
         Allocation a(pointer, size, timestamp);
         auto emp = allocations_.insert(std::make_pair(pointer,a));
         used_memory_ += size;
+        max_used_memory = std::max(max_used_memory,used_memory_);        
         simple_allocation_events_[timestamp] = heap_usage(used_memory_, managed_memory_);
         return true;
     }
@@ -117,7 +123,7 @@ bool Heap::addAllocation(size_t timestamp, size_t pointer, size_t size, bool cor
 
 bool Heap::removeAllocation(size_t timestamp, size_t pointer, bool core_exist) {
     size_t removed_memory;
-    
+
     if(core_exist)
     {
         Core* core = getCoreForAllocation(pointer);

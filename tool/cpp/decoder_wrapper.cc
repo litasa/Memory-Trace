@@ -264,6 +264,8 @@ NAN_METHOD(Decoder::GetHeapInformation) {
     Nan::Set(heap_stats, Nan::New<v8::String>("type").ToLocalChecked(),  Nan::New<v8::String>((heap->getType()).c_str()).ToLocalChecked());    
     Nan::Set(heap_stats, Nan::New<v8::String>("birth").ToLocalChecked(), Nan::New<v8::Number>(heap->birth_/frequency));
     Nan::Set(heap_stats, Nan::New<v8::String>("death").ToLocalChecked(), Nan::New<v8::Number>(heap->death_/frequency));
+    Nan::Set(heap_stats, Nan::New<v8::String>("max_managed").ToLocalChecked(), Nan::New<v8::Number>(heap->max_managed_memory));
+    Nan::Set(heap_stats, Nan::New<v8::String>("max_used").ToLocalChecked(), Nan::New<v8::Number>(heap->max_used_memory));
 
     v8::Local<v8::Array> backing_allocators = Nan::New<v8::Array>(heap->backing_allocator_ids.size());
     
