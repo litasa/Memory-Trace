@@ -116,11 +116,7 @@ document.getElementById('ShouldVisualize').addEventListener('click', function() 
     
 },false)
 
-var last_var = 0;
 document.getElementById("byte_conversion").addEventListener('change', function() {
     var node = document.getElementById("byte_conversion");
-    var shift_times = node.value - last_var;
-    console.log(shift_times)
-    visualization.shiftYScale(shift_times);
-    last_var = node.value;
+    visualization.shiftYScale(node.value);
 })

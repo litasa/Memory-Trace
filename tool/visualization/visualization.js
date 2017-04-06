@@ -102,9 +102,6 @@ exports.shiftYScale = function(shift) {
 		if(shift > 0) {
 			maxval = maxval >> 10;
 		}
-		else {
-			maxval = maxval << 10;
-		}
 	}
 	if(maxval === 0) {
 		maxval = 1;
@@ -119,8 +116,16 @@ exports.updateStats = function(stats) {
 		html += "<li>Name: " + stats.name + "</li>";
 		html += "<li>Type: " + stats.type + "</li>";
 		html += "<li>Birth: " + stats.birth + " s</li>";
-		html += "<li>Max managed: " + stats.max_managed +"</li>";
-		html += "<li>Max used: " + stats.max_used +"</li>";		
+
+		var byte_info = document.getElementById("byte_conversion");
+		for(var i = 0; i < byte_info.value; ++i) {
+				stats.max_managed = stats.max_managed >> 10;
+				stats.max_used = stats.max_used >> 10;
+		}
+		var type = byte_info.options[byte_info.value].text;
+
+		html += "<li>Max managed: " + stats.max_managed + " " + type + "</li>";
+		html += "<li>Max used: " + stats.max_used +" " + type + "</li>";		
 		if(stats.death != 0) {
 		html += "<li>Death: " + stats.death + " s</li>";			
 		}
