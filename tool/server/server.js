@@ -1,99 +1,62 @@
 const net = require('net');
 const fs = require('fs');
 const stream = require('stream');
+const ipcRenderer = require('electron').ipcRenderer
+const send_to = require('../util/send_to.js')
+const moment = require('moment');
 
 var internal_socket;
-var external_socket;
 // external_server
-var external_server = newServer().listen(8181);
+var sockets = [];
+var pipe = true;
 
-var newServer = function() {
-  return net.createServer(function (socket) {
-  external_socket = socket;
-  var total_data_recieved = 0;
-  var first_connect = true;
-  var start_time = 0;
-  var last_time = 0;
-
-  var date = new Date();
-  var time = String(date.getDay()) + "-" + String(date.getHours()) + "-" + String(date.getMinutes()) + "-" + String(date.getSeconds())
-  var name =  "./previous_traces/test_" + time + ".db";
-  var unmodified_stream = fs.createWriteStream(name);
+var external_server = net.createServer(function(socket) {
+  sockets.push(socket);
+  send_to.Chart('connection-established')
+  console.log("connectin established")
+  //var unmodified_stream = fs.createWriteStream("./previous_traces/test_" + time + ".db");
+  var unmodified_stream = fs.createWriteStream("./previous_traces/" + moment().format('YYYY-MM-DD_HH-mm-ss') + ".mtrace");
 
     //write input data to file
-    socket.pipe(internal_socket);
+    if(pipe){
+      socket.pipe(internal_socket);
+    }
     socket.pipe(unmodified_stream);
 
     socket.on('close', function(data) {
-      console.log("socket close")
-      sendToChart('connection-closed')
+      send_to.Chart('connection-closed')
+      console.log("closed connection")
+    })
+    
+    socket.on('connection', function(data) {
       
     })
 
-    socket.on('connect', function(data) {
-      console.log("socket connected")
-      sentToChart('connection-established')   
-    })
-
-    var counter = 0;
     socket.on('data', function (data) {
-      if(counter % 500 == 0) {
-        counter = 0;
-        console.log("data recieved");
-      }
-      counter++;
-      if(data === undefined) {
-        throw "undefined data recieved"
-      }
-
-      total_data_recieved += data.length;
-    })
-
-    socket.on('drain', function(error) {
-      console.log("socket drain")
-    })
-
-    socket.on('end', function(data) {
-      var diff = performance.now() - start_time;
-      console.log("connection ended in: " + diff + ", with sent data: " + total_data_recieved);
-      sendToChart('connection-closed')
+      //needs the event to collect data
     })
 
     socket.on('error', function(error) {
-      console.log("External socket error: " + error.name + " with message: " + error.message);
+      var msg = error.name + " " + error.message;
+      data = { msg: msg}
+      send_to.Chart('external-error', data);
     })
 
-    socket.on('lookup', function(error) {
-      console.log("socket lookup")
-    })
-
-    socket.on('timeout', function(error) {
-      console.log("socket timeout")
-    })
-
-})
-}
-
-external_server.on('close', function() {
-  console.log("server closed at time: " + performance.now());
-  sendToChart('connection-closed')
-});
-
-external_server.on('connection', function(socket) {
-  console.log('connection to Memtrace::InitSocket (or open file) done');
-});
+}).listen(8181);
 
 external_server.on('listening', function() {
   require('dns').lookup(require('os').hostname(), function (err, add, fam) {
-    sendToChart('server-init', {address: add, port: external_server.address().port})
+    send_to.Chart('server-init', {address: add, port: external_server.address().port})
   });
 })
 
 external_server.on('error', function(error) {
-  console.log("server error: " + error)
+  var msg = error.name + " " + error.message;
+  data = { msg: msg}
+  send_to.Chart('external-error', data);
 })
 
-ipcRenderer.on('please-connect', function(event, data) {
+ipcRenderer.on('internal-server-address', function(event, data) {
   internal_socket = net.createConnection(data.addr);
 })
 
@@ -107,4 +70,20 @@ ipcRenderer.on('resume', function(event, data) {
 
 ipcRenderer.on('callstack', function(event, data) {
   external_socket.write('callstack\0');
+})
+
+ipcRenderer.on('disable-pipe', function(event, data) {
+  if(sockets.length > 0) {
+    sockets[0].unpipe(internal_socket)
+  }
+  pipe=false;
+  console.log("unpiped");
+})
+
+ipcRenderer.on('enable-pipe', function(event,data) {
+  if(sockets.length > 0) {
+    sockets[0].pipe(internal_socket)
+  }
+  pipe=true;
+  console.log("piped");
 })

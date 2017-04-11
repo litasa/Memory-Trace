@@ -29,8 +29,8 @@ public:
     bool addCore(size_t timestamp, size_t pointer, size_t managed_size);
     bool growCore(size_t timestamp, size_t pointer, size_t size);
 
-    bool removeAllocation(size_t timestamp, size_t pointer);
-    bool addAllocation(size_t timestamp, size_t pointer, size_t size);
+    bool removeAllocation(size_t timestamp, size_t pointer, bool core_exist);
+    bool addAllocation(size_t timestamp, size_t pointer, size_t size, bool core_exist);
 
     bool setBackingAllocator(size_t alloc);
     std::string getName() const { return name_; }
@@ -41,12 +41,14 @@ public:
 
     std::vector<size_t> backing_allocator_ids;
     std::map<size_t,Core> recently_dead_;
-    bool dead = false;
     const size_t id_;
     const std::string type_;
     const std::string name_;
+    //statistics
+    size_t max_managed_memory;
+    size_t max_used_memory;
 private:
-    
+    void update_stats();
 };
 
 #endif //HEAP_H

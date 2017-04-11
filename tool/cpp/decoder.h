@@ -27,8 +27,6 @@ class Decoder : public Nan::ObjectWrap {
     void trySteps();
 
     MemoryState* memory_state_;
-    
-    std::vector<Heap*> getMemoryState();
   private:
     explicit Decoder();
     ~Decoder();
@@ -48,9 +46,10 @@ class Decoder : public Nan::ObjectWrap {
 
     static NAN_METHOD(New);
     static NAN_METHOD(UnpackStream);
-    static NAN_METHOD(GetMemoryAsArray);
+    static NAN_METHOD(SaveAsCSV);
     static NAN_METHOD(GetFilteredData);    
     static NAN_METHOD(StreamEnd);
+    static NAN_METHOD(GetHeapInformation);
 
     /* Wrapper functions - end */
 };

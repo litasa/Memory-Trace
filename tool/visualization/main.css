@@ -1,0 +1,55 @@
+.right {
+    position: absolute;
+    right: 3px;
+    top: 30px;
+    width: 325px;
+    height: calc(100% - 250px);
+    padding-top: 10px;
+    overflow-y: scroll;
+}
+#connect-message {
+  position: absolute;
+  top: 0px;
+  right: 3px;
+}
+
+.commands {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(100% - 350px);
+}
+
+.legend {
+  position: absolute;
+  bottom: 110px;
+  right: 3px;
+  width: 325px;
+  height: 80px;
+}
+
+.chart {
+  position: absolute;
+  top: 30px;
+  left: 3px;
+  width: calc(100% - 350px);
+  height: calc(100% - 150px);
+}
+
+.buttons {
+  position: absolute;
+  bottom: 80px;
+  left: 3px;
+}
+
+.bottomleft {
+    position: absolute;
+    bottom: 3px;
+    left: 3px;
+}
+
+.bottomright {
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+}

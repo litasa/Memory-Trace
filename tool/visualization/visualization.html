@@ -1,12 +1,9 @@
 <html>
 <meta charset="utf-8">
-<style>
-</style>
 <head>
-  <script src="../util/ipc_utils.js"></script>
-  <script src="../util/enums.js"></script>
+  <link rel="stylesheet" type="text/css" href="main.css"/>
+  <script src="messages.js"></script>
   <script src="setup.js"></script>
-  <script src="visualization.js"></script>
   <script src="internal_server.js"></script>
 
   <script type="text/javascript" src="../node_modules/chart.js/dist/Chart.js"></script>
@@ -14,33 +11,41 @@
 	<script src="../node_modules/chartjs-plugin-zoom/chartjs-plugin-zoom.js"></script>
 </head>
 <body>
-  <input type="button" value="Disable/Enable Visualization" id="ShouldVisualize"/>
-    <div id="chart-goes-here">
+  <div class="commands">
+    <input type="button" value="Disable/Enable Visualization" id="ShouldVisualize"/>
+  <select id="byte_conversion">
+        <option value="0">B</option>
+        <option value="1">KiB</option>
+        <option value="2">MB</option>
+        <option value="3">GB</option>
+  </select>
+  </div>
+  <div id="connect-message">Listening to </div>
+  <div class="right" id="info_box"></div>
+    <div class="legend" id="legend-goes-here">
+        <div id="js-legend" class="chart-legend"></div>
+    </div>
+    <div class="chart" id="chart-goes-here">
       <canvas id="myChart" width ="400" height="400"></canvas>
     </div>
-    <input type="button" value="Choose a file" id="select-file"/>
-    <input type="button" value="Pause" id="Pause"/>
-    <input type="button" value="Resume" id="Resume"/>
-    <input type="button" value="Collect callstack" id="Callstack"/>
-    <input type="button" value="Unpack to disk" id="Unpack"/>
-      <input type="button" value="Reset application" id="Reset"/>
-    <script src="file_load.js"></script>
-    <select id="byte_conversion">
-      <option value="0">B</option>
-      <option value="1">KiB</option>
-      <option value="2">MB</option>
-      <option value="3">GB</option>
-    </select>
-    </br>
-    Visualize Heap <input type="number" id="heap_id" value="0" min="0">
-    Follow Alloc <input type="checkbox" id="follow_alloc" value="true" checked>
-    </br>
-    <input type="number" id="samples_per_second" value="10" min="1"> samples per sec
-    <input type="number" id="max_view_window" value="30" min="0"> max view window
-    </br>
-    
-    <div id="legend-goes-here">
-        <div id="js-legend" class="chart-legend"></div>
+    <div class="buttons">
+      <input type="button" value="Choose a file" id="select-file"/>
+      <input type="button" value="Pause" id="Pause"/>
+      <input type="button" value="Resume" id="Resume"/>
+      <!-- <input type="button" value="Collect callstack" id="Callstack"/> -->
+      <input type="button" value="Unpack to disk" id="Unpack"/>
+      <input type="button" value="Reset application" id="Reset"/> <script src="buttons.js"></script>
+    </div>
+    <div class="bottomleft">
+      Visualize Heap <input type="number" class="num_box" id="heap_id" value="0" min="0">
+      Follow Alloc <input type="checkbox" id="follow_alloc" value="true" checked>
+      </br>      
+      <input type="number" class="num_box" id="samples_per_second" value="10" min="1"> samples per sec
+      </br>
+      <input type="number" class="num_box" id="max_view_window" value="30" min="0"> max view window
+    </div>
+    <div class="bottomright">
+      Status:<div id ="status"></div>
     </div>
 </body>
 </html>

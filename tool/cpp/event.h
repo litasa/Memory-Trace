@@ -28,8 +28,6 @@ namespace Event
 
             /*Stingray specifics from here on*/
             SetBackingAllocator = 30,
-            TrackHeapAllocation,
-		    TrackHeapFree,
         };
 
     struct Event {
@@ -76,7 +74,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << stream_magic << "," << platform << "," << system_frequency << "\n";
+		    ss << "," << std::showbase << std::hex << stream_magic << std::dec << "," << platform << "," << system_frequency << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -100,11 +98,11 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-            ss << ", #stream ended";
+            ss << ", #stream ended\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
-            ss << "(" << eventNumber << ")" << "StopStream " << "at time: " << timestamp;
+            ss << "(" << eventNumber << ")" << "StopStream " << "at time: " << timestamp << "\n";
         }
     };
 
@@ -160,7 +158,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -183,7 +181,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -206,7 +204,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -229,7 +227,7 @@ namespace Event
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -246,13 +244,13 @@ namespace Event
     };
 
     struct AddAllocation : public Event {
-        AddAllocation(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes)
-        : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
+        AddAllocation(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes, bool owned_by_heap)
+        : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes), owned(owned_by_heap) { };
         ~AddAllocation();
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << size << "," << owned <<"\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
@@ -260,33 +258,37 @@ namespace Event
             ss << "\n\tid: " << id;
             ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
             ss << "\n\tsize: " << size;
+            ss << "\n\towned by heap: " << owned? "true" : "false";
             ss << "\n";
         }
 
         uint64_t id;
         uint64_t pointer;
         uint64_t size;
+        bool owned;
     };
 
     struct RemoveAllocation : public Event {
-        RemoveAllocation(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer)
-        : Event(eventNumber, eventType, time), id(id), pointer(pointer) { };
+        RemoveAllocation(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer, bool owned_by_heap)
+        : Event(eventNumber, eventType, time), id(id), pointer(pointer), owned(owned_by_heap) { };
         ~RemoveAllocation();
 
         virtual void getAsCSV(std::stringstream& ss) override {
 		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "\n";
+		    ss << "," << id << "," << std::showbase << std::hex << pointer << std::dec << "," << owned << "\n";
 	    }
 
         virtual void getAsVerbose(std::stringstream& ss) override {
             ss << "(" << eventNumber << ")" << "RemoveAllocation " << "at time: " << timestamp;
             ss << "\n\tid: " << id;
             ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+            ss << "\n\towned by heap: " << owned? "true" : "false";            
             ss << "\n";
         }
 
         uint64_t id;
         uint64_t pointer;
+        bool owned;
     };
 
     struct StartEvent : public Event {
@@ -345,48 +347,48 @@ namespace Event
         size_t set_to_heap;
     };
 
-    struct TrackAllocation : public Event {
-        TrackAllocation(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes)
-        : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
-        ~TrackAllocation();
+    // struct TrackAllocation : public Event {
+    //     TrackAllocation(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer,uint64_t size_bytes)
+    //     : Event(eventNumber, eventType, time), id(id), pointer(pointer), size(size_bytes) { };
+    //     ~TrackAllocation();
 
-        virtual void getAsCSV(std::stringstream& ss) override {
-		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "," << size << "\n";
-	    }
+    //     virtual void getAsCSV(std::stringstream& ss) override {
+	// 	    Event::getAsCSV(ss);
+	// 	    ss << "," << id << "," << pointer << "," << size << "\n";
+	//     }
 
-        virtual void getAsVerbose(std::stringstream& ss) override {
-            ss << "(" << eventNumber << ")" << "TrackAllocation " << "at time: " << timestamp;
-            ss << "\n\tid: " << id;
-            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
-            ss << "\n\tsize: " << size;
-            ss << "\n";
-        }
+    //     virtual void getAsVerbose(std::stringstream& ss) override {
+    //         ss << "(" << eventNumber << ")" << "TrackAllocation " << "at time: " << timestamp;
+    //         ss << "\n\tid: " << id;
+    //         ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+    //         ss << "\n\tsize: " << size;
+    //         ss << "\n";
+    //     }
 
-        uint64_t id;
-        uint64_t pointer;
-        uint64_t size;
-    };
+    //     uint64_t id;
+    //     uint64_t pointer;
+    //     uint64_t size;
+    // };
 
-    struct TrackFree : public Event {
-        TrackFree(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer)
-        : Event(eventNumber, eventType, time), id(id), pointer(pointer) { };
-        ~TrackFree();
+    // struct TrackFree : public Event {
+    //     TrackFree(uint64_t eventNumber, size_t eventType, uint64_t time, uint64_t id,uint64_t pointer)
+    //     : Event(eventNumber, eventType, time), id(id), pointer(pointer) { };
+    //     ~TrackFree();
 
-        virtual void getAsCSV(std::stringstream& ss) override {
-		    Event::getAsCSV(ss);
-		    ss << "," << id << "," << pointer << "\n";
-	    }
+    //     virtual void getAsCSV(std::stringstream& ss) override {
+	// 	    Event::getAsCSV(ss);
+	// 	    ss << "," << id << "," << pointer << "\n";
+	//     }
 
-        virtual void getAsVerbose(std::stringstream& ss) override {
-            ss << "(" << eventNumber << ")" << "TrackFree " << "at time: " << timestamp;
-            ss << "\n\tid: " << id;
-            ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
-            ss << "\n";
-        }
+    //     virtual void getAsVerbose(std::stringstream& ss) override {
+    //         ss << "(" << eventNumber << ")" << "TrackFree " << "at time: " << timestamp;
+    //         ss << "\n\tid: " << id;
+    //         ss << "\n\tpointer: " << std::showbase << std::hex << pointer << std::dec;
+    //         ss << "\n";
+    //     }
 
-        uint64_t id;
-        uint64_t pointer;
-    };
+    //     uint64_t id;
+    //     uint64_t pointer;
+    // };
 }
 #endif //EVENT_H

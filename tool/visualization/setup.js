@@ -1,36 +1,13 @@
-connected = false;
-server = null;
-
 var enc = require('..\\build\\Release\\Encryption');
+var Visualization = require("./visualization.js")
+var status = require("./status.js")
+var send_to = require("../util/send_to.js")
+
 Window.decoder = enc.Decoder();
 Window.visualization_enabled = true;
 
 window.onload = function() {
-  initChart();
-    setTimeout(function() {
-    sendToServer('please-connect', {addr: list});
-  },2000);
+  Visualization.initChart();
+  send_to.Server('internal-server-address', {addr: list});
+  setInterval(Visualization.setUpdate,500, Visualization);
 }
-
-ipcRenderer.on('server-init', function(event, serverData) {
-  server = {};
-  server.address = serverData.address;
-  server.port = serverData.port;
-  Window.server = server;
-  console.log("recieved from server.js")
-  console.log('address: ' + server.address + ' port: ' + server.port);
-})
-
-ipcRenderer.on('connection-established', function() {
-  Window.started = true;
-  console.log("connection entered")
-})
-
-ipcRenderer.on('connection-closed', function() {
-  Window.started = false;
-  console.log("connection closed")
-})
-
-ipcRenderer.on('event-done', function(event, data) {
-  console.log("data recieved");
-})

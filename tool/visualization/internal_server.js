@@ -1,47 +1,31 @@
 const net = require('net');
-var event_count = 0;
-
-var last_time = performance.now();
-var total_data = 0;
+const status = require("./status.js");
+var send_to = require("../util/send_to.js")
 
 var list = '\\\\.\\pipe\\internal_server'
 
-var update_frequency = 800;
-Window.first_data = true;
-var server = newServer().listen(list);
-
-var newServer = function() {
-  return net.createServer(function(socket) {
-  
-  console.log('internal_server connection received');
-  sendToServer('connection-established');
+var server = net.createServer(function(socket) {
   socket.on('data', function(data) {
-    if(Window.first_data === true) {
-      Window.collecting = true;
-      Window.first_data = false;
+    Window.decoder.unpackStream(data);
+    if(!status.collecting) {
+      status.SetMessage("Collecting data")
     }
-    total_data += data.length;
-    var start = performance.now();
-    if(Window.visualization_enabled) {
-       Window.decoder.unpackStream(data);      
-    }
-    if(!Window.decoder.streamEnd()) {
-      
-    }
-    else {
-      console.log("The stream Ended correctly")
-      Window.collecting = false;
-    }
+    status.collecting = true;
   })
 
   socket.on('error', function(err) {
     console.log(err);
-    Window.collecting = false;
+    status.collecting = false;
   });
 
-})
-}
-
-ipcRenderer.on('stream-end', function(event, data) {
-  console.log('finished recieving data: ' + total_data);
-})
+  socket.on('close', function(err) {
+    if(!Window.decoder.streamEnd()) {
+      console.log("Stream ended incorrectly")
+      status.SetWarningMessage("Connection ended incorrectly");
+    }
+    else {
+      status.collecting = false;
+      status.SetMessage("Connection ended correctly");
+    }
+  })
+}).listen(list);

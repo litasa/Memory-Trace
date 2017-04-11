@@ -37,44 +37,205 @@ namespace MemTrace
 
 #if MEMTRACE_ENABLE
 
-  // Get connection parameters specified on the command line, if any (returns true)
-  // Useful to forward memtrace configuration along to spawned child processes.
-  bool    GetSocketData(char (&ip_addr_out)[128], int* port_out);
+  /**
+  * @brief Initializes MemoryTrace to save to file
+  * @param character string to absolute filepath
+  */
+  void InitFile(const char *trace_file);
 
-  void    InitFile(const char *trace_temp_file);
+  /**
+  * @brief Initializes MemoryTrace to connect to server
+  * @param character string to server ip address
+  * @param port number that server is listening to
+  * @code
+  * InitSocket("192.168.0.1", 8181);
+  * @endcode
+  */
+  void InitSocket(const char *server_ip_address, int server_port);
 
-  void    InitSocket(const char *server_ip_address, int server_port);
+  /**
+  * @brief Closes tracking, ending connection if any was established
+  */
+  void Shutdown();
 
-  void    Shutdown();
+  /**
+  * @brief Forces the content in buffer to be transmitted
+  */
+  void Flush();
 
-  void    Flush();
+  /**
+  * @brief Event: Initializes the stream
+  *
+  * Sends the following information, in order:
+  * - Stream magic
+  * - Platform name
+  * - Start time
+  */
+  void BeginStream();
 
-  void	  BeginStream();
+  /**
+  * @brief Create a heap
+  *
+  * Send the following information, in order:
+  * - heapid
+  * - type
+  * - name
+  * @code
+  * id = MemTrace::HeapCreate("Block Allocator", "Debug");
+  * @endcode
+  * @param Type of heap, typically class name
+  * @param Name of heap, typically function
+  * @return Designated number of heap
+  */
+  HeapId HeapCreate(const char* type, const char* name);
 
-  HeapId  HeapCreate(const char* type, const char* name);
-  void    HeapDestroy(HeapId heap_id);
+  /**
+  * @brief Destroy previously created heap
+  * @param Character string to be printed
+  * @param ... extra parameters for in string output
+  * @return 
+  */
+  void HeapDestroy(HeapId heap_id);
 
-  void    HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
-  void	  HeapGrowCore(HeapId heap_id, const void* base, size_t size_bytes);
+/**
+  * @brief Add core to a heap
+  *
+  * Send the following information, in order:
+  * - heapid
+  * - pointer to start of core
+  * - size
+  * @param Id to heap that adds the core
+  * @param Pointer to start of base
+  * @param Size of core
+*/
+  void HeapAddCore(HeapId heap_id, const void* base, size_t size_bytes);
+
+/**
+  * @brief Increases the size of a existing core
+  *
+  * Send the following information, in order:
+  * - heapid
+  * - pointer to start of core
+  * - new size
+  * @param Id to heap that grows the core
+  * @param Pointer to start of base
+  * @param The new size of the core
+*/
+  void HeapGrowCore(HeapId heap_id, const void* base, size_t new_size_bytes);
+
+/**
+  * @brief Remove a existing core
+  *
+  * Send the following information, in order:
+  * - heapid
+  * - pointer to start of core
+  * - size of core
+  * @param Id to heap that removes the core
+  * @param Pointer to start of base
+  * @param The size of the core
+*/
   void    HeapRemoveCore(HeapId heap_id, const void* base, size_t size_bytes);
-  void	  HeapShrinkCore(HeapId heap_id, const void* base, size_t size_bytes);
 
-  void    HeapAllocate(HeapId heap_id, const void* ptr, size_t size_bytes);
-  void	  HeapTrackAllocation(HeapId heap_id, const void* ptr, size_t size_bytes);
-  void    HeapFree(HeapId heap_id, const void* ptr);
-  void	  HeapTrackFree(HeapId heap_id, const void* ptr);
-  void	  HeapFreeAll(HeapId heap_id);
+/**
+  * @brief Shrink a existing core
+  *
+  * Send the following information, in order:
+  * - heapid
+  * - pointer to start of core
+  * - size of core
+  * @param Id to heap that shrinks the core
+  * @param Pointer to start of base
+  * @param The new size of the core
+*/
+  void	  HeapShrinkCore(HeapId heap_id, const void* base, size_t new_size_bytes);
 
-  void	  StartRecordingEvent(const char* eventName);
-  void    StopRecordingEvent(const char* eventName);
+/**
+  * @brief Allocate a new piece of memory
+  *
+  * Send the following information, in order:
+  * - heapid
+  * - pointer to start of allocation
+  * - size of allocation
+  * - If allocated by this allocator
+  * @param Id to heap that allocates memory
+  * @param Pointer to start of allocation
+  * @param The size of allocation
+  * @param Is it allocated by another heap
+*/
+  void HeapAllocate(HeapId heap_id, const void* ptr, size_t size_bytes, bool allocated_by_heap = true);
+/**
+  * @brief Free memory
+  *
+  * Send the following information, in order:
+  * - heapid
+  * - pointer to start of allocation
+  * - If allocated by this allocator
+  * @param Id to heap that frees memory
+  * @param Pointer to start of allocation
+  * @param Is it allocated by another heap
+*/
+  void HeapFree(HeapId heap_id, const void* ptr, bool allocated_by_heap = true);
 
-	void    HandleMessage(char* msg, size_t size);
-	void	  Pause();
+/**
+  * @brief Free all memory
+  *
+  * Used when a memory allocator is destroyed to reduce the amount of events fired
+  *
+  * Send the following information, in order:
+  * - heapid
+  * @param Id to heap that allocates memory
+*/
+  void HeapFreeAll(HeapId heap_id);
 
-  void DummyInitFunction(char dummy);
+/**
+  * @brief Start user defined event
+  *
+  * Useful for indicating non memory related events such as a hash table rehash.
+  * Needs to be followed by a StopRecordingEvent with same name
+  *
+  * Send the following information, in order:
+  * - EventName
+  * @param Name of event
+*/
+  void StartRecordingEvent(const char* eventName);
 
-  /* Stingray Engine Specifics */
-  void	  HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap);
+/**
+  * @brief Ends user defined event
+  *
+  * Useful for indicating non memory related events such as a hash table rehash.
+  * Needs to be preceeded by a StartRecordingEvent with same name
+  *
+  * Send the following information, in order:
+  * - EventName
+  * @param Name of event
+*/
+  void StopRecordingEvent(const char* eventName);
+
+/**
+  * @brief Function that handles incomming messages from the network
+  *
+  * @param Message to be handled
+  * @param Size of message
+*/
+  void HandleMessage(char* msg, size_t size);
+
+/**
+  * @brief Pause function
+  *
+  * Runs an infinite loop, not good for multi threaded applications
+*/
+  void Pause();
+
+/**
+  * @brief Sets a memoryprovided for a heap
+  *
+  * Send the following information, in order:
+  * - current heapid
+  * - memory providing heapid
+  * @param Id for current heap
+  * @param Id for backing heap
+*/
+  void HeapSetBackingAllocator(HeapId for_heap, HeapId set_to_heap);
 
 #endif
 
