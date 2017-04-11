@@ -106,6 +106,7 @@ document.getElementById('ShouldVisualize').addEventListener('click', function() 
                 visualization.initChart();
             }
             else {
+
                 send_to.Server('disable-pipe');
                 var elem = document.getElementById("myChart");
                 elem.remove();
