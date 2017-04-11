@@ -44,7 +44,7 @@ function createWindow () {
 
 
   // Open the DevTools.
-  chartWindow.webContents.openDevTools()
+  //chartWindow.webContents.openDevTools()
   //serverWindow.webContents.openDevTools()
   //internalServerWindow.webContents.openDevTools()
    chartWindow.on('closed', function () {
