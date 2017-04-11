@@ -215,13 +215,11 @@ void MemoryState::addEvent(Event::Event* event) {
 
         case Event::Code::EventStart :
         {
-            //std::cout << "Event: " << ((Event::StartEvent*)event)->name << " started" << std::endl;
             break;
         }
 
         case Event::Code::EventEnd :
-        {
-            //std::cout << "Event: " << ((Event::EndEvent*)event)->name << " ended" << std::endl;            
+        {    
             break;
         }
 

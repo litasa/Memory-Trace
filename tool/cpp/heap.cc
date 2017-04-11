@@ -10,7 +10,6 @@ Heap::Heap(size_t timestamp, size_t id, std::string type, std::string name)
 }
 
 Heap::~Heap() {
-    //maps manages themselves
 }
 
 void Heap::printContent() const {
