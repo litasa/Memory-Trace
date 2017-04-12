@@ -106,7 +106,7 @@ exports.shiftYScale = function(shift) {
 	if(maxval === 0) {
 		maxval = 1;
 	}
-	visualization.chart.scales['y-axis-0'].options.ticks.suggestedMax = maxval;
+	visualization.chart.scales['y-axis-0'].options.ticks.max = maxval;
 }
 
 exports.updateStats = function(stats) {

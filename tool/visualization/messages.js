@@ -3,6 +3,7 @@ const ipcRenderer = require('electron').ipcRenderer
 
 ipcRenderer.on('server-init', function(event, server) {
   status.SetIpAddress(server.address,server.port);
+  Window.server = server;
 })
 
 ipcRenderer.on('connection-established', function(event, data) {
